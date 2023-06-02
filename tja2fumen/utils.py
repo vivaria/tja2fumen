@@ -64,27 +64,40 @@ def validateHeaderMetadata(headerBytes):
         elif idx == 9:
             assert val in [27, 31, 23], f"Expected 27/31/23 at position '{idx}', got '{val}' instead."
 
-        # 3. TODO
+        # 3. TODO: Note count / drumroll count / note score / song length / etc.
         # Notes:
-        #   * Byte 12 has a bell-curve distribution from 0-255, with most bytes clustered in the 31-63 range.
-        #      - Because of the distribution of values, this byte feels like a song property.
-        #      - e.g. easy songs have a lower value, harder songs have a higher value
-        #   * Byte 13 is usually just 0, but for some games, it can be 1 or 2.
+        # - For Oni songs, bytes (12, 16, 20) correlate with note count (bytes 13, 17 are always 0):
+        #     * If we look at 10* Oni songs, we see the following 2 ends of the spectrum for bytes (12, 13, 16, 17, 20):
+        #         - (9, 0, 4, 0, 238): Sotsu Omeshii Full (1487 notes)
+        #         - (9, 0, 5, 0, 237): Shimedore 2000 (1414 notes)
+        #                        Shimedore 2000+ (1414 notes)
+        #                        Silent Jealousy (1408 notes)
+        #                        The Future of the Taiko Drum (1400 notes)
+        #                        Dairouketen Maou (1396 notes)
+        #         - (10, 0, 5, 0, 235): Yugen no Ran (1262 notes)
+        #         - [...]
+        #         - (27, 0, 14, 0, 201): Pan vs. Gohan! Daikessen! [Normal Route] (480 notes)
+        #         - (28, 0, 14, 0, 200): Anata to Tu-lat-tat-ta (468 notes)
+        #         - (34, 0, 17, 0, 189): GeGeGe no Kitaro [6th Season] (390 notes)
+        #     * Just to confirm, if we look at the top/bottom 9* songs, we see:
+        #         - (8, 0, 4, 0, 240): Hypnosismic -Division Battle Anthem- (1608 notes)
+        #         - (10, 0, 8, 0, 225): Rokuchounen to Ichiyo Monogatari (846 notes)
+        #         - (48, 0, 24, 0, 160): Inscrutable Battle (274 notes)
+        #     * So, to summarize, for Oni songs:
+        #         - As the number of notes increases, bytes 12/16 decrease, and byte 20 increases
+        #         - As the number of notes decreases, bytes 12/16 increase, and byte 20 decreases
+        #
+        # - However, the relationship doesn't hold when checking, for example, 1* Easy charts
+        #     * Bytes 13 and 17, which were previously always 0, are now 0/1/2:
+        #         - (249, 0, 187, 0, 132): Let's go! Smile Precure (67 notes)
+        #         - (249, 1, 123, 1, 3): Anata to Tu-lat-tat-ta (33 notes)
+        #         - (44, 2, 161, 1, 234): Do you want to build a Snowman? (30 notes)
+        #         - (0, 1, 192, 0, 128): Odoru Ponpokorin (65 notes)
+        #     * I'm having trouble making sense of the relationships between these bytes.
         elif idx in [12, 13]:
             pass
-
-        # 4. TODO
-        # Notes:
-        #   * Byte 16 has a bell-curve distribution from 0-255, with most bytes clustered in the 7-24 range.
-        #      - Because of the distribution of values, this byte feels like a song property.
-        #      - e.g. easy songs have a lower value, harder songs have a higher value
-        #   * Byte 17 is usually just 0, but for some games, it can be 1 or 2.
         elif idx in [16, 17]:
             pass
-
-        # 5. TODO
-        # Notes:
-        #   * Byte 20 has a bell-curve distribution from 1-242, with most bytes clustered in the 164-230 range
         elif idx == 20:
             pass
 
