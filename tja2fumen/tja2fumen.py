@@ -394,6 +394,19 @@ def debugPrint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+def checkMismatchedBytes(file1, file2):
+    with open(file1, 'rb') as file1, open(file2, 'rb') as file2:
+        data1, data2 = file1.read(), file2.read()
+    incorrect_bytes = {}
+    # Ignore header (first 432 + 80 = 512 bytes)
+    for i, (byte1, byte2) in enumerate(zip(data1[512:], data2[512:])):
+        if byte1 == byte2:
+            pass
+        else:
+            incorrect_bytes[hex(i+512)] = [byte1, byte2]
+    return incorrect_bytes
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="tja2fumen {0}".format(tja2fumen_version)
@@ -467,3 +480,6 @@ if __name__ == "__main__":
         outputName = inputFile.name.split('.')[0] + "_rebuilt.bin"
         outputFile = open(outputName, "wb")
         writeFumen(outputFile, parsedSong)
+        # Read output file back in to validate that the rewritten song is a perfect match
+        inputFileOut = open(outputName, "rb")
+        print(checkMismatchedBytes(inputFile.name, outputFile.name))
