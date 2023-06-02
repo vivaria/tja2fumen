@@ -5,20 +5,108 @@ import re
 # Valid strings for headers and chart commands
 HEADER_GLOBAL = ['TITLE', 'TITLEJA', 'SUBTITLE', 'SUBTITLEJA', 'BPM', 'WAVE', 'OFFSET', 'DEMOSTART', 'GENRE']
 HEADER_COURSE = ['COURSE', 'LEVEL', 'BALLOON', 'SCOREINIT', 'SCOREDIFF', 'TTRO' 'WBEAT']
-COMMAND = ['START', 'END', 'GOGOSTART', 'GOGOEND', 'BRANCHSTART', 'BRANCHEND', 'BARLINEON', 'BARLINEOFF', 'MEASURE',
-           'BPMCHANGE', 'DELAY', 'SECTION', 'N', 'E', 'M', 'LEVELHOLD', 'SCROLL', 'BMSCROLL', 'HBSCROLL', 'TTBREAK']
+BRANCH_COMMANDS = ['START', 'END', 'BRANCHSTART', 'BRANCHEND', 'N', 'E', 'M']
+MEASURE_COMMANDS = ['MEASURE', 'GOGOSTART', 'GOGOEND', 'SCROLL', 'BPMCHANGE', 'TTBREAK' 'LEVELHOLD']
+UNUSED_COMMANDS = ['DELAY', 'SECTION', 'BMSCROLL', 'HBSCROLL', 'BARLINEON', 'BARLINEOFF']
+COMMAND = BRANCH_COMMANDS + MEASURE_COMMANDS + UNUSED_COMMANDS
 
 
 def getCourse(tjaHeaders, lines):
-    headers = {
-        "course": 'Oni',
-        "level": 0,
-        "balloon": [],
-        "scoreInit": 100,
-        "scoreDiff": 100,
-        "ttRowBeat": 16,
-    }
+    def parseHeaderMetadata(line):
+        nonlocal headers
+        if line["name"] == 'COURSE':
+            headers['course'] = line['value']
+        elif line["name"] == 'LEVEL':
+            headers['level'] = int(line['value'])
+        elif line["name"] == 'SCOREINIT':
+            headers['scoreInit'] = int(line['value'])
+        elif line["name"] == 'SCOREDIFF':
+            headers['scoreDiff'] = int(line['value'])
+        elif line["name"] == 'TTROWBEAT':
+            headers['ttRowBeat'] = int(line['value'])
+        elif line["name"] == 'BALLOON':
+            if line['value']:
+                balloons = [int(v) for v in line['value'].split(",")]
+            else:
+                balloons = []
+            headers['balloon'] = balloons
 
+    def parseBranchCommands(line):
+        nonlocal flagLevelhold, targetBranch, currentBranch
+        if line["name"] == 'BRANCHSTART':
+            if flagLevelhold:
+                return
+            values = line['value'].split(',')
+            if values[0] == 'r':
+                if len(values) >= 3:
+                    targetBranch = 'M'
+                elif len(values) == 2:
+                    targetBranch = 'E'
+                else:
+                    targetBranch = 'N'
+            elif values[0] == 'p':
+                if len(values) >= 3 and float(values[2]) <= 100:
+                    targetBranch = 'M'
+                elif len(values) >= 2 and float(values[1]) <= 100:
+                    targetBranch = 'E'
+                else:
+                    targetBranch = 'N'
+        elif line["name"] == 'BRANCHEND':
+            currentBranch = targetBranch
+        elif line["name"] == 'N':
+            currentBranch = 'N'
+        elif line["name"] == 'E':
+            currentBranch = 'E'
+        elif line["name"] == 'M':
+            currentBranch = 'M'
+        elif line["name"] == 'START' or line['name'] == 'END':
+            currentBranch = 'N'
+            targetBranch = 'N'
+            flagLevelhold = False
+
+    def parseMeasureCommands(line):
+        nonlocal measureDivisor, measureDividend, measureEvents, measureProperties, flagLevelhold
+        if line['name'] == 'MEASURE':
+            matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
+            if not matchMeasure:
+                return
+            measureDividend = int(matchMeasure.group(1))
+            measureDivisor = int(matchMeasure.group(2))
+        elif line['name'] == 'GOGOSTART':
+            measureEvents.append({"name": 'gogoStart', "position": len(measureData)})
+        elif line['name'] == 'GOGOEND':
+            measureEvents.append({"name": 'gogoEnd', "position": len(measureData)})
+        elif line['name'] == 'SCROLL':
+            measureEvents.append({"name": 'scroll', "position": len(measureData), "value": float(line['value'])})
+        elif line['name'] == 'BPMCHANGE':
+            measureEvents.append({"name": 'bpm', "position": len(measureData), "value": float(line['value'])})
+        elif line['name'] == 'TTBREAK':
+            measureProperties['ttBreak'] = True
+        elif line['name'] == 'LEVELHOLD':
+            flagLevelhold = True
+
+    def parseMeasureData(line):
+        nonlocal measures, measureData, measureDividend, measureDivisor, measureEvents, measureProperties
+        data = line['data']
+        # If measure has ended, then append the measure and start anew
+        if data.endswith(','):
+            measureData += data[0:-1]
+            measure = {
+                "length": [measureDividend, measureDivisor],
+                "properties": measureProperties,
+                "data": measureData,
+                "events": measureEvents,
+            }
+            measures.append(measure)
+            measureData = ''
+            measureEvents = []
+            measureProperties = {}
+        # Otherwise, keep tracking measureData
+        else:
+            measureData += data
+
+    # Define state variables
+    headers = {}
     measures = []
     measureDividend = 4
     measureDivisor = 4
@@ -29,167 +117,31 @@ def getCourse(tjaHeaders, lines):
     targetBranch = 'N'
     flagLevelhold = False
 
-    # Process lines
+    # Process course lines
     for line in lines:
         if line["type"] == 'header':
-            if line["name"] == 'COURSE':
-                headers['course'] = line['value']
-                
-            elif line["name"] == 'LEVEL':
-                headers['level'] = int(line['value'])
-                
-            elif line["name"] == 'BALLOON':
-                if line['value']:
-                    balloons = [int(v) for v in line['value'].split(",")]
-                else:
-                    balloons = []
-                headers['balloon'] = balloons
-                
-            elif line["name"] == 'SCOREINIT':
-                headers['scoreInit'] = int(line['value'])
-                
-            elif line["name"] == 'SCOREDIFF':
-                headers['scoreDiff'] = int(line['value'])
-                
-            elif line["name"] == 'TTROWBEAT':
-                headers['ttRowBeat'] = int(line['value'])
+            parseHeaderMetadata(line)
+        elif line["type"] == 'command' and line['name'] in BRANCH_COMMANDS:
+            parseBranchCommands(line)
+        elif line["type"] == 'command' and line['name'] in MEASURE_COMMANDS and currentBranch == targetBranch:
+            parseMeasureCommands(line)
+        elif line['type'] == 'data' and currentBranch == targetBranch:
+            parseMeasureData(line)
 
-        elif line["type"] == 'command':
-            if line["name"] == 'BRANCHSTART':
-                if flagLevelhold:
-                    continue
-                values = line['value'].split(',')
-                if values[0] == 'r':
-                    if len(values) >= 3: 
-                        targetBranch = 'M'
-                    elif len(values) == 2:
-                        targetBranch = 'E'
-                    else:
-                        targetBranch = 'N'
-                elif values[0] == 'p':
-                    if len(values) >= 3 and float(values[2]) <= 100:
-                        targetBranch = 'M'
-                    elif len(values) >= 2 and float(values[1]) <= 100:
-                        targetBranch = 'E'
-                    else:
-                        targetBranch = 'N'
-
-            elif line["name"] == 'BRANCHEND':
-                currentBranch = targetBranch
-
-            elif line["name"] == 'N':
-                currentBranch = 'N'
-
-            elif line["name"] == 'E':
-                currentBranch = 'E'
-
-            elif line["name"] == 'M':
-                currentBranch = 'M'
-
-            elif line["name"] == 'START':
-                currentBranch = 'N'
-                targetBranch = 'N'
-                flagLevelhold = False
-
-            elif line["name"] == 'END':
-                currentBranch = 'N'
-                targetBranch = 'N'
-                flagLevelhold = False
-
-            else:
-                if currentBranch != targetBranch:
-                    continue
-                    
-                if line['name'] == 'MEASURE':
-                    matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
-                    if not matchMeasure:
-                        continue
-                    measureDividend = int(matchMeasure.group(1))
-                    measureDivisor = int(matchMeasure.group(2))
-
-                elif line['name'] == 'GOGOSTART':
-                    measureEvents.append({
-                        "name": 'gogoStart',
-                        "position": len(measureData),
-                    })
-
-                elif line['name'] == 'GOGOEND':
-                    measureEvents.append({
-                        "name": 'gogoEnd',
-                        "position": len(measureData),
-                    })
-
-                elif line['name'] == 'SCROLL':
-                    measureEvents.append({
-                        "name": 'scroll',
-                        "position": len(measureData),
-                        "value": float(line['value']),
-                    })
-
-                elif line['name'] == 'BPMCHANGE':
-                    measureEvents.append({
-                        "name": 'bpm',
-                        "position": len(measureData),
-                        "value": float(line['value']),
-                    })
-
-                elif line['name'] == 'TTBREAK':
-                    measureProperties['ttBreak'] = True
-
-                elif line['name'] == 'LEVELHOLD':
-                    flagLevelhold = True
-
-                else:
-                    print(line['name'])  # Unknown: BARLINEOFF, BARLINEON
-
-        elif line['type'] == 'data' and currentBranch is targetBranch:
-            data = line['data']
-            if data.endswith(','):
-                measureData += data[0:-1]
-                measure = {
-                    "length": [measureDividend, measureDivisor],
-                    "properties": measureProperties,
-                    "data": measureData,
-                    "events": measureEvents,
-                }
-                measures.append(measure)
-                measureData = ''
-                measureEvents = []
-                measureProperties = {}
-            else:
-                measureData += data
-
-    if len(measures):
-        # Make first BPM event
+    # Post-processing: Ensure the first measure has a BPM event
+    if measures:
         firstBPMEventFound = False
         # Search for BPM event in the first measure
         for i in range(len(measures[0]['events'])):
             evt = measures[0]['events'][i]
             if evt.name == 'bpm' and evt.position == 0:
                 firstBPMEventFound = True
+        # If not present, insert a BPM event into the first measure using the global header metadata
         if not firstBPMEventFound:
             # noinspection PyTypeChecker
-            measures[0]['events'].insert(0, {
-                "name": 'bpm',
-                "position": 0,
-                "value": tjaHeaders['bpm'],
-            })
+            measures[0]['events'].insert(0, {"name": 'bpm', "position": 0, "value": tjaHeaders['bpm']})
 
-    # Helper values
-    course = 0
-    courseValue = headers['course'].lower()
-
-    if courseValue in ['easy', '0']:
-        course = 0
-    elif courseValue in ['normal', '1']:
-        course = 1
-    elif courseValue in ['hard', '2']:
-        course = 2
-    elif courseValue in ['oni', '3']:
-        course = 3
-    elif courseValue in ['ura', 'edit', '4']:
-        course = 4
-
+    # Post-processing: In case the file doesn't end on a "measure end" symbol (','), append whatever is left
     if measureData:
         measures.append({
             "length": [measureDividend, measureDivisor],
@@ -197,15 +149,15 @@ def getCourse(tjaHeaders, lines):
             "data": measureData,
             "events": measureEvents,
         })
-    else:
+
+    # Post-processing: Otherwise, if the file ends on a measure event (e.g. #GOGOEND), append any remaining events
+    elif measureEvents:
         for event in measureEvents:
             event['position'] = len(measures[len(measures) - 1]['data'])
             # noinspection PyTypeChecker
             measures[len(measures) - 1]['events'].append(event)
 
-    # Output
-    print(measures[len(measures) - 1])
-    return course, headers, measures
+    return headers, measures
 
 
 def parseLine(line):
@@ -249,7 +201,7 @@ def parseTJA(tja):
     currentCourse = ''
     for line in lines:
         parsed = parseLine(line)
-        # Case 1: Comments (ignore
+        # Case 1: Comments (ignore)
         if parsed['type'] == 'comment':
             pass
         # Case 2: Global header metadata
