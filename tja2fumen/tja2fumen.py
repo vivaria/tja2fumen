@@ -115,7 +115,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
     unknownMetadata = readStruct(file, order, format_string="I", seek=0x204)[0]
 
     # Initialize the dict that will contain the chart information
-    song = {}
+    song = { 'measures': [] }
     song['header'] = fumenHeader
     song['headerUnknown'] = fumenHeaderUnknown
     song['order'] = order
@@ -155,7 +155,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         if measureNumber == 0:
             measure["offset"] = measure["fumenOffset"] + 240000 / measure["bpm"]
         else:
-            prev = song[measureNumber - 1]
+            prev = song['measures'][measureNumber - 1]
             measure["offset"] = ((prev["offset"] + measure["fumenOffset"] + 240000) /
                                  (measure["bpm"] - prev["fumenOffset"] - 240000 / prev["bpm"]))
         measure["gogo"] = getBool(measureStruct[2])
@@ -263,7 +263,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
             measure[branchNames[branchNumber]] = branch
 
         # Assign the measure to the song
-        song[measureNumber] = measure
+        song['measures'].append(measure)
         if file.tell() >= size:
             break
 
@@ -318,7 +318,7 @@ def writeFumen(file, song):
     len_measures = 0
     for measureNumber in range(song['length']):
         len_measures += 40
-        measure = song[measureNumber]
+        measure = song['measures'][measureNumber]
         for branchNumber in range(len(branchNames)):
             len_measures += 8
             branch = measure[branchNames[branchNumber]]
@@ -337,7 +337,7 @@ def writeFumen(file, song):
     # Write measure data
     file.seek(0x208)
     for measureNumber in range(song['length']):
-        measure = song[measureNumber]
+        measure = song['measures'][measureNumber]
         measureStruct = [measure['bpm'], measure['fumenOffset'], int(measure['gogo']), int(measure['hidden'])]
         measureStruct.extend([measure['padding1']] + measure['branchInfo'] + [measure['padding2']])
         writeStruct(file, order, format_string="ffBBHiiiiiii", value_list=measureStruct)
