@@ -99,7 +99,6 @@ def preprocessTJAMeasures(tja):
 def convertTJAToFumen(fumen, tja):
     # Hardcode currentBranch due to current lack of support for branching songs
     currentBranch = 'normal'  # TODO: Program in branch support
-    fumen['measures'] = fumen['measures'][9:]
     tja['measures'] = preprocessTJAMeasures(tja)
 
     # Parse TJA measures to create converted TJA -> Fumen file

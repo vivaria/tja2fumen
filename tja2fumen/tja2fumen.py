@@ -39,6 +39,6 @@ def main(fnameFumen=None, fnameTJA=None, validate=False):
 
 
 if __name__ == "__main__":
-    fnameFumen = "test-data/ia6cho_m.bin"  # NB: Contains only oni chart
-    fnameTJA = "test-data/Rokuchounen to Ichiya Monogatari.tja"  # NB: Contains 5 charts
-    fumen, tja = main(fnameFumen, fnameTJA)
+    fnameFumen = "test-data/12373714_m.bin"
+    fnameTJA = "test-data/Unlimited Games.tja"  # NB: Contains 5 charts
+    fumen, tja = main(fnameFumen=fnameFumen, fnameTJA=fnameTJA)
