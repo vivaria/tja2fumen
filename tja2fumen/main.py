@@ -24,8 +24,12 @@ def main(fnameFumen=None, fnameTJA=None, validate=False):
 
     if fnameTJA:
         # Parse tja
-        inputFile = open(fnameTJA, "r", encoding="utf-8-sig")
-        parsedSongsTJA = parseTJA(inputFile)
+        try:
+            inputFile = open(fnameTJA, "r", encoding="utf-8-sig")
+            parsedSongsTJA = parseTJA(inputFile)
+        except UnicodeDecodeError:
+            inputFile = open(fnameTJA, "r", encoding="shift-jis")
+            parsedSongsTJA = parseTJA(inputFile)
 
         # Try converting the Oni TJA chart to match the Oni fumen
         convertedTJA = convertTJAToFumen(parsedSongFumen, parsedSongsTJA['Oni'])
