@@ -5,7 +5,8 @@ This repo a new attempt to write a tja2fumen chart converter to replace/compleme
 ### Goals
 
 - [X] Fix desyncronization issues due to BPMCHANGE commands. (See: https://github.com/Fluto/TakoTako/issues/16)
-- [ ] Provide an open-source, highly-documented reference for parsing both the TJA and Fumen file formats.
+- [X] Provide open source code, as opposed to distributing only a closed-source binary.
+- [ ] Provide a highly-documented reference for parsing both the TJA and Fumen file formats.
 - [ ] Stick to "pure Python", i.e. no external dependencies if possible.
 - [ ] Provide support for Windows/Linux/macOS via [`PyInstaller`](https://pyinstaller.org/en/stable/) or something similar.
 
