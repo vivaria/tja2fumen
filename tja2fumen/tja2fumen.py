@@ -4,7 +4,7 @@ import struct
 import argparse
 import io
 
-fumen2osu_version = "v1.4"
+tja2fumen_version = "v0.1"
 
 branchNames = ("normal", "advanced", "master")
 
@@ -340,7 +340,7 @@ def debugPrint(*args, **kwargs):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="fumen2osu {0}".format(fumen2osu_version)
+        description="tja2fumen {0}".format(tja2fumen_version)
     )
     parser.add_argument(
         "file_m.bin",
