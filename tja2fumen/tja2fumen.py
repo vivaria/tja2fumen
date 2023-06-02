@@ -106,6 +106,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         else:
             order = "<"
             totalMeasures = measuresLittle
+    unknownMetadata = readStruct(file, order, format_string="I", seek=0x204)[0]
 
     # Initialize the dict that will contain the chart information
     song = {}
@@ -113,6 +114,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
     song['headerUnknown'] = fumenHeaderUnknown
     song['order'] = order
     song["length"] = totalMeasures
+    song["unknownMetadata"] = unknownMetadata
 
     # Determine whether the song has branches from byte 0x1b0 (decimal 432)
     hasBranches = getBool(readStruct(file, order, format_string="B", seek=0x1b0)[0])
@@ -324,6 +326,7 @@ def writeFumen(file, song):
     # Write metadata
     writeStruct(file, order, format_string="B", value_list=[putBool(song['branches'])], seek=0x1b0)
     writeStruct(file, order, format_string="I", value_list=[song['length']], seek=0x200)
+    writeStruct(file, order, format_string="I", value_list=[song['unknownMetadata']], seek=0x204)
 
     # Write measure data
     file.seek(0x208)
