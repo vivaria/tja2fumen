@@ -26,18 +26,26 @@ noteTypes = {
 
 
 def readFumen(fumenFile, byteOrder=None, debug=False):
+    """
+    Parse bytes of a fumen .bin file into nested measure, branch, and note dictionaries.
+
+    For more information on any of the terms used in this function (e.g. scoreInit, scoreDiff),
+    please refer to KatieFrog's excellent guide: https://gist.github.com/KatieFrogs/e000f406bbc70a12f3c34a07303eec8b
+    """
     if type(fumenFile) is str:
         file = open(fumenFile, "rb")
     else:
         file = fumenFile
     size = os.fstat(file.fileno()).st_size
 
-    song = {}
-
+    # Determine:
+    #   - The byte order (big or little endian)
+    #   - The total number of measures from byte 0x200 (decimal 512)
     if byteOrder:
         order = ">" if byteOrder == "big" else "<"
         totalMeasures = readStruct(file, order, format_string="I", seek=0x200)[0]
     else:
+        # Use the number of measures to determine the byte order
         measuresBig = readStruct(file, order="", format_string=">I", seek=0x200)[0]
         measuresLittle = readStruct(file, order="", format_string="<I", seek=0x200)[0]
         if measuresBig < measuresLittle:
@@ -47,8 +55,15 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
             order = "<"
             totalMeasures = measuresLittle
 
+    # Initialize the dict that will contain the chart information
+    song = {}
+    song["length"] = totalMeasures
+
+    # Determine whether the song has branches from byte 0x1b0 (decimal 432)
     hasBranches = getBool(readStruct(file, order, format_string="B", seek=0x1b0)[0])
     song["branches"] = hasBranches
+
+    # Print general debug metadata about the song
     if debug:
         debugPrint("Total measures: {0}, {1} branches, {2}-endian".format(
             totalMeasures,
@@ -56,11 +71,22 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
             "Big" if order == ">" else "Little"
         ))
 
+    # Start reading measure data from position 0x208 (decimal 520)
     file.seek(0x208)
     for measureNumber in range(totalMeasures):
-        measure = {}
-        # measureStruct: bpm 4, offset 4, gogo 1, hidden 1, dummy 2, branchInfo 4 * 6, dummy 4
+        # Parse the measure data using the following `format_string`:
+        #   "ffBBHiiiiiii" (12 format characters, 40 bytes per measure)
+        #     - 'f': BPM              (represented by one float (4 bytes))
+        #     - 'f': fumenOffset      (represented by one float (4 bytes))
+        #     - 'B': gogo             (represented by one unsigned char (1 byte))
+        #     - 'B': hidden           (represented by one unsigned char (1 byte))
+        #     - 'H': <padding>        (represented by one unsigned short (2 bytes))
+        #     - 'iiiiii': branchInfo  (represented by six integers (24 bytes))
+        #     - 'i': <padding>        (represented by one integer (4 bytes)
         measureStruct = readStruct(file, order, format_string="ffBBHiiiiiii")
+
+        # Create the measure dictionary using the newly-parsed measure data
+        measure = {}
         measure["bpm"] = measureStruct[0]
         measure["fumenOffset"] = measureStruct[1]
         if measureNumber == 0:
@@ -72,13 +98,22 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         measure["gogo"] = getBool(measureStruct[2])
         measure["hidden"] = getBool(measureStruct[3])
 
-        for branchNumber in range(3):
-            branch = {}
-            # branchStruct: totalNotes 2, dummy 2, speed 4
+        # Iterate through the three branch types
+        for branchNumber in range(len(branchNames)):
+            # Parse the measure data using the following `format_string`:
+            #   "HHf" (3 format characters, 8 bytes per branch)
+            #     - 'H': totalNotes (represented by one unsigned short (2 bytes))
+            #     - 'H': <padding>  (represented by one unsigned short (2 bytes))
+            #     - 'f': speed      (represented by one float (4 bytes)
             branchStruct = readStruct(file, order, format_string="HHf")
+
+            # Create the branch dictionary using the newly-parsed branch data
+            branch = {}
             totalNotes = branchStruct[0]
+            branch["length"] = totalNotes
             branch["speed"] = branchStruct[2]
 
+            # Print debug metadata about the branches
             if debug and (hasBranches or branchNumber == 0 or totalNotes != 0):
                 branchName = " ({0})".format(
                     branchNames[branchNumber]
@@ -94,6 +129,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
                 ))
                 debugPrint("Total notes: {0}".format(totalNotes))
 
+            # Iterate through each note in the measure (per branch)
             for noteNumber in range(totalNotes):
                 if debug:
                     fileOffset = file.tell()
@@ -103,49 +139,58 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
                         shortHex(fileOffset + 0x17)
                     ), end="")
 
-                note = {}
-                # noteStruct: type 4, pos 4, item 4, dummy 4, init 2, diff 2, duration 4
+                # Parse the note data using the following `format_string`:
+                #   "ififHHf" (7 format characters, 24 bytes per note cluster)
+                #     - 'i': note type
+                #     - 'f': note position
+                #     - 'i': item
+                #     - 'f': <padding>
+                #     - 'H': scoreInit
+                #     - 'H': scoreDiff
+                #     - 'f': duration
+                # NB: 'item' doesn't seem to be used at all in this function.
                 noteStruct = readStruct(file, order, format_string="ififHHf")
-                noteType = noteStruct[0]
 
+                # Validate the note type
+                noteType = noteStruct[0]
                 if noteType not in noteTypes:
-                    if debug:
-                        debugPrint("")
                     raise ValueError("Error: Unknown note type '{0}' at offset {1}".format(
                         shortHex(noteType).upper(),
                         hex(file.tell() - 0x18))
                     )
 
+                # Create the note dictionary using the newly-parsed note data
+                note = {}
                 note["type"] = noteTypes[noteType]
                 note["pos"] = noteStruct[1]
-
                 if noteType == 0xa or noteType == 0xc:
                     # Balloon hits
                     note["hits"] = noteStruct[4]
                 elif "scoreInit" not in song:
                     song["scoreInit"] = noteStruct[4]
                     song["scoreDiff"] = noteStruct[5] / 4.0
-
                 if noteType == 0x6 or noteType == 0x9 or noteType == 0xa or noteType == 0xc:
                     # Drumroll and balloon duration in ms
                     note["duration"] = noteStruct[6]
-                branch[noteNumber] = note
 
+                # Print debug information about the note
                 if debug:
                     debugPrint(" ({0})".format(nameValue(note)))
 
+                # Seek forward 8 bytes to account for padding bytes at the end of drumrolls
                 if noteType == 0x6 or noteType == 0x9 or noteType == 0x62:
-                    # Drumrolls have 8 dummy bytes at the end
                     file.seek(0x8, os.SEEK_CUR)
 
-            branch["length"] = totalNotes
+                # Assign the note to the branch
+                branch[noteNumber] = note
+
+            # Assign the branch to the measure
             measure[branchNames[branchNumber]] = branch
 
+        # Assign the measure to the song
         song[measureNumber] = measure
         if file.tell() >= size:
             break
-
-    song["length"] = totalMeasures
 
     file.close()
     return song
