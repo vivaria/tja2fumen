@@ -1,6 +1,7 @@
 from copy import deepcopy
 
-from constants import TJA_NOTE_TYPES, unknownHeaderSample
+from utils import computeSoulGaugeByte
+from constants import TJA_NOTE_TYPES, DIFFICULTY_BYTES, unknownHeaderSample
 
 # Filler metadata that the `writeFumen` function expects
 default_note = {'type': '', 'pos': 0.0, 'item': 0, 'padding': 0.0,
@@ -101,6 +102,7 @@ def convertTJAToFumen(fumen, tja):
     currentBranch = 'normal'  # TODO: Program in branch support
     tja['measures'] = preprocessTJAMeasures(tja)
     currentDrumroll = None
+    total_notes = 0
 
     # Parse TJA measures to create converted TJA -> Fumen file
     tjaConverted = {'measures': []}
@@ -172,9 +174,11 @@ def convertTJAToFumen(fumen, tja):
                     note['hits'] = tja['metadata']['balloon'].pop(0)
                     note['hitsPadding'] = 0
                     currentDrumroll = note
+                    total_notes -= 1
                 if note['type'] in ["Drumroll", "DRUMROLL"]:
                     note['drumrollBytes'] = b'\x00\x00\x00\x00\x00\x00\x00\x00'
                     currentDrumroll = note
+                    total_notes -= 1
                 measureFumen[currentBranch][note_counter] = note
                 note_counter += 1
         measureFumen[currentBranch]['length'] = note_counter
@@ -192,7 +196,14 @@ def convertTJAToFumen(fumen, tja):
             else:
                 currentDrumroll['duration'] += measureDurationBase
 
-    tjaConverted['headerUnknown'] = b"".join(i.to_bytes(1, 'little') for i in unknownHeaderSample)
+        total_notes += note_counter
+
+    # Take a stock header metadata sample and add song-specific metadata
+    headerMetadata = unknownHeaderSample
+    headerMetadata[8] = DIFFICULTY_BYTES[tja['metadata']['course']][0]
+    headerMetadata[9] = DIFFICULTY_BYTES[tja['metadata']['course']][1]
+    headerMetadata[20] = computeSoulGaugeByte(total_notes)
+    tjaConverted['headerUnknown'] = b"".join(i.to_bytes(1, 'little') for i in headerMetadata)
     tjaConverted['order'] = '<'
     tjaConverted['length'] = len(tjaConverted['measures'])
     tjaConverted['unknownMetadata'] = 0

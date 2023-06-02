@@ -69,11 +69,13 @@ byte_strings = {
 
 simpleHeaders = [b * 36 for b in [byte_strings['431'], byte_strings['V1'], byte_strings['V2']]]
 
-# This sample header for the "unknown header bytes" is built from the investigations in utils/validateHeaderMetadata
-# However, it's missing song-specific metadata from bytes 12, 16, 20, and (perhaps optionally), 76, 77 and 78.
+# Create a sample header pre-filled with known bytes
 unknownHeaderSample = [0] * 80
+# The following bytes are hardcoded by tja2fumen.exe (implying they have little/no effect on how the song is parsed)
 unknownHeaderSample[4] = 16
 unknownHeaderSample[5] = 39
+unknownHeaderSample[12] = 10
+unknownHeaderSample[16] = 8
 unknownHeaderSample[21] = 255
 unknownHeaderSample[22] = 255
 unknownHeaderSample[23] = 255
@@ -89,3 +91,15 @@ unknownHeaderSample[60] = 1
 unknownHeaderSample[64] = 30
 unknownHeaderSample[68] = 30
 unknownHeaderSample[72] = 20
+unknownHeaderSample[76] = 78
+unknownHeaderSample[77] = 97
+unknownHeaderSample[78] = 188
+
+DIFFICULTY_BYTES = {
+    'Easy': [112, 23],
+    'Normal': [88, 27],
+    'Hard': [88, 27],
+    'Oni': [64, 31],
+    'Ura': [64, 31],
+    'Edit': [64, 31]
+}

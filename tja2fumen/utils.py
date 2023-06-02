@@ -1,5 +1,6 @@
 import sys
 import struct
+import math
 
 from constants import simpleHeaders, byte_strings
 
@@ -188,6 +189,13 @@ def validateHeaderMetadata(headerBytes):
         # 11. Empty bytes
         else:
             assert val == 0, f"Expected 0 at position '{idx}', got '{val}' instead."
+
+
+def computeSoulGaugeByte(n_notes):
+    # I don't think this is fully accurate. It doesn't work for non-Oni songs, and it's usually off by a bit.
+    A = -85.548628
+    B = 44.780199
+    return round(A+B*math.log(n_notes))
 
 
 def readStruct(file, order, format_string, seek=None):
