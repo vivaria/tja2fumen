@@ -218,7 +218,30 @@ def parseTJA(tja):
             courses[currentCourse].append(parsed)
 
     # Convert parsed course lines into actual note data
+    songs = {}
     for courseName, courseLines in courses.items():
-        courses[courseName] = getCourse(headers, courseLines)
+        courseHeader, courseMeasures = getCourse(headers, courseLines)
+        songs[courseName] = applyFumenStructureToParsedTJA(headers, courseHeader, courseMeasures)
 
-    return headers, courses
+    return songs
+
+
+def applyFumenStructureToParsedTJA(globalHeader, courseHeader, measures):
+    song = { 'measures': [], 'metadata': {} }
+
+    for k, v in globalHeader.items():
+        song['metadata'][k] = v
+
+    for k, v in courseHeader.items():
+        if k in ['scoreInit', 'scoreDiff']:
+            song[k] = v
+        else:
+            song['metadata'][k] = v
+
+    for i, measure in enumerate(measures):
+        song['measures'].append(measure)
+        for event in measure['events']:
+            if event['name'].upper() in BRANCH_COMMANDS:
+                song['branches'] = True
+
+    return song
