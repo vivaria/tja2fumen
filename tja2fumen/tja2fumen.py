@@ -34,18 +34,12 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
 
     song = {}
 
-    def readStruct(fmt, seek=None):
-        if seek:
-            file.seek(seek)
-        return struct.unpack(order + fmt, file.read(struct.calcsize(order + fmt)))
-
     if byteOrder:
         order = ">" if byteOrder == "big" else "<"
-        totalMeasures = readStruct("I", 0x200)[0]
+        totalMeasures = readStruct(file, order, format_string="I", seek=0x200)[0]
     else:
-        order = ""
-        measuresBig = readStruct(">I", 0x200)[0]
-        measuresLittle = readStruct("<I", 0x200)[0]
+        measuresBig = readStruct(file, order="", format_string=">I", seek=0x200)[0]
+        measuresLittle = readStruct(file, order="", format_string="<I", seek=0x200)[0]
         if measuresBig < measuresLittle:
             order = ">"
             totalMeasures = measuresBig
@@ -53,7 +47,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
             order = "<"
             totalMeasures = measuresLittle
 
-    hasBranches = getBool(readStruct("B", 0x1b0)[0])
+    hasBranches = getBool(readStruct(file, order, format_string="B", seek=0x1b0)[0])
     song["branches"] = hasBranches
     if debug:
         debugPrint("Total measures: {0}, {1} branches, {2}-endian".format(
@@ -66,7 +60,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
     for measureNumber in range(totalMeasures):
         measure = {}
         # measureStruct: bpm 4, offset 4, gogo 1, hidden 1, dummy 2, branchInfo 4 * 6, dummy 4
-        measureStruct = readStruct("ffBBHiiiiiii")
+        measureStruct = readStruct(file, order, format_string="ffBBHiiiiiii")
         measure["bpm"] = measureStruct[0]
         measure["fumenOffset"] = measureStruct[1]
         if measureNumber == 0:
@@ -81,7 +75,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         for branchNumber in range(3):
             branch = {}
             # branchStruct: totalNotes 2, dummy 2, speed 4
-            branchStruct = readStruct("HHf")
+            branchStruct = readStruct(file, order, format_string="HHf")
             totalNotes = branchStruct[0]
             branch["speed"] = branchStruct[2]
 
@@ -111,7 +105,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
 
                 note = {}
                 # noteStruct: type 4, pos 4, item 4, dummy 4, init 2, diff 2, duration 4
-                noteStruct = readStruct("ififHHf")
+                noteStruct = readStruct(file, order, format_string="ififHHf")
                 noteType = noteStruct[0]
 
                 if noteType not in noteTypes:
@@ -155,6 +149,35 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
 
     file.close()
     return song
+
+
+def readStruct(file, order, format_string, seek=None):
+    """
+    Interpret bytes as packed binary data.
+
+    Arguments:
+        - file: The fumen's file object (presumably in 'rb' mode).
+        - order: '<' or '>' (little or big endian).
+        - format_string: String made up of format characters that describes the data layout.
+                         Full list of available format characters:
+                             (https://docs.python.org/3/library/struct.html#format-characters)
+                         However, this script uses only the following format characters:
+                           - B: unsigned char  (1 byte)
+                           - H: unsigned short (2 bytes)
+                           - I: unsigned int   (4 bytes)
+                           - i: int            (4 bytes)
+                           - f: float          (4 bytes)
+        - seek: The position of the read pointer to be used within the file.
+
+    Return values:
+        - interpreted_string: A string containing interpreted byte values,
+                              based on the specified 'fmt' format characters.
+    """
+    if seek:
+        file.seek(seek)
+    byte_string = file.read(struct.calcsize(order + format_string))
+    interpreted_string = struct.unpack(order + format_string, byte_string)
+    return interpreted_string
 
 
 def shortHex(number):
