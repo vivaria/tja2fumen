@@ -5,6 +5,12 @@ import argparse
 
 tja2fumen_version = "v0.1"
 
+# Fumen format reverse engineering TODOs
+# TODO: Figure out the remaining header bytes represent (0x1b0 to 0x207)
+# TODO: Figure out what drumroll bytes are (8 bytes after every drumroll)
+#       NB: fumen2osu.py assumed these were padding bytes, but they're not!! They contain some sort of metadata.
+# TODO: Figure out what the unknown Wii1, Wii4, and PS4 notes represent (just in case they're important somehow)
+
 branchNames = ("normal", "advanced", "master")
 
 noteTypes = {
