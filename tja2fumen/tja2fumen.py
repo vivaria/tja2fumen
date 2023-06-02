@@ -1,38 +1,43 @@
-import os, sys, struct, argparse, io
+import os
+import sys
+import struct
+import argparse
+import io
 
 fumen2osu_version = "v1.4"
 
 branchNames = ("normal", "advanced", "master")
 
-def readFumen(inputFile, byteOrder=None, debug=False):
-    if type(inputFile) is str:
-        file = open(inputFile, "rb")
+
+def readFumen(fumenFile, byteOrder=None, debug=False):
+    if type(fumenFile) is str:
+        file = open(fumenFile, "rb")
     else:
-        file = inputFile
+        file = fumenFile
     size = os.fstat(file.fileno()).st_size
 
     noteTypes = {
-        0x1: "Don", # ドン
-        0x2: "Don", # ド
-        0x3: "Don", # コ
-        0x4: "Ka", # カッ
-        0x5: "Ka", # カ
+        0x1: "Don",  # ドン
+        0x2: "Don",  # ド
+        0x3: "Don",  # コ
+        0x4: "Ka",   # カッ
+        0x5: "Ka",   # カ
         0x6: "Drumroll",
         0x7: "DON",
         0x8: "KA",
         0x9: "DRUMROLL",
         0xa: "Balloon",
-        0xb: "DON", # hands
+        0xb: "DON",       # hands
         0xc: "Kusudama",
-        0xd: "KA", # hands
-        0x62: "Drumroll" # ?
+        0xd: "KA",        # hands
+        0x62: "Drumroll"  # ?
     }
     song = {}
 
-    def readStruct(format, seek=None):
+    def readStruct(fmt, seek=None):
         if seek:
             file.seek(seek)
-        return struct.unpack(order + format, file.read(struct.calcsize(order + format)))
+        return struct.unpack(order + fmt, file.read(struct.calcsize(order + fmt)))
 
     if byteOrder:
         order = ">" if byteOrder == "big" else "<"
@@ -68,7 +73,8 @@ def readFumen(inputFile, byteOrder=None, debug=False):
             measure["offset"] = measure["fumenOffset"] + 240000 / measure["bpm"]
         else:
             prev = song[measureNumber - 1]
-            measure["offset"] = prev["offset"] + measure["fumenOffset"] + 240000 / measure["bpm"] - prev["fumenOffset"] - 240000 / prev["bpm"]
+            measure["offset"] = ((prev["offset"] + measure["fumenOffset"] + 240000) /
+                                 (measure["bpm"] - prev["fumenOffset"] - 240000 / prev["bpm"]))
         measure["gogo"] = getBool(measureStruct[2])
         measure["hidden"] = getBool(measureStruct[3])
 
@@ -151,7 +157,9 @@ def readFumen(inputFile, byteOrder=None, debug=False):
     file.close()
     return song
 
-def writeOsu(song, globalOffset=0, title=None, subtitle="", wave=None, selectedBranch=None, outputFile=None, inputFile=None):
+
+def writeOsu(song, globalOffset=0, title=None, subtitle="", wave=None, selectedBranch=None, outputFile=None,
+             inputFile=None):
     if not song or len(song) == 0:
         return False
 
@@ -170,7 +178,7 @@ def writeOsu(song, globalOffset=0, title=None, subtitle="", wave=None, selectedB
         title = title or "Song Title"
         wave = wave or "song.wav"
 
-    if song["branches"] == True:
+    if song["branches"] is True:
         if selectedBranch not in branchNames:
             selectedBranch = branchNames[-1]
             debugPrint("Warning: Using the {0} branch in a branched song.".format(selectedBranch))
@@ -222,7 +230,10 @@ SliderTickRate:4
         prevBranch = prevMeasure[selectedBranch] if i != 0 else None
         measure = song[i]
         branch = measure[selectedBranch]
-        if i == 0 or prevMeasure["bpm"] != measure["bpm"] or prevMeasure["gogo"] != measure["gogo"] or prevBranch["speed"] != branch["speed"]:
+        if (i == 0
+                or prevMeasure["bpm"] != measure["bpm"]
+                or prevMeasure["gogo"] != measure["gogo"]
+                or prevBranch["speed"] != branch["speed"]):
             offset = measure["offset"] - globalOffset
             gogo = 1 if measure["gogo"] else 0
             if i == 0 or prevMeasure["bpm"] != measure["bpm"]:
@@ -232,7 +243,8 @@ SliderTickRate:4
                     msPerBeat,
                     gogo
                 ), "ascii"))
-            if branch["speed"] != 1 or i != 0 and (prevBranch["speed"] != branch["speed"] or prevMeasure["bpm"] == measure["bpm"]):
+            if branch["speed"] != 1 or i != 0 and (prevBranch["speed"] != branch["speed"] or
+                                                   prevMeasure["bpm"] == measure["bpm"]):
                 msPerBeat = -100 / branch["speed"]
                 osu.append(bytes("{0},{1},4,1,0,100,1,{2}".format(
                     int(offset),
@@ -275,7 +287,6 @@ SliderTickRate:4
                     int(pixelLength)
                 ), "ascii"))
             elif noteType == "Balloon" or noteType == "Kusudama":
-                sound = osuSounds[noteType]
                 endTime = offset + note["duration"]
                 osu.append(bytes("416,176,{0},12,0,{1},0:0:0:0:".format(
                     int(offset),
@@ -300,29 +311,34 @@ SliderTickRate:4
     else:
         return osuContents
 
+
 def shortHex(number):
     return hex(number)[2:]
+
 
 def getBool(number):
     return True if number == 0x1 else False if number == 0x0 else number
 
+
 def nameValue(*lists):
     string = []
-    for list in lists:
-        for name in list:
+    for lst in lists:
+        for name in lst:
             if name == "type":
-                string.append(list[name])
+                string.append(lst[name])
             elif name != "length" and type(name) is not int:
-                value = list[name]
+                value = lst[name]
                 if type(value) == float and value % 1 == 0.0:
                     value = int(value)
                 string.append("{0}: {1}".format(name, value))
     return ", ".join(string)
 
+
 def debugPrint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="fumen2osu {0}".format(fumen2osu_version)
     )
@@ -389,7 +405,8 @@ if __name__=="__main__":
     if len(sys.argv) == 1:
         parser.print_help()
     else:
-        args = parser.parse_args()
-        inputFile = getattr(args, "file_m.bin")
-        song = readFumen(inputFile, args.order, args.debug)
-        writeOsu(song, args.offset, args.title, args.subtitle, args.wave, args.branch, args.o, inputFile)
+        arguments = parser.parse_args()
+        inputFile = getattr(arguments, "file_m.bin")
+        parsedSong = readFumen(inputFile, arguments.order, arguments.debug)
+        writeOsu(parsedSong, arguments.offset, arguments.title, arguments.subtitle, arguments.wave, arguments.branch,
+                 arguments.o, inputFile)
