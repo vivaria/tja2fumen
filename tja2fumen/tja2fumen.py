@@ -24,6 +24,37 @@ noteTypes = {
     0x62: "Drumroll"  # ?
 }
 
+# Fumen headers are made up of smaller substrings of bytes
+b_x00 = b'\x00\x00\x00\x00\x00\x00'
+b_431 = b'43\xc8Ag&\x96B"\xe2\xd8B'
+b_432 = b'43\xc8Ag&\x96BD\x84\xb7B'
+b_433 = b'43\xc8A"\xe2\xd8B\x00@\xfaB'
+b_434 = b'43\xc8AD\x84\xb7B"\xe2\xd8B'
+b_g1 = b'g&\x96B4\xa3\x89Cxw\x05A'
+b_V1 = b'V\xd5&B\x00@\xfaB\x00@\xfaB'
+b_V2 = b'V\xd5&B"\xe2\xd8B\x00@\xfaB'
+b_V3 = b'V\xd5&B\x00@\xfaB\xf0\xce\rC'
+
+simpleHeaders = [b * 36 for b in [b_431, b_V1, b_V2]]
+
+
+def checkValidHeader(header):
+    # These simple headers (substrings repeated 36 times) are used for many Gen2 systems (AC, Wii, etc.)
+    if header in simpleHeaders:
+        return True
+    # Starting with Gen3, they began using unique headers for every song. (3DS and PSPDX are the big offenders.)
+    #   They seem to be some random combination of b_x00 + one of the non-null byte substrings.
+    #   To avoid enumerating every combination of 432 bytes, we do a lazy check instead.
+    elif b_x00 in header and any(b in header for b in [b_431, b_432, b_433, b_434, b_V1, b_V2, b_V3]):
+        return True
+    # The PS4 song 'wii5op' is a special case: It throws in this odd b_g1 string in combo with other substrings.
+    elif b_g1 in header and any(b in header for b in [b_431, b_V2]):
+        return True
+    # Otherwise, this is some unknown header we haven't seen before.
+    # Typically, these will be tja2bin.exe converted files with a completely invalid header.
+    else:
+        return False
+
 
 def readFumen(fumenFile, byteOrder=None, debug=False):
     """
@@ -37,6 +68,11 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
     else:
         file = fumenFile
     size = os.fstat(file.fileno()).st_size
+
+    # Check for valid fumen header (first 432 bytes) using valid byte substrings
+    fumenHeader = file.read(432)
+    if not checkValidHeader(fumenHeader):
+        debugPrint(f"Invalid header!")
 
     # Determine:
     #   - The byte order (big or little endian)
