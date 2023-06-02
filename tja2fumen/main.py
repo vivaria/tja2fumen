@@ -22,6 +22,7 @@ def main(fnameFumen=None, fnameTJA=None, validate=False):
     else:
         parsedSongFumen = None
 
+    convertedTJAs = {}
     if fnameTJA:
         # Parse tja
         try:
@@ -31,18 +32,19 @@ def main(fnameFumen=None, fnameTJA=None, validate=False):
             inputFile = open(fnameTJA, "r", encoding="shift-jis")
             parsedSongsTJA = parseTJA(inputFile)
 
-        # Try converting the Oni TJA chart to match the Oni fumen
-        convertedTJA = convertTJAToFumen(parsedSongFumen, parsedSongsTJA['Oni'])
-        outputName = inputFile.name.split('.')[0] + ".bin"
-        outputFile = open(outputName, "wb")
-        writeFumen(outputFile, convertedTJA)
-    else:
-        convertedTJA = None
+        for course, song in parsedSongsTJA.items():
+            convertedTJA = convertTJAToFumen(parsedSongFumen, song)
+            convertedTJAs[course] = convertedTJA
 
-    return parsedSongFumen, convertedTJA
+    return parsedSongFumen, convertedTJAs
 
 
 if __name__ == "__main__":
     fnameFumen = "test-data/12373714_m.bin"
     fnameTJA = "test-data/Unlimited Games.tja"  # NB: Contains 5 charts
-    fumen, tja = main(fnameFumen=fnameFumen, fnameTJA=fnameTJA)
+    fumen, convertedTJAs = main(fnameFumen=fnameFumen, fnameTJA=fnameTJA)
+
+    for course, song in convertedTJAs.items():
+        outputName = ".".join(fnameTJA.split('.')[0:-1]) + f"_{course}.bin"
+        outputFile = open(outputName, "wb")
+        writeFumen(outputFile, song)
