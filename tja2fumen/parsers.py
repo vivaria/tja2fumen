@@ -1,7 +1,7 @@
 import os
 import re
 
-from utils import readStruct, getBool, shortHex, nameValue, debugPrint, checkValidHeader
+from utils import readStruct, getBool, shortHex, nameValue, debugPrint, checkValidHeader, validateHeaderMetadata
 from constants import (
     # TJA constants
     HEADER_GLOBAL, HEADER_COURSE, BRANCH_COMMANDS, MEASURE_COMMANDS, COMMAND,
@@ -258,7 +258,6 @@ def applyFumenStructureToParsedTJA(globalHeader, courseHeader, measures):
 ########################################################################################################################
 
 # Fumen format reverse engineering TODOs
-# TODO: Figure out the remaining header bytes represent (0x1b0 to 0x207)
 # TODO: Figure out what drumroll bytes are (8 bytes after every drumroll)
 #       NB: fumen2osu.py assumed these were padding bytes, but they're not!! They contain some sort of metadata.
 # TODO: Figure out what the unknown Wii1, Wii4, and PS4 notes represent (just in case they're important somehow)
@@ -283,6 +282,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         debugPrint(f"Invalid header!")
     # Read the next 80 bytes, which contains unknown information
     fumenHeaderUnknown = file.read(80)
+    validateHeaderMetadata(fumenHeaderUnknown)
 
     # Determine:
     #   - The byte order (big or little endian)

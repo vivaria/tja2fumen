@@ -24,6 +24,159 @@ def checkValidHeader(header):
         return False
 
 
+def validateHeaderMetadata(headerBytes):
+    for idx, val in enumerate(headerBytes):
+        # 0. Unknown
+        # Notes:
+        #   * Breakdown of distribution of different byte combinations:
+        #       - 5739/7482 charts: [0, 0, 0, 0]    (Most platforms)
+        #       -  386/7482 charts: [0, 151, 68, 0]
+        #       -  269/7482 charts: [0, 1, 57, 0]
+        #       -   93/7482 charts: [1, 0, 0, 0]
+        #       -   93/7482 charts: [0, 64, 153, 0]
+        #       -   And more...
+        #       -   After this, we see a long tail of hundreds of different unique byte combinations.
+        #   * Games with the greatest number of unique byte combinations:
+        #       - VitaMS: 258 unique byte combinations
+        #       - iOSU: 164 unique byte combinations
+        #       - Vita: 153 unique byte combinations
+        # Given that most platforms use the values (0, 0, 0, 0), and unique values are very platform-specific,
+        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        if idx in [0, 1, 2, 3]:
+            pass
+
+        # 1. <padding>
+        # Notes: These values are ALWAYS (16, 39), for every valid fumen.
+        elif idx == 4:
+            assert val == 16, f"Expected 16 at position '{idx}', got '{val}' instead."
+        elif idx == 5:
+            assert val == 39, f"Expected 39 at position '{idx}', got '{val}' instead."
+
+        # 2. TODO
+        # Notes:
+        #   * Breakdown of distribution of different byte combinations:
+        #       - 3611/7482 charts: [88, 27]
+        #       - 2016/7482 charts: [64, 31]
+        #       - 1805/7482 charts: [112, 23]
+        #   * In other words, there are only three different byte-pairs across all valid fumens.
+        elif idx == 8:
+            assert val in [88, 64, 27], f"Expected 88/64/112 at position '{idx}', got '{val}' instead."
+        elif idx == 9:
+            assert val in [27, 31, 23], f"Expected 27/31/23 at position '{idx}', got '{val}' instead."
+
+        # 3. TODO
+        # Notes:
+        #   * Byte 12 has a bell-curve distribution from 0-255, with most bytes clustered in the 31-63 range.
+        #      - Because of the distribution of values, this byte feels like a song property.
+        #      - e.g. easy songs have a lower value, harder songs have a higher value
+        #   * Byte 13 is usually just 0, but for some games, it can be 1 or 2.
+        elif idx in [12, 13]:
+            pass
+
+        # 4. TODO
+        # Notes:
+        #   * Byte 16 has a bell-curve distribution from 0-255, with most bytes clustered in the 7-24 range.
+        #      - Because of the distribution of values, this byte feels like a song property.
+        #      - e.g. easy songs have a lower value, harder songs have a higher value
+        #   * Byte 17 is usually just 0, but for some games, it can be 1 or 2.
+        elif idx in [16, 17]:
+            pass
+
+        # 5. TODO
+        # Notes:
+        #   * Byte 20 has a bell-curve distribution from 1-242, with most bytes clustered in the 164-230 range
+        elif idx == 20:
+            pass
+
+        # 6. <padding>
+        # Notes:
+        #   * For the vast majority (99%) of charts, bytes 21, 22, and 23 have the values (255, 255, 255)
+        #   * For a very tiny minority of charts (~5), byte 21 will be 254 or 253 instead.
+        # Given that most platforms use the values (255, 255, 255), and unique values are very platform-specific,
+        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        elif idx in [21, 22, 23]:
+            assert val in [253, 254, 255], f"Expected 255 at position '{idx}', got '{val}' instead."
+
+        # 7. <padding>
+        # Notes:
+        #   * For the vast majority (99%) of charts, bytes 21, 22, and 23 have the values (1, 1, 1)
+        #   * For a small minority of charts (~100), one or both of bytes 30/34 will be 0 instead of 1
+        # Given that most platforms use the values (1, 1, 1), and unique values are very platform-specific,
+        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        elif idx == 26:
+            assert val == 1, f"Expected 1 at position '{idx}', got '{val}' instead."
+        elif idx in [30, 34]:
+            assert val in [1, 0], f"Expected 1/0 at position '{idx}', got '{val}' instead."
+
+        # 8. Unknown
+        # Notes:
+        #   * For the vast majority (99%) of charts, bytes (28, 29) and (32, 33) have the values (0, 0)
+        #   * But, for some games (Gen3Arcade, 3DS), unique values will be stored in these bytes.
+        # Given that most platforms use the values (0, 0), and unique values are very platform-specific,
+        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        elif idx in [28, 29]:
+            pass
+        elif idx in [32, 33]:
+            pass
+
+        # 8. <padding>
+        # Notes:
+        #   * For the vast majority (99%) of charts, bytes (36, 40, 48) and (52, 56, 50) have the values (20, 10, 1)
+        #   * For a small minority of charts (~45), these values can be 0,1,2 instead.
+        # Given that most platforms use the values (20, 10, 1), and unique values are very platform-specific,
+        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        elif idx in [36, 52]:
+            assert val in [20, 0, 1, 2], f"Expected 20 (or 0,1,2) at position '{idx}', got '{val}' instead."
+        elif idx in [40, 56]:
+            assert val in [10, 0, 1], f"Expected 10 (or 0,1) at position '{idx}', got '{val}' instead."
+        elif idx in [48, 60]:
+            # NB: See below for an explanation about '255' for byte 60
+            assert val in [1, 0, 255], f"Expected 1 (or 0) at position '{idx}', got '{val}' instead."
+
+        # 8. <padding>
+        # Notes:
+        #   * For the vast majority (99%) of charts, bytes (61, 62, 63) have the values (0, 0, 0)
+        #   * However, for iOS and iOSU charts (144 total), bytes (60, 61, 62, 63) are (255, 255, 255, 255) instead.
+        # Given that most platforms use the values (0, 0, 0), and unique values are very platform-specific,
+        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        elif idx in [61, 62, 63]:
+            assert val in [0, 255], f"Expected 0/255 at position '{idx}', got '{val}' instead."
+
+        # 9. <padding>
+        # Notes:
+        #   * Breakdown of distribution of different byte combinations:
+        #       - 5809/7482 charts: (30, 30, 20)
+        #       - 1577/7482 charts: (30, 30, 0)
+        #       -   41/7482 charts: (0, 0, 0)
+        #       -    3/7482 charts: (1, 0, 0)
+        #       -    2/7482 charts: (0, 0, 20)
+        # Given that most platforms use the values (30, 30, 20), and unique values are very platform-specific,
+        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        elif idx in [64, 68]:
+            assert val in [30, 0, 1], f"Expected 30/0 at position '{idx}', got '{val}' instead."
+        elif idx == 72:
+            assert val in [20, 0], f"Expected 20/0 at position '{idx}', got '{val}' instead."
+
+        # 10. TODO
+        # Notes:
+        #   * In Gen2 charts (AC, Wii), these values would be evenly distributed between 4 different byte combinations.
+        #   * These values correspond to the difficulty of the song (no Uras in Gen2, hence 4 values):
+        #      - (288, 193, 44)
+        #      - (192, 42, 12)
+        #      - (92, 205, 23)
+        #      - (8, 206, 31)
+        #   * However, starting in Gen3 (AC, console), these bytes were given unique per-song values.
+        #      - In total, Gen3 contains 6449 unique combinations of bytes.
+        # For TJA conversion, I am not sure whether to try and figure out the Gen3 scheme for these bytes (difficult!),
+        # or to just stick with the Gen2 scheme (and make up the missing value for Uras), which would be much easier.
+        elif idx in [76, 77, 78]:
+            pass
+
+        # 11. Empty bytes
+        else:
+            assert val == 0, f"Expected 0 at position '{idx}', got '{val}' instead."
+
+
 def readStruct(file, order, format_string, seek=None):
     """
     Interpret bytes as packed binary data.
