@@ -56,7 +56,7 @@ def parseLine(line):
     match_comment = re.match(r"//.*", line)
     match_header = re.match(r"^([A-Z]+):(.*)", line)
     match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
-    match_data = re.match(r"^(([0-9]|A|B|C|F|G)*,?)$", line)
+    match_data = re.match(r"^(([0-9]|A|B|C|F|G)*,?).*$", line)
 
     if match_comment:
         return {"type": 'comment', "value": line}
