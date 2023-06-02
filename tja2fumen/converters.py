@@ -63,9 +63,9 @@ def preprocessTJAMeasures(tja):
                 combined.append(notes.pop(0))
 
         # Step 2: Split measure into submeasure
-        measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'subdivisions': len(measure['data']),
-                       'pos_start': 0, 'pos_end': 0, 'time_sig': measure['length'],
-                       'data': [], 'properties': measure['properties']}
+        measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
+                       'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
+                       'time_sig': measure['length'], 'data': [], 'properties': measure['properties']}
         for data in combined:
             if data['type'] == 'note':
                 measure_cur['data'].append(data)
@@ -78,15 +78,19 @@ def preprocessTJAMeasures(tja):
                 else:
                     measure_cur['pos_end'] = data['pos']
                     measuresCorrected.append(measure_cur)
-                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'subdivisions': len(measure['data']),
-                                   'pos_start': data['pos'], 'pos_end': 0, 'time_sig': measure['length'],
-                                   'data': [], 'properties': measure['properties']}
+                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
+                                   'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
+                                   'time_sig': measure['length'], 'data': [], 'properties': measure['properties']}
             elif data['type'] == 'scroll':
                 currentScroll = data['value']
                 measure_cur['scroll'] = currentScroll
-            # 'else' non-bpm/scroll events
+            elif data['type'] == 'gogo':
+                currentGogo = bool(data['value'])
+                measure_cur['gogo'] = currentGogo
+            elif data['type'] == 'barline':
+                pass
             else:
-                measure_cur['data'].append(data)
+                print(f"Unexpected event type: {data['type']}")
         measure_cur['pos_end'] = len(measure['data'])
         measuresCorrected.append(measure_cur)
 
@@ -145,6 +149,7 @@ def convertTJAToFumen(fumen, tja):
                 note_counter += 1
         measureFumen[currentBranch]['length'] = note_counter
         measureFumen[currentBranch]['speed'] = measureTJA['scroll']
+        measureFumen['gogo'] = measureTJA['gogo']
         measureFumen['bpm'] = measureTJA['bpm']
 
         # Append the measure to the tja's list of measures
