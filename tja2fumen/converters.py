@@ -113,10 +113,11 @@ def convertTJAToFumen(fumen, tja):
         # - measureDurationBase: The "base" measure duration, computed using a single BPM value.
         # - measureDuration: The actual measure duration, which may be adjusted if there is a mid-measure BPM change.
         measureDurationBase = measureDuration = (4 * 60_000 * measureSize * measureRatio / measureTJA['bpm'])
-        # The following adjustment accounts for mid-measure BPM changes. (!!! Discovered by tana :3 !!!)
-        if measureRatio != 1.0:
-            measureTJANext = tja['measures'][idx_m+1]
-            measureDuration -= (4 * 60_000 * ((1 / measureTJANext['bpm']) - (1 / measureTJA['bpm'])))
+        # The following adjustment accounts for BPM changes. (!!! Discovered by tana :3 !!!)
+        if idx_m != len(tja['measures'])-1:
+            measureTJANext = tja['measures'][idx_m + 1]
+            if measureTJA['bpm'] != measureTJANext['bpm']:
+                measureDuration -= (4 * 60_000 * ((1 / measureTJANext['bpm']) - (1 / measureTJA['bpm'])))
 
         # Apply the change in offset to the overall offset to get the measure offset
         # This is a bodge I'm using just for Rokuchounen to Ichiya Monogatari
