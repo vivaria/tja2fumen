@@ -167,5 +167,7 @@ def convertTJAToFumen(fumen, tja):
     tjaConverted['length'] = len(tjaConverted['measures'])
     tjaConverted['unknownMetadata'] = 0
     tjaConverted['branches'] = False
+    tjaConverted['scoreInit'] = tja['scoreInit']
+    tjaConverted['scoreDiff'] = tja['scoreDiff']
 
     return tjaConverted

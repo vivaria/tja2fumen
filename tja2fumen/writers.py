@@ -51,7 +51,7 @@ def writeFumen(file, song):
                 if 'hits' in note.keys():
                     noteStruct.extend([note["hits"], note['hitsPadding']])
                 else:
-                    noteStruct.extend([note['scoreInit'], int(note['scoreDiff'] * 4)])
+                    noteStruct.extend([note['scoreInit'], note['scoreDiff'] * 4])
                 # Drumroll or balloon duration
                 if 'duration' in note.keys():
                     noteStruct.append(note['duration'])

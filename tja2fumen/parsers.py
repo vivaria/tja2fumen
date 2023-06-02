@@ -426,7 +426,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
                     note["hitsPadding"] = noteStruct[5]
                 else:
                     note['scoreInit'] = noteStruct[4]
-                    note['scoreDiff'] = noteStruct[5] / 4.0
+                    note['scoreDiff'] = noteStruct[5] // 4
                     if "scoreInit" not in song:
                         song["scoreInit"] = note['scoreInit']
                         song["scoreDiff"] = note['scoreDiff']
