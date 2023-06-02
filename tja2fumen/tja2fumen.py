@@ -86,6 +86,8 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
     fumenHeader = file.read(432)
     if not checkValidHeader(fumenHeader):
         debugPrint(f"Invalid header!")
+    # Read the next 80 bytes, which contains unknown information
+    fumenHeaderUnknown = file.read(80)
 
     # Determine:
     #   - The byte order (big or little endian)
