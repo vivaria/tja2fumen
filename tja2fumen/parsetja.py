@@ -10,68 +10,33 @@ COMMAND = ['START', 'END', 'GOGOSTART', 'GOGOEND', 'BRANCHSTART', 'BRANCHEND', '
 
 
 def parseLine(line):
+    # Regex matches for various line types
     match_comment = re.match(r"//.*", line)
     match_header = re.match(r"^([A-Z]+):(.+)", line)
     match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
     match_data = re.match(r"^(([0-9]|A|B|C|F|G)*,?)$", line)
 
-    # comment
     if match_comment:
-        return {
-            "type": 'comment',
-            "value": line
-        }  # js: line = line.substr(0, match.index).strip()
+        return {"type": 'comment', "value": line}
 
-    # header
     elif match_header:
         nameUpper = match_header.group(1).upper()
         value = match_header.group(2)
-
         if nameUpper in HEADER_GLOBAL:
-            return {
-                "type": 'header',
-                "scope": 'global',
-                "name": nameUpper,
-                "value": value.strip(),
-            }
+            return {"type": 'header', "scope": 'global', "name": nameUpper, "value": value.strip()}
         elif nameUpper in HEADER_COURSE:
-            return {
-                "type": 'header',
-                "scope": 'course',
-                "name": nameUpper,
-                "value": value.strip(),
-            }
-        else:
-            breakpoint()
+            return {"type": 'header', "scope": 'course', "name": nameUpper, "value": value.strip()}
 
-    # command
     elif match_command:
         nameUpper = match_command.group(1).upper()
-        value = match_command.group(2)
-        if not value:
-            value = ''
-
+        value = match_command.group(2) if match_command.group(2) else ''
         if nameUpper in COMMAND:
-            return {
-                "type": 'command',
-                "name": nameUpper,
-                "value": value.strip(),
-            }
+            return {"type": 'command', "name": nameUpper, "value": value.strip()}
 
-    # data
     elif match_data:
-        data = match_data.group(1)
+        return {"type": 'data', "data": match_data.group(1)}
 
-        return {
-            "type": 'data',
-            "data": data,
-        }
-
-    else:
-        return {
-            "type": 'unknown',
-            "value": line,
-        }
+    return {"type": 'unknown', "value": line}
 
 
 def getCourse(tjaHeaders, lines):
