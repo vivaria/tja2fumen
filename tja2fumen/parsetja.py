@@ -227,6 +227,7 @@ def parseTJA(tja):
 
 
 def applyFumenStructureToParsedTJA(globalHeader, courseHeader, measures):
+    """Merge song metadata, course metadata, and course data into a single fumen-like object."""
     song = { 'measures': [], 'metadata': {} }
 
     for k, v in globalHeader.items():
@@ -240,8 +241,5 @@ def applyFumenStructureToParsedTJA(globalHeader, courseHeader, measures):
 
     for i, measure in enumerate(measures):
         song['measures'].append(measure)
-        for event in measure['events']:
-            if event['name'].upper() in BRANCH_COMMANDS:
-                song['branches'] = True
 
     return song
