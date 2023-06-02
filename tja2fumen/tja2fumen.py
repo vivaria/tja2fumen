@@ -116,11 +116,10 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
                 if noteType not in noteTypes:
                     if debug:
                         debugPrint("")
-                    debugPrint("Error: Unknown note type '{0}' at offset {1}".format(
+                    raise ValueError("Error: Unknown note type '{0}' at offset {1}".format(
                         shortHex(noteType).upper(),
                         hex(file.tell() - 0x18))
                     )
-                    return False
 
                 note["type"] = noteTypes[noteType]
                 note["pos"] = noteStruct[1]
