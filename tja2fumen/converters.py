@@ -10,7 +10,7 @@ default_measure = {
     'bpm': 0.0,
     'fumenOffset': 0.0,
     'gogo': False,
-    'hidden': False,
+    'hidden': True,
     'padding1': 0,
     'branchInfo': [-1, -1, -1, -1, -1, -1],
     'padding2': 0,
@@ -41,7 +41,6 @@ def preprocessTJAMeasures(tja):
     currentBPM = 0
     currentScroll = 1.0
     currentGogo = False
-    currentHidden = False
 
     measuresCorrected = []
     for measure in tja['measures']:
@@ -133,6 +132,14 @@ def convertTJAToFumen(fumen, tja):
             measureOffsetPrev = tjaConverted['measures'][-1]['fumenOffset']
             measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationNext
         measureDurationNext = measureDuration
+
+        # Best guess at what 'hidden' status means for each measure:
+        # - 'True' means the measure lands on a barline (i.e. most measures)
+        # - 'False' means that the measure is between barlines. For example:
+        #     1. Measures before the first barline
+        #     2. Sub-measures that don't fall on the barline
+        if idx_m == 0 or (measureRatio != 1.0 and measureTJA['pos_start'] != 0):
+            measureFumen['hidden'] = False
 
         # Create note dictionaries based on TJA measure data (containing 0's plus 1/2/3/4/etc. for notes)
         note_counter = 0
