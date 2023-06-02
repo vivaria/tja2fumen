@@ -54,7 +54,7 @@ def parseTJA(tja):
 def parseLine(line):
     # Regex matches for various line types
     match_comment = re.match(r"//.*", line)
-    match_header = re.match(r"^([A-Z]+):(.+)", line)
+    match_header = re.match(r"^([A-Z]+):(.*)", line)
     match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
     match_data = re.match(r"^(([0-9]|A|B|C|F|G)*,?)$", line)
 
@@ -87,11 +87,11 @@ def getCourse(tjaHeaders, lines):
         if line["name"] == 'COURSE':
             headers['course'] = line['value']
         elif line["name"] == 'LEVEL':
-            headers['level'] = int(line['value'])
+            headers['level'] = int(line['value']) if line['value'] else 0
         elif line["name"] == 'SCOREINIT':
-            headers['scoreInit'] = int(line['value'])
+            headers['scoreInit'] = int(line['value']) if line['value'] else 0
         elif line["name"] == 'SCOREDIFF':
-            headers['scoreDiff'] = int(line['value'])
+            headers['scoreDiff'] = int(line['value']) if line['value'] else 0
         elif line["name"] == 'BALLOON':
             if line['value']:
                 balloons = [int(v) for v in line['value'].split(",")]
