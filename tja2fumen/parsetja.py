@@ -313,67 +313,34 @@ def getCourse(tjaHeaders, lines):
 
 
 def parseTJA(tja):
-    # Split by lines
+    # Split into lines
     lines = tja.read().splitlines()
-
-    headers = {
-        "title": '',
-        "subtitle": '',
-        "bpm": 120,
-        "wave": '',
-        "offset": 0,
-        "demoStart": 0,
-        "genre": '',
-    }
+    lines = [line for line in lines if line]  # Discard empty lines
 
     # Line by line
+    headers = {}
     courses = {}
-    courseLines = []
+    currentCourse = ''
     for line in lines:
-        if line == '':
-            continue
-
         parsed = parseLine(line)
-        if parsed['type'] == 'header' and parsed['scope'] == 'global':
-            if parsed['name'] == 'TITLE':
-                headers['title'] = parsed['value']
-            elif parsed['name'] == 'TITLEJA':
-                headers['titleja'] = parsed['value']
-            elif parsed['name'] == 'SUBTITLE':
-                headers['subtitle'] = parsed['value']
-            elif parsed['name'] == 'SUBTITLEJA':
-                headers['subtitleja'] = parsed['value']
-            elif parsed['name'] == 'BPM':
-                headers['bpm'] = float(parsed['value'])
-            elif parsed['name'] == 'WAVE':
-                headers['wave'] = parsed['value']
-            elif parsed['name'] == 'OFFSET':
-                headers['offset'] = float(parsed['value'])
-            elif parsed['name'] == 'DEMOSTART':
-                headers['demoStart'] = float(parsed['value'])
-            elif parsed['name'] == 'GENRE':
-                headers['genre'] = parsed['value']
+        # Case 1: Comments (ignore
+        if parsed['type'] == 'comment':
+            pass
+        # Case 2: Global header metadata
+        elif parsed['type'] == 'header' and parsed['scope'] == 'global':
+            headers[parsed['name'].lower()] = parsed['value']
+        # Case 3: Course data (metadata, commands, note data)
+        else:
+            # Check to see if we're starting a new course
+            if parsed['type'] == 'header' and parsed['scope'] == 'course' and parsed['name'] == 'COURSE':
+                currentCourse = parsed['value']
+                if currentCourse not in courses.keys():
+                    courses[currentCourse] = []
+            # Append the line to the current course
+            courses[currentCourse].append(parsed)
 
-        elif parsed['type'] == 'header' and parsed['scope'] == 'course':
-            if parsed['name'] == 'COURSE':
-                if courseLines:
-                    course = getCourse(headers, courseLines)
-                    courses[course[1]['course']] = course
-                else:
-                    pass  # This is the first course, so we haven't parsed its lines ye
+    # Convert parsed course lines into actual note data
+    for courseName, courseLines in courses.items():
+        courses[courseName] = getCourse(headers, courseLines)
 
-            courseLines.append(parsed)
-
-        elif parsed['type'] == 'command':
-            courseLines.append(parsed)
-
-        elif parsed['type'] == 'data':
-            courseLines.append(parsed)
-
-    # Parse the lines for the last course (since there are no more course headers left)
-    if courseLines:
-        course = getCourse(headers, courseLines)
-        courses[course[1]['course']] = course
-
-    # Return
     return headers, courses
