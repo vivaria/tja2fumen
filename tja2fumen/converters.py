@@ -68,7 +68,7 @@ def preprocessTJAMeasures(tja):
         for data in combined:
             if data['type'] == 'bpm':
                 currentBPM = float(data['value'])
-                # Case 1: BPM change at the start of a measure; just change PM
+                # Case 1: BPM change at the start of a measure; just change BPM
                 if data['pos'] == 0:
                     measure_cur['bpm'] = currentBPM
                 # Case 2: BPM change mid-measure, so start a new sub-measure
