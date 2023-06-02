@@ -269,7 +269,12 @@ def readStruct(file, order, format_string, seek=None):
     """
     if seek:
         file.seek(seek)
-    byte_string = file.read(struct.calcsize(order + format_string))
+    expected_size = struct.calcsize(order + format_string)
+    byte_string = file.read(expected_size)
+    # One "official" fumen (AC11\deo\deo_n.bin) runs out of data early
+    # This workaround fixes the issue by appending 0's to get the size to match
+    if len(byte_string) != expected_size:
+        byte_string += (b'\x00' * (expected_size - len(byte_string)))
     interpreted_string = struct.unpack(order + format_string, byte_string)
     return interpreted_string
 
