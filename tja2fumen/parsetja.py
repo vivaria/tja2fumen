@@ -2,50 +2,11 @@
 
 import re
 
-HEADER_GLOBAL = [
-    'TITLE',
-    'TITLEJA',
-    'SUBTITLE',
-    'SUBTITLEJA',
-    'BPM',
-    'WAVE',
-    'OFFSET',
-    'DEMOSTART',
-    'GENRE',
-]
-
-HEADER_COURSE = [
-    'COURSE',
-    'LEVEL',
-    'BALLOON',
-    'SCOREINIT',
-    'SCOREDIFF',
-    'TTRO'
-    'WBEAT',
-]
-
-COMMAND = [
-    'START',
-    'END',
-    'GOGOSTART',
-    'GOGOEND',
-    'MEASURE',
-    'SCROLL',
-    'BPMCHANGE',
-    'DELAY',
-    'BRANCHSTART',
-    'BRANCHEND',
-    'SECTION',
-    'N',
-    'E',
-    'M',
-    'LEVELHOLD',
-    'BMSCROLL',
-    'HBSCROLL',
-    'BARLINEOFF',
-    'BARLINEON',
-    'TTBREAK',
-]
+# Valid strings for headers and chart commands
+HEADER_GLOBAL = ['TITLE', 'TITLEJA', 'SUBTITLE', 'SUBTITLEJA', 'BPM', 'WAVE', 'OFFSET', 'DEMOSTART', 'GENRE']
+HEADER_COURSE = ['COURSE', 'LEVEL', 'BALLOON', 'SCOREINIT', 'SCOREDIFF', 'TTRO' 'WBEAT']
+COMMAND = ['START', 'END', 'GOGOSTART', 'GOGOEND', 'BRANCHSTART', 'BRANCHEND', 'BARLINEON', 'BARLINEOFF', 'MEASURE',
+           'BPMCHANGE', 'DELAY', 'SECTION', 'N', 'E', 'M', 'LEVELHOLD', 'SCROLL', 'BMSCROLL', 'HBSCROLL', 'TTBREAK']
 
 
 def parseLine(line):
