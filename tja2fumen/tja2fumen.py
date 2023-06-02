@@ -2,7 +2,6 @@ import os
 import sys
 import struct
 import argparse
-import io
 
 tja2fumen_version = "v0.1"
 
@@ -158,160 +157,6 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
     return song
 
 
-def writeOsu(song, globalOffset=0, title=None, subtitle="", wave=None, selectedBranch=None, outputFile=None,
-             inputFile=None):
-    if not song or len(song) == 0:
-        return False
-
-    if inputFile:
-        if type(inputFile) is str:
-            filename = inputFile
-        else:
-            filename = inputFile.name
-        filenameNoExt = os.path.splitext(filename)[0]
-        title = title or filenameNoExt
-        wave = wave or "SONG_{0}.wav".format(
-            filenameNoExt.split("_")[0].upper()
-        )
-        outputFile = outputFile or "{0}.osu".format(filenameNoExt)
-    else:
-        title = title or "Song Title"
-        wave = wave or "song.wav"
-
-    if song["branches"] is True:
-        if selectedBranch not in branchNames:
-            selectedBranch = branchNames[-1]
-            debugPrint("Warning: Using the {0} branch in a branched song.".format(selectedBranch))
-    else:
-        selectedBranch = branchNames[0]
-
-    osu = []
-    osu.append(b"""osu file format v14
-
-[General]""")
-    osu.append(b"AudioFilename: " + bytes(wave, "utf8"))
-    osu.append(b"""AudioLeadIn: 0
-PreviewTime: 0
-CountDown: 0
-SampleSet: Normal
-StackLeniency: 0.7
-Mode: 1
-LetterboxInBreaks: 0
-WidescreenStoryboard: 0
-
-[Editor]
-DistanceSpacing: 0.8
-BeatDivisor: 4
-GridSize: 4
-TimelineZoom: 1
-
-[Metadata]""")
-    osu.append(b"Title:" + bytes(title, "utf8"))
-    osu.append(b"TitleUnicode:" + bytes(title, "utf8"))
-    osu.append(b"Artist:" + bytes(subtitle, "utf8"))
-    osu.append(b"ArtistUnicode:" + bytes(subtitle, "utf8"))
-    osu.append(b"""Creator:
-Version:
-Source:
-Tags:
-
-[Difficulty]
-HPDrainRate:3
-CircleSize:5
-OverallDifficulty:3
-ApproachRate:5
-SliderMultiplier:1.4
-SliderTickRate:4
-
-[TimingPoints]""")
-    globalOffset = globalOffset * 1000.0
-    for i in range(song["length"]):
-        prevMeasure = song[i - 1] if i != 0 else None
-        prevBranch = prevMeasure[selectedBranch] if i != 0 else None
-        measure = song[i]
-        branch = measure[selectedBranch]
-        if (i == 0
-                or prevMeasure["bpm"] != measure["bpm"]
-                or prevMeasure["gogo"] != measure["gogo"]
-                or prevBranch["speed"] != branch["speed"]):
-            offset = measure["offset"] - globalOffset
-            gogo = 1 if measure["gogo"] else 0
-            if i == 0 or prevMeasure["bpm"] != measure["bpm"]:
-                msPerBeat = 1000 / measure["bpm"] * 60
-                osu.append(bytes("{0},{1},4,1,0,100,1,{2}".format(
-                    int(offset),
-                    msPerBeat,
-                    gogo
-                ), "ascii"))
-            if branch["speed"] != 1 or i != 0 and (prevBranch["speed"] != branch["speed"] or
-                                                   prevMeasure["bpm"] == measure["bpm"]):
-                msPerBeat = -100 / branch["speed"]
-                osu.append(bytes("{0},{1},4,1,0,100,1,{2}".format(
-                    int(offset),
-                    msPerBeat,
-                    gogo
-                ), "ascii"))
-    osu.append(b"""
-
-[HitObjects]""")
-    osuSounds = {
-        "Don": 0,
-        "Ka": 8,
-        "DON": 4,
-        "KA": 12,
-        "Drumroll": 0,
-        "DRUMROLL": 4,
-        "Balloon": 0,
-        "Kusudama": 0
-    }
-    for i in range(song["length"]):
-        measure = song[i]
-        branch = song[i][selectedBranch]
-        for j in range(branch["length"]):
-            note = branch[j]
-            noteType = note["type"]
-            offset = measure["offset"] + note["pos"] - globalOffset
-            if noteType == "Don" or noteType == "Ka" or noteType == "DON" or noteType == "KA":
-                sound = osuSounds[noteType]
-                osu.append(bytes("416,176,{0},1,{1},0:0:0:0:".format(
-                    int(offset),
-                    sound
-                ), "ascii"))
-            elif noteType == "Drumroll" or noteType == "DRUMROLL":
-                sound = osuSounds[noteType]
-                velocity = 1.4 * branch["speed"] * 100 / (1000 / measure["bpm"] * 60)
-                pixelLength = note["duration"] * velocity
-                osu.append(bytes("416,176,{0},2,{1},L|696:176,1,{2},0|0,0:0|0:0,0:0:0:0:".format(
-                    int(offset),
-                    sound,
-                    int(pixelLength)
-                ), "ascii"))
-            elif noteType == "Balloon" or noteType == "Kusudama":
-                endTime = offset + note["duration"]
-                osu.append(bytes("416,176,{0},12,0,{1},0:0:0:0:".format(
-                    int(offset),
-                    int(endTime)
-                ), "ascii"))
-    osu.append(b"")
-    osuContents = b"\n".join(osu)
-
-    if outputFile:
-        if type(outputFile) is str:
-            file = open(outputFile, "bw+")
-        else:
-            file = outputFile
-        if type(outputFile) is io.TextIOWrapper:
-            osuContents = osuContents.decode("utf-8")
-        try:
-            file.write(osuContents)
-        except UnicodeEncodeError as e:
-            print(e)
-        file.close()
-        return True
-    else:
-        return osuContents
-
-
 def shortHex(number):
     return hex(number)[2:]
 
@@ -408,5 +253,4 @@ if __name__ == "__main__":
         arguments = parser.parse_args()
         inputFile = getattr(arguments, "file_m.bin")
         parsedSong = readFumen(inputFile, arguments.order, arguments.debug)
-        writeOsu(parsedSong, arguments.offset, arguments.title, arguments.subtitle, arguments.wave, arguments.branch,
-                 arguments.o, inputFile)
+        breakpoint()
