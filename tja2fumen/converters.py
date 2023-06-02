@@ -4,7 +4,7 @@ from constants import TJA_NOTE_TYPES, unknownHeaderSample
 
 # Filler metadata that the `writeFumen` function expects
 default_note = {'type': '', 'pos': 0.0, 'item': 0, 'padding': 0.0,
-                'scoreInit': 0, 'scoreDiff': 0, 'durationPadding': 0.0}
+                'scoreInit': 0, 'scoreDiff': 0, 'duration': 0.0}
 default_branch = {'length': 0, 'padding': 0, 'speed': 1.0}
 default_measure = {
     'bpm': 0.0,

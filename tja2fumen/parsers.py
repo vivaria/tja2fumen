@@ -434,7 +434,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
                     # Drumroll and balloon duration in ms
                     note["duration"] = noteStruct[6]
                 else:
-                    note['durationPadding'] = noteStruct[6]
+                    note['duration'] = noteStruct[6]
 
                 # Print debug information about the note
                 if debug:

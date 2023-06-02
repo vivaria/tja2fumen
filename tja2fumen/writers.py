@@ -53,10 +53,7 @@ def writeFumen(file, song):
                 else:
                     noteStruct.extend([note['scoreInit'], note['scoreDiff'] * 4])
                 # Drumroll or balloon duration
-                if 'duration' in note.keys():
-                    noteStruct.append(note['duration'])
-                else:
-                    noteStruct.append(note['durationPadding'])
+                noteStruct.append(note['duration'])
                 writeStruct(file, order, format_string="ififHHf", value_list=noteStruct)
                 if note['type'].lower() == "drumroll":
                     file.write(note['drumrollBytes'])
