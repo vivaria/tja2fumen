@@ -69,3 +69,24 @@ byte_strings = {
 }
 
 simpleHeaders = [b * 36 for b in [byte_strings['431'], byte_strings['V1'], byte_strings['V2']]]
+
+# This sample header for the "unknown header bytes" is built from the investigations in utils/validateHeaderMetadata
+# However, it's missing song-specific metadata from bytes 12, 16, 20, and (perhaps optionally), 76, 77 and 78.
+unknownHeaderSample = [0] * 80
+unknownHeaderSample[4] = 16
+unknownHeaderSample[5] = 39
+unknownHeaderSample[21] = 255
+unknownHeaderSample[22] = 255
+unknownHeaderSample[23] = 255
+unknownHeaderSample[26] = 1
+unknownHeaderSample[30] = 1
+unknownHeaderSample[34] = 1
+unknownHeaderSample[36] = 20
+unknownHeaderSample[40] = 10
+unknownHeaderSample[48] = 1
+unknownHeaderSample[52] = 20
+unknownHeaderSample[56] = 10
+unknownHeaderSample[60] = 1
+unknownHeaderSample[64] = 30
+unknownHeaderSample[68] = 30
+unknownHeaderSample[72] = 20

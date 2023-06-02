@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from constants import TJA_NOTE_TYPES
+from constants import TJA_NOTE_TYPES, unknownHeaderSample
 
 # Filler metadata that the `writeFumen` function expects
 default_note = {'type': '', 'pos': 0.0, 'item': 0, 'padding': 0.0,
@@ -162,7 +162,7 @@ def convertTJAToFumen(fumen, tja):
         # Append the measure to the tja's list of measures
         tjaConverted['measures'].append(measureFumen)
 
-    tjaConverted['headerUnknown'] = b'x\00' * 80
+    tjaConverted['headerUnknown'] = b"".join(i.to_bytes(1, 'little') for i in unknownHeaderSample)
     tjaConverted['order'] = '<'
     tjaConverted['length'] = len(tjaConverted['measures'])
     tjaConverted['unknownMetadata'] = 0
