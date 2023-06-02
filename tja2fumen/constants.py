@@ -104,3 +104,12 @@ DIFFICULTY_BYTES = {
     'Ura': [64, 31],
     'Edit': [64, 31]
 }
+
+COURSE_IDS = {
+    'Easy': 'e',
+    'Normal': 'n',
+    'Hard': 'h',
+    'Oni': 'm',
+    'Ura': 'x',
+    'Edit': 'x'
+}
