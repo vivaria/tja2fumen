@@ -248,7 +248,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
 
                 # Seek forward 8 bytes to account for padding bytes at the end of drumrolls
                 if noteType == 0x6 or noteType == 0x9 or noteType == 0x62:
-                    file.seek(0x8, os.SEEK_CUR)
+                    note["drumrollBytes"] = file.read(8)
 
                 # Assign the note to the branch
                 branch[noteNumber] = note
@@ -356,7 +356,7 @@ def writeFumen(file, song):
                     noteStruct.append(note['durationPadding'])
                 writeStruct(file, order, format_string="ififHHf", value_list=noteStruct)
                 if note['type'].lower() == "drumroll":
-                    file.seek(0x8, os.SEEK_CUR)
+                    file.write(note['drumrollBytes'])
     file.close()
 
 
