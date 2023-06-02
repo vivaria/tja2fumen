@@ -18,7 +18,7 @@ from tja2fumen.constants import (
 def parseTJA(tja):
     # Split into lines
     lines = tja.read().splitlines()
-    lines = [line for line in lines if line]  # Discard empty lines
+    lines = [line for line in lines if line.strip()]  # Discard empty lines
 
     # Line by line
     headers = {}
