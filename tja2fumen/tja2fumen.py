@@ -21,6 +21,19 @@ noteTypes = {
     0xb: "DON",       # hands
     0xc: "Kusudama",
     0xd: "KA",        # hands
+    0xe: "?",         # ? (Present in some Wii1 songs)
+    0xf: "?",         # ? (Present in some PS4 songs)
+    0x10: "?",        # ? (Present in some Wii1 songs)
+    0x11: "?",        # ? (Present in some Wii1 songs)
+    0x12: "?",        # ? (Present in some Wii4 songs)
+    0x13: "?",        # ? (Present in some Wii1 songs)
+    0x14: "?",        # ? (Present in some PS4 songs)
+    0x15: "?",        # ? (Present in some Wii1 songs)
+    0x16: "?",        # ? (Present in some Wii1 songs)
+    0x17: "?",        # ? (Present in some Wii4 songs)
+    0x18: "?",        # ? (Present in some PS4 songs)
+    0x19: "?",        # ? (Present in some PS4 songs)
+    0x22: "?",        # ? (Present in some Wii1 songs)
     0x62: "Drumroll"  # ?
 }
 
