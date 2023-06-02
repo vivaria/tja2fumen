@@ -41,6 +41,7 @@ def preprocessTJAMeasures(tja):
     measuresCorrected = []
 
     currentBPM = 0
+    currentScroll = 1.0
     currentGogo = False
     currentHidden = False
 
@@ -64,7 +65,7 @@ def preprocessTJAMeasures(tja):
 
         # Step 2: Split measure into submeasure
         submeasures = []
-        measure_cur = {'bpm': currentBPM, 'pos_start': 0, 'data': []}
+        measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'pos_start': 0, 'data': []}
         for data in combined:
             if data['type'] == 'bpm':
                 currentBPM = float(data['value'])
@@ -75,7 +76,11 @@ def preprocessTJAMeasures(tja):
                 else:
                     measure_cur['pos_end'] = data['pos']
                     submeasures.append(measure_cur)
-                    measure_cur = {'bpm': currentBPM, 'pos_start': data['pos'], 'data': []}
+                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'pos_start': data['pos'], 'data': []}
+            elif data['type'] == 'scroll':
+                currentScroll = data['value']
+                measure_cur['scroll'] = currentScroll
+            # 'else' == Note data, and non-bpm/scroll events
             else:
                 measure_cur['data'].append(data)
         measure_cur['pos_end'] = len(measure['data'])
@@ -85,6 +90,7 @@ def preprocessTJAMeasures(tja):
         for submeasure in submeasures:
             measuresCorrected.append({
                 'bpm': submeasure['bpm'],
+                'scroll': submeasure['scroll'],
                 'subdivisions': len(measure['data']),
                 'pos_start': submeasure['pos_start'],
                 'pos_end': submeasure['pos_end'],
@@ -147,6 +153,7 @@ def convertTJAToFumen(fumen, tja):
                 measureFumen[currentBranch][note_counter] = note
                 note_counter += 1
         measureFumen[currentBranch]['length'] = note_counter
+        measureFumen[currentBranch]['speed'] = measureTJA['scroll']
         measureFumen['bpm'] = measureTJA['bpm']
 
         # Append the measure to the tja's list of measures
