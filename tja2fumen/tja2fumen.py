@@ -7,6 +7,23 @@ tja2fumen_version = "v0.1"
 
 branchNames = ("normal", "advanced", "master")
 
+noteTypes = {
+    0x1: "Don",  # ドン
+    0x2: "Don",  # ド
+    0x3: "Don",  # コ
+    0x4: "Ka",   # カッ
+    0x5: "Ka",   # カ
+    0x6: "Drumroll",
+    0x7: "DON",
+    0x8: "KA",
+    0x9: "DRUMROLL",
+    0xa: "Balloon",
+    0xb: "DON",       # hands
+    0xc: "Kusudama",
+    0xd: "KA",        # hands
+    0x62: "Drumroll"  # ?
+}
+
 
 def readFumen(fumenFile, byteOrder=None, debug=False):
     if type(fumenFile) is str:
@@ -15,22 +32,6 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         file = fumenFile
     size = os.fstat(file.fileno()).st_size
 
-    noteTypes = {
-        0x1: "Don",  # ドン
-        0x2: "Don",  # ド
-        0x3: "Don",  # コ
-        0x4: "Ka",   # カッ
-        0x5: "Ka",   # カ
-        0x6: "Drumroll",
-        0x7: "DON",
-        0x8: "KA",
-        0x9: "DRUMROLL",
-        0xa: "Balloon",
-        0xb: "DON",       # hands
-        0xc: "Kusudama",
-        0xd: "KA",        # hands
-        0x62: "Drumroll"  # ?
-    }
     song = {}
 
     def readStruct(fmt, seek=None):
