@@ -1,7 +1,7 @@
-from parsers import readFumen, parseTJA
-from writers import writeFumen
-from converters import convertTJAToFumen
-from utils import checkMismatchedBytes
+from tja2fumen.parsers import readFumen, parseTJA
+from tja2fumen.writers import writeFumen
+from tja2fumen.converters import convertTJAToFumen
+from tja2fumen.utils import checkMismatchedBytes
 
 tja2fumen_version = "v0.1"
 

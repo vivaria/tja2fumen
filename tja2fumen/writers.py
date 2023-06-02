@@ -1,5 +1,5 @@
-from utils import writeStruct, putBool
-from constants import simpleHeaders, branchNames, typeNotes
+from tja2fumen.utils import writeStruct, putBool
+from tja2fumen.constants import simpleHeaders, branchNames, typeNotes
 
 
 def writeFumen(file, song):

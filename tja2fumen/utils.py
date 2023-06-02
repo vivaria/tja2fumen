@@ -2,7 +2,7 @@ import sys
 import struct
 import math
 
-from constants import simpleHeaders, byte_strings
+from tja2fumen.constants import simpleHeaders, byte_strings
 
 
 def checkValidHeader(header):

@@ -1,7 +1,7 @@
 from copy import deepcopy
 
-from utils import computeSoulGaugeByte
-from constants import TJA_NOTE_TYPES, DIFFICULTY_BYTES, unknownHeaderSample
+from tja2fumen.utils import computeSoulGaugeByte
+from tja2fumen.constants import TJA_NOTE_TYPES, DIFFICULTY_BYTES, unknownHeaderSample
 
 # Filler metadata that the `writeFumen` function expects
 default_note = {'type': '', 'pos': 0.0, 'item': 0, 'padding': 0.0,
