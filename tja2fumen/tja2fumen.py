@@ -108,6 +108,9 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
 
     # Initialize the dict that will contain the chart information
     song = {}
+    song['header'] = fumenHeader
+    song['headerUnknown'] = fumenHeaderUnknown
+    song['order'] = order
     song["length"] = totalMeasures
 
     # Determine whether the song has branches from byte 0x1b0 (decimal 432)
@@ -148,6 +151,9 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
                                  (measure["bpm"] - prev["fumenOffset"] - 240000 / prev["bpm"]))
         measure["gogo"] = getBool(measureStruct[2])
         measure["hidden"] = getBool(measureStruct[3])
+        measure["padding1"] = measureStruct[4]
+        measure["branchInfo"] = list(measureStruct[5:11])
+        measure["padding2"] = measureStruct[11]
 
         # Iterate through the three branch types
         for branchNumber in range(len(branchNames)):
@@ -162,6 +168,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
             branch = {}
             totalNotes = branchStruct[0]
             branch["length"] = totalNotes
+            branch["padding"] = branchStruct[1]
             branch["speed"] = branchStruct[2]
 
             # Print debug metadata about the branches
@@ -214,15 +221,23 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
                 note = {}
                 note["type"] = noteTypes[noteType]
                 note["pos"] = noteStruct[1]
+                note["item"] = noteStruct[2]
+                note["padding"] = noteStruct[3]
                 if noteType == 0xa or noteType == 0xc:
                     # Balloon hits
                     note["hits"] = noteStruct[4]
-                elif "scoreInit" not in song:
-                    song["scoreInit"] = noteStruct[4]
-                    song["scoreDiff"] = noteStruct[5] / 4.0
+                    note["hitsPadding"] = noteStruct[5]
+                else:
+                    note['scoreInit'] = noteStruct[4]
+                    note['scoreDiff'] = noteStruct[5] / 4.0
+                    if "scoreInit" not in song:
+                        song["scoreInit"] = note['scoreInit']
+                        song["scoreDiff"] = note['scoreDiff']
                 if noteType == 0x6 or noteType == 0x9 or noteType == 0xa or noteType == 0xc:
                     # Drumroll and balloon duration in ms
                     note["duration"] = noteStruct[6]
+                else:
+                    note['durationPadding'] = noteStruct[6]
 
                 # Print debug information about the note
                 if debug:
