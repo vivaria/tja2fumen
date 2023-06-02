@@ -131,6 +131,8 @@ def getCourse(tjaHeaders, lines):
             currentBranch = 'N'
             targetBranch = 'N'
             flagLevelhold = False
+        elif line['name'] == 'SECTION':
+            raise NotImplementedError
 
     def parseMeasureCommands(line):
         nonlocal measureDivisor, measureDividend, measureEvents, flagLevelhold
@@ -155,8 +157,6 @@ def getCourse(tjaHeaders, lines):
         elif line['name'] == 'LEVELHOLD':
             flagLevelhold = True
         elif line['name'] == 'DELAY':
-            raise NotImplementedError
-        elif line['name'] == 'SECTION':
             raise NotImplementedError
         elif line['name'] == 'LYRIC':
             pass
