@@ -110,13 +110,19 @@ def convertTJAToFumen(fumen, tja):
     for idx_m, measureTJA in enumerate(tja['measures']):
         measureFumen = deepcopy(default_measure)
 
-        # Compute the fumenOffset
+        # Compute the fumenOffset change (i.e. the duration of the measure).
+        measureSize = measureTJA['time_sig'][0] / measureTJA['time_sig'][1]
         measureLength = measureTJA['pos_end'] - measureTJA['pos_start']
-        if measureLength == measureTJA['subdivisions']:
-            measureRatio = 1.0  # This avoids the case of a measure with no notes --> 0 / 0 --> DivisionByZeroError
-        else:
-            measureRatio = measureLength / measureTJA['subdivisions']
-        measureDuration = (240_000 / measureTJA['bpm']) * measureRatio
+        measureRatio = 1.0 if measureTJA['subdivisions'] == 0.0 else (measureLength / measureTJA['subdivisions'])
+        # - measureDurationBase: The "base" measure duration, computed using a single BPM value.
+        # - measureDuration: The actual measure duration, which may be adjusted if there is a mid-measure BPM change.
+        measureDurationBase = measureDuration = (4 * 60_000 * measureSize * measureRatio / measureTJA['bpm'])
+        # The following adjustment accounts for mid-measure BPM changes. (!!! Discovered by tana :3 !!!)
+        if measureRatio != 1.0:
+            measureTJANext = tja['measures'][idx_m+1]
+            measureDuration -= (4 * 60_000 * ((1 / measureTJANext['bpm']) - (1 / measureTJA['bpm'])))
+
+        # Apply the change in offset to the overall offset to get the measure offset
         # This is a bodge I'm using just for Rokuchounen to Ichiya Monogatari
         # Its first measure happens _before_ the first barline
         # So, we actually need to shift the offsets by 1 to get everything to line up
@@ -135,7 +141,9 @@ def convertTJAToFumen(fumen, tja):
                 pass
             elif data['type'] == 'note':
                 note = deepcopy(default_note)
-                note['pos'] = measureDuration * (data['pos'] - measureTJA['pos_start']) / measureLength
+                # Note positions must be calculated using the base measure duration (that uses a single BPM value)
+                # (In other words, note positions do not take into account any mid-measure BPM change adjustments.)
+                note['pos'] = measureDurationBase * (data['pos'] - measureTJA['pos_start']) / measureLength
                 note['type'] = data['value']  # TODO: Handle BALLOON/DRUMROLL
                 note['scoreInit'] = tja['scoreInit']  # Probably not fully accurate
                 note['scoreDiff'] = tja['scoreDiff']  # Probably not fully accurate
