@@ -41,6 +41,9 @@ def preprocessTJAMeasures(tja):
     measuresCorrected = []
 
     currentBPM = 0
+    currentGogo = False
+    currentHidden = False
+
     for measure in tja['measures']:
         # Step 1: Combine notes and events
         notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
@@ -99,10 +102,6 @@ def convertTJAToFumen(fumen, tja):
     fumen['measures'] = fumen['measures'][9:]
     tja['measures'] = preprocessTJAMeasures(tja)
 
-    # Variables that will change over time due to events
-    currentGogo = False
-    currentHidden = False
-
     # Parse TJA measures to create converted TJA -> Fumen file
     tjaConverted = {'measures': []}
     for idx_m, measureTJA in enumerate(tja['measures']):
@@ -137,11 +136,7 @@ def convertTJAToFumen(fumen, tja):
         # Create note dictionaries based on TJA measure data (containing 0's plus 1/2/3/4/etc. for notes)
         note_counter = 0
         for idx_d, data in enumerate(measureTJA['data']):
-            if data['type'] == 'gogo':
-                pass
-            elif data['type'] == 'hidden':
-                pass
-            elif data['type'] == 'note':
+            if data['type'] == 'note':
                 note = deepcopy(default_note)
                 # Note positions must be calculated using the base measure duration (that uses a single BPM value)
                 # (In other words, note positions do not take into account any mid-measure BPM change adjustments.)
