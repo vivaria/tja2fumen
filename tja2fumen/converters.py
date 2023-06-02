@@ -38,13 +38,12 @@ def preprocessTJAMeasures(tja):
 
     In the future, this logic should probably be moved into the TJA parser itself.
     """
-    measuresCorrected = []
-
     currentBPM = 0
     currentScroll = 1.0
     currentGogo = False
     currentHidden = False
 
+    measuresCorrected = []
     for measure in tja['measures']:
         # Step 1: Combine notes and events
         notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
@@ -64,8 +63,9 @@ def preprocessTJAMeasures(tja):
                 combined.append(notes.pop(0))
 
         # Step 2: Split measure into submeasure
-        submeasures = []
-        measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'pos_start': 0, 'data': []}
+        measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'subdivisions': len(measure['data']),
+                       'pos_start': 0, 'pos_end': 0, 'time_sig': measure['length'],
+                       'data': [], 'properties': measure['properties']}
         for data in combined:
             if data['type'] == 'bpm':
                 currentBPM = float(data['value'])
@@ -75,8 +75,10 @@ def preprocessTJAMeasures(tja):
                 # Case 2: BPM change mid-measure, so start a new sub-measure
                 else:
                     measure_cur['pos_end'] = data['pos']
-                    submeasures.append(measure_cur)
-                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'pos_start': data['pos'], 'data': []}
+                    measuresCorrected.append(measure_cur)
+                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'subdivisions': len(measure['data']),
+                                   'pos_start': data['pos'], 'pos_end': 0, 'time_sig': measure['length'],
+                                   'data': [], 'properties': measure['properties']}
             elif data['type'] == 'scroll':
                 currentScroll = data['value']
                 measure_cur['scroll'] = currentScroll
@@ -84,20 +86,7 @@ def preprocessTJAMeasures(tja):
             else:
                 measure_cur['data'].append(data)
         measure_cur['pos_end'] = len(measure['data'])
-        submeasures.append(measure_cur)
-
-        # Append the newly-created measures
-        for submeasure in submeasures:
-            measuresCorrected.append({
-                'bpm': submeasure['bpm'],
-                'scroll': submeasure['scroll'],
-                'subdivisions': len(measure['data']),
-                'pos_start': submeasure['pos_start'],
-                'pos_end': submeasure['pos_end'],
-                'time_sig': measure['length'],
-                'data': submeasure['data'],
-                'properties': measure['properties'],
-            })
+        measuresCorrected.append(measure_cur)
 
     return measuresCorrected
 
