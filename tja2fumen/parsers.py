@@ -98,6 +98,8 @@ def getCourse(tjaHeaders, lines):
             else:
                 balloons = []
             headers['balloon'] = balloons
+        else:
+            raise NotImplementedError
 
     def parseBranchCommands(line):
         nonlocal flagLevelhold, targetBranch, currentBranch
@@ -133,6 +135,8 @@ def getCourse(tjaHeaders, lines):
             flagLevelhold = False
         elif line['name'] == 'SECTION':
             raise NotImplementedError
+        else:
+            raise NotImplementedError
 
     def parseMeasureCommands(line):
         nonlocal measureDivisor, measureDividend, measureEvents, flagLevelhold
@@ -162,6 +166,8 @@ def getCourse(tjaHeaders, lines):
             pass
         elif line['name'] == 'NEXTSONG':
             pass
+        else:
+            raise NotImplementedError
 
     def parseMeasureData(line):
         nonlocal measures, measureData, measureDividend, measureDivisor, measureEvents
