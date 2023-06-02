@@ -52,15 +52,15 @@ def validateHeaderMetadata(headerBytes):
         elif idx == 5:
             assert val == 39, f"Expected 39 at position '{idx}', got '{val}' instead."
 
-        # 2. TODO
+        # 2. Difficulty
         # Notes:
         #   * Breakdown of distribution of different byte combinations:
-        #       - 3611/7482 charts: [88, 27]
-        #       - 2016/7482 charts: [64, 31]
-        #       - 1805/7482 charts: [112, 23]
-        #   * In other words, there are only three different byte-pairs across all valid fumens.
+        #       - 1805/7482 charts: [112, 23] (Easy)
+        #       - 3611/7482 charts: [88, 27]  (Normal, Hard)
+        #       - 2016/7482 charts: [64, 31]  (Oni, Ura)
+        #   * In other words, all 5 difficulties map to only three different byte-pairs across all valid fumens.
         elif idx == 8:
-            assert val in [88, 64, 27], f"Expected 88/64/112 at position '{idx}', got '{val}' instead."
+            assert val in [88, 64, 112], f"Expected 88/64/112 at position '{idx}', got '{val}' instead."
         elif idx == 9:
             assert val in [27, 31, 23], f"Expected 27/31/23 at position '{idx}', got '{val}' instead."
 
@@ -157,18 +157,18 @@ def validateHeaderMetadata(headerBytes):
         elif idx == 72:
             assert val in [20, 0], f"Expected 20/0 at position '{idx}', got '{val}' instead."
 
-        # 10. TODO
+        # 10. Difficulty (Gen2) and ???? (Gen3)
         # Notes:
-        #   * In Gen2 charts (AC, Wii), these values would be evenly distributed between 4 different byte combinations.
+        #   * In Gen2 charts (AC, Wii), these values would be one of 4 different byte combinations.
         #   * These values correspond to the difficulty of the song (no Uras in Gen2, hence 4 values):
-        #      - (288, 193, 44)
-        #      - (192, 42, 12)
-        #      - (92, 205, 23)
-        #      - (8, 206, 31)
-        #   * However, starting in Gen3 (AC, console), these bytes were given unique per-song values.
-        #      - In total, Gen3 contains 6449 unique combinations of bytes.
-        # For TJA conversion, I am not sure whether to try and figure out the Gen3 scheme for these bytes (difficult!),
-        # or to just stick with the Gen2 scheme (and make up the missing value for Uras), which would be much easier.
+        #      - [192, 42, 12]  (Easy)
+        #      - [92, 205, 23]  (Normal)
+        #      - [8, 206, 31]   (Hard)
+        #      - [288, 193, 44] (Oni)
+        #   * However, starting in Gen3 (AC, console), these bytes were given unique per-song, per-chart values.
+        #      - In total, Gen3 contains 6449 unique combinations of bytes (with some minor overlaps between games).
+        # For TJA conversion, I plan to just stick with the Gen2 scheme (and make up the missing value for Uras),
+        # which would be much easier than trying to figure out the Gen3 scheme.
         elif idx in [76, 77, 78]:
             pass
 
