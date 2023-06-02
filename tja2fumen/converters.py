@@ -67,7 +67,9 @@ def preprocessTJAMeasures(tja):
                        'pos_start': 0, 'pos_end': 0, 'time_sig': measure['length'],
                        'data': [], 'properties': measure['properties']}
         for data in combined:
-            if data['type'] == 'bpm':
+            if data['type'] == 'note':
+                measure_cur['data'].append(data)
+            elif data['type'] == 'bpm':
                 currentBPM = float(data['value'])
                 # Case 1: BPM change at the start of a measure; just change BPM
                 if data['pos'] == 0:
@@ -82,7 +84,7 @@ def preprocessTJAMeasures(tja):
             elif data['type'] == 'scroll':
                 currentScroll = data['value']
                 measure_cur['scroll'] = currentScroll
-            # 'else' == Note data, and non-bpm/scroll events
+            # 'else' non-bpm/scroll events
             else:
                 measure_cur['data'].append(data)
         measure_cur['pos_end'] = len(measure['data'])
