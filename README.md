@@ -21,6 +21,7 @@ The converter is in a messy/experimental state, and is not yet fit for use due t
 - [ ] Support for branch commands (`#BRANCHSTART`, `#BRANCHEND`, `#N`, `#E`, `#M`, `#LEVELHOLD`, etc.)
 - [ ] Support for barline manipulation commands (`#BARLINEON`, `#BARLINEOFF`)
 - [ ] Support for delay commands (`#DELAY`)
+- [ ] Support for P1/P2 charts (`#STYLE: Single`, `#STYLE: Double`, `#START P1`, `START P2`)
 - [ ] Refactoring into a more Pythonic style (variable names (`camelCase` -> `under_score`), object-oriented note/branch/measure representations, etc.)
 - [ ] Argument parsing + proper i/o handling
 - [ ] Packaging into an executable
