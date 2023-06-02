@@ -100,6 +100,7 @@ def convertTJAToFumen(fumen, tja):
     # Hardcode currentBranch due to current lack of support for branching songs
     currentBranch = 'normal'  # TODO: Program in branch support
     tja['measures'] = preprocessTJAMeasures(tja)
+    currentDrumroll = None
 
     # Parse TJA measures to create converted TJA -> Fumen file
     tjaConverted = {'measures': []}
@@ -145,13 +146,35 @@ def convertTJAToFumen(fumen, tja):
         note_counter = 0
         for idx_d, data in enumerate(measureTJA['data']):
             if data['type'] == 'note':
-                note = deepcopy(default_note)
                 # Note positions must be calculated using the base measure duration (that uses a single BPM value)
                 # (In other words, note positions do not take into account any mid-measure BPM change adjustments.)
-                note['pos'] = measureDurationBase * (data['pos'] - measureTJA['pos_start']) / measureLength
-                note['type'] = data['value']  # TODO: Handle BALLOON/DRUMROLL
+                note_pos = measureDurationBase * (data['pos'] - measureTJA['pos_start']) / measureLength
+                # The duration of the current drumroll is the position of the drumroll-end note.
+                if data['value'] == "EndDRB":
+                    currentDrumroll['duration'] += note_pos
+                    # 1182, 1385, 1588, 2469, 1568, 752, 1568
+                    currentDrumroll['duration'] = float(int(currentDrumroll['duration']))
+                    currentDrumroll = None
+                    continue
+                # The TJA spec technically allows you to place double-Kusudama notes:
+                #    "Use another 9 to specify when to lower the points for clearing."
+                # But this is unsupported in fumens, so just skip the second Kusudama note.
+                if data['value'] == "Kusudama" and currentDrumroll:
+                    continue
+                # Handle the remaining non-EndDRB, non-double Kusudama notes
+                note = deepcopy(default_note)
+                note['pos'] = note_pos
+                note['type'] = data['value']
                 note['scoreInit'] = tja['scoreInit']  # Probably not fully accurate
                 note['scoreDiff'] = tja['scoreDiff']  # Probably not fully accurate
+                # Handle drumroll/balloon-specific metadata
+                if note['type'] in ["Balloon", "Kusudama"]:
+                    note['hits'] = tja['metadata']['balloon'].pop(0)
+                    note['hitsPadding'] = 0
+                    currentDrumroll = note
+                if note['type'] in ["Drumroll", "DRUMROLL"]:
+                    note['drumrollBytes'] = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+                    currentDrumroll = note
                 measureFumen[currentBranch][note_counter] = note
                 note_counter += 1
         measureFumen[currentBranch]['length'] = note_counter
@@ -161,6 +184,13 @@ def convertTJAToFumen(fumen, tja):
 
         # Append the measure to the tja's list of measures
         tjaConverted['measures'].append(measureFumen)
+
+        # If drumroll hasn't ended by the end of this measure, increase duration by measure timing
+        if currentDrumroll:
+            if currentDrumroll['duration'] == 0.0:
+                currentDrumroll['duration'] += (measureDurationBase - currentDrumroll['pos'])
+            else:
+                currentDrumroll['duration'] += measureDurationBase
 
     tjaConverted['headerUnknown'] = b"".join(i.to_bytes(1, 'little') for i in unknownHeaderSample)
     tjaConverted['order'] = '<'
