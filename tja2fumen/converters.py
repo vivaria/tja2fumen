@@ -20,64 +20,129 @@ default_measure = {
 }
 
 
+def preprocessTJAMeasures(tja):
+    """
+    Merge TJA 'data' and 'event' fields into a single measure property, and split
+    measures into sub-measures whenever a mid-measure BPM change occurs.
+
+    The TJA parser produces measure objects with two important properties:
+      - 'data': Contains the note data (1: don, 2: ka, etc.) along with spacing (s)
+      - 'events' Contains event commands such as MEASURE, BPMCHANGE, GOGOTIME, etc.
+
+    However, notes and events can be intertwined within a single measure. So, it's
+    not possible to process them separately; they must be considered as single sequence.
+
+    A particular danger is BPM changes. TJA allows multiple BPMs within a single measure,
+    but the fumen format permits one BPM per measure. So, a TJA measure must be split up
+    if it has multiple BPM changes within a measure.
+
+    In the future, this logic should probably be moved into the TJA parser itself.
+    """
+    measuresCorrected = []
+
+    currentBPM = 0
+    for measure in tja['measures']:
+        # Step 1: Combine notes and events
+        notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
+                 for i, note in enumerate(measure['data']) if note != '0']
+        events = [{'pos': e['position'], 'type': e['name'], 'value': e['value']}
+                  for e in measure['events']]
+        combined = []
+        while notes or events:
+            if events and notes:
+                if notes[0]['pos'] >= events[0]['pos']:
+                    combined.append(events.pop(0))
+                else:
+                    combined.append(notes.pop(0))
+            elif events:
+                combined.append(events.pop(0))
+            elif notes:
+                combined.append(notes.pop(0))
+
+        # Step 2: Split measure into submeasure
+        submeasures = []
+        measure_cur = {'bpm': currentBPM, 'pos_start': 0, 'data': []}
+        for data in combined:
+            if data['type'] == 'bpm':
+                currentBPM = float(data['value'])
+                # Case 1: BPM change at the start of a measure; just change PM
+                if data['pos'] == 0:
+                    measure_cur['bpm'] = currentBPM
+                # Case 2: BPM change mid-measure, so start a new sub-measure
+                else:
+                    measure_cur['pos_end'] = data['pos']
+                    submeasures.append(measure_cur)
+                    measure_cur = {'bpm': currentBPM, 'pos_start': data['pos'], 'data': []}
+            else:
+                measure_cur['data'].append(data)
+        measure_cur['pos_end'] = len(measure['data'])
+        submeasures.append(measure_cur)
+
+        # Append the newly-created measures
+        for submeasure in submeasures:
+            measuresCorrected.append({
+                'bpm': submeasure['bpm'],
+                'subdivisions': len(measure['data']),
+                'pos_start': submeasure['pos_start'],
+                'pos_end': submeasure['pos_end'],
+                'time_sig': measure['length'],
+                'data': submeasure['data'],
+                'properties': measure['properties'],
+            })
+
+    return measuresCorrected
+
+
 def convertTJAToFumen(fumen, tja):
+    fumen['measures'] = fumen['measures'][9:]
+    tja['measures'] = preprocessTJAMeasures(tja)
+
     # Fumen offset for the first measure that has a barline
-    fumenOffset1 = float(tja['metadata']['offset']) * -1000
+    fumenOffset = float(tja['metadata']['offset']) * -1000
 
     # Variables that will change over time due to events
-    currentBPM = 0.0
     currentGogo = False
     currentHidden = False
     currentBranch = 'normal'  # TODO: Program in branch support
 
     # Parse TJA measures to create converted TJA -> Fumen file
     tjaConverted = {'measures': []}
-    for i, measureTJA in enumerate(tja['measures']):
-        measureFumenExample = fumen['measures'][i+9]
+    for idx_m, measureTJA in enumerate(tja['measures']):
         measureFumen = deepcopy(default_measure)
 
-        # TODO Event: GOGOTIME
-
-        # TODO Event: HIDDEN
-
-        # TODO Event: BARLINE
-
-        # TODO Event: MEASURE
-
-        # Event: BPMCHANGE
-        # TODO: Handle TJA measure being broken up into multiple Fumen measures due to mid-measure BPM changes
-        midMeasureBPM = [(0, currentBPM)]
-        for event in measureTJA['events']:
-            if event['name'] == 'bpm':
-                currentBPM = float(event['value'])
-                if event['position'] == 0:
-                    midMeasureBPM[0] = (0, currentBPM,)
-                else:
-                    midMeasureBPM.append((event['position'], currentBPM))
-        if len(midMeasureBPM) > 1:
-            test = None
-        measureFumen['bpm'] = currentBPM
-
-        # TODO: `measureFumen['fumenOffset']
-        #       Will need to account for BARLINEON and BARLINEOFF.
-        #       Some examples that line up with actual fumen data:
-        # fumenOffset0 = (fumenOffset1 - measureLength)
-        # fumenOffset2 = (fumenOffset1 + measureLength)
-        measureLength = 240_000 / currentBPM
-        # measureFumen['fumenOffset'] = prev['fumenOffset'] + measureLength
+        # Compute the fumenOffset
+        measureLength = measureTJA['pos_end'] - measureTJA['pos_start']
+        if measureLength == measureTJA['subdivisions']:
+            measureRatio = 1.0  # This avoids the case of a measure with no notes --> 0 / 0 --> DivisionByZeroError
+        else:
+            measureRatio = measureLength / measureTJA['subdivisions']
+        measureDuration = (240_000 / measureTJA['bpm']) * measureRatio
+        # This is a bodge I'm using just for Rokuchounen to Ichiya Monogatari
+        # Its first measure happens _before_ the first barline
+        # So, we actually need to shift the offsets by 1 to get everything to line up
+        if idx_m == 0:
+            measureFumen['fumenOffset'] = fumenOffset - measureDuration
+        else:
+            measureFumen['fumenOffset'] = tjaConverted['measures'][-1]['fumenOffset'] + measureDurationNext
+        measureDurationNext = measureDuration
 
         # Create note dictionaries based on TJA measure data (containing 0's plus 1/2/3/4/etc. for notes)
         note_counter = 0
-        for i, note_value in enumerate(measureTJA['data']):
-            if note_value != '0':
+        for idx_d, data in enumerate(measureTJA['data']):
+            if data['type'] == 'gogo':
+                pass
+            elif data['type'] == 'hidden':
+                pass
+            elif data['type'] == 'note':
                 note = deepcopy(default_note)
-                note['pos'] = measureLength * (i / len(measureTJA['data']))
-                note['type'] = TJA_NOTE_TYPES[note_value]  # TODO: Handle BALLOON/DRUMROLL
+                note['pos'] = measureDuration * (data['pos'] - measureTJA['pos_start']) / measureLength
+                note['type'] = data['value']  # TODO: Handle BALLOON/DRUMROLL
                 note['scoreInit'] = tja['scoreInit']  # Probably not fully accurate
                 note['scoreDiff'] = tja['scoreDiff']  # Probably not fully accurate
                 measureFumen[currentBranch][note_counter] = note
                 note_counter += 1
         measureFumen[currentBranch]['length'] = note_counter
+        measureFumen['bpm'] = measureTJA['bpm']
 
         # Append the measure to the tja's list of measures
         tjaConverted['measures'].append(measureFumen)

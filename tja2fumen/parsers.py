@@ -143,9 +143,13 @@ def getCourse(tjaHeaders, lines):
             measureDividend = int(matchMeasure.group(1))
             measureDivisor = int(matchMeasure.group(2))
         elif line['name'] == 'GOGOSTART':
-            measureEvents.append({"name": 'gogoStart', "position": len(measureData)})
+            measureEvents.append({"name": 'gogo', "position": len(measureData), "value": '1'})
         elif line['name'] == 'GOGOEND':
-            measureEvents.append({"name": 'gogoEnd', "position": len(measureData)})
+            measureEvents.append({"name": 'gogo', "position": len(measureData), "value": '0'})
+        elif line['name'] == 'BARLINEON':
+            measureEvents.append({"name": 'barline', "position": len(measureData), "value": '1'})
+        elif line['name'] == 'BARLINEOFF':
+            measureEvents.append({"name": 'barline', "position": len(measureData), "value": '0'})
         elif line['name'] == 'SCROLL':
             measureEvents.append({"name": 'scroll', "position": len(measureData), "value": float(line['value'])})
         elif line['name'] == 'BPMCHANGE':
@@ -204,7 +208,7 @@ def getCourse(tjaHeaders, lines):
         # Search for BPM event in the first measure
         for i in range(len(measures[0]['events'])):
             evt = measures[0]['events'][i]
-            if evt.name == 'bpm' and evt.position == 0:
+            if evt['name'] == 'bpm' and evt['position'] == 0:
                 firstBPMEventFound = True
         # If not present, insert a BPM event into the first measure using the global header metadata
         if not firstBPMEventFound:
