@@ -97,9 +97,6 @@ def convertTJAToFumen(fumen, tja):
     fumen['measures'] = fumen['measures'][9:]
     tja['measures'] = preprocessTJAMeasures(tja)
 
-    # Fumen offset for the first measure that has a barline
-    fumenOffset = float(tja['metadata']['offset']) * -1000
-
     # Variables that will change over time due to events
     currentGogo = False
     currentHidden = False
@@ -127,9 +124,13 @@ def convertTJAToFumen(fumen, tja):
         # Its first measure happens _before_ the first barline
         # So, we actually need to shift the offsets by 1 to get everything to line up
         if idx_m == 0:
+            # Compute fumen offset for the first measure that has a barline
+            fumenOffset = float(tja['metadata']['offset']) * -1000
             measureFumen['fumenOffset'] = fumenOffset - measureDuration
         else:
-            measureFumen['fumenOffset'] = tjaConverted['measures'][-1]['fumenOffset'] + measureDurationNext
+            # Just refer back to the previous offset
+            measureOffsetPrev = tjaConverted['measures'][-1]['fumenOffset']
+            measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationNext
         measureDurationNext = measureDuration
 
         # Create note dictionaries based on TJA measure data (containing 0's plus 1/2/3/4/etc. for notes)
