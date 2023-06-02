@@ -92,8 +92,6 @@ def getCourse(tjaHeaders, lines):
             headers['scoreInit'] = int(line['value'])
         elif line["name"] == 'SCOREDIFF':
             headers['scoreDiff'] = int(line['value'])
-        elif line["name"] == 'TTROWBEAT':
-            headers['ttRowBeat'] = int(line['value'])
         elif line["name"] == 'BALLOON':
             if line['value']:
                 balloons = [int(v) for v in line['value'].split(",")]
@@ -135,7 +133,7 @@ def getCourse(tjaHeaders, lines):
             flagLevelhold = False
 
     def parseMeasureCommands(line):
-        nonlocal measureDivisor, measureDividend, measureEvents, measureProperties, flagLevelhold
+        nonlocal measureDivisor, measureDividend, measureEvents, flagLevelhold
         if line['name'] == 'MEASURE':
             matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
             if not matchMeasure:
@@ -154,27 +152,23 @@ def getCourse(tjaHeaders, lines):
             measureEvents.append({"name": 'scroll', "position": len(measureData), "value": float(line['value'])})
         elif line['name'] == 'BPMCHANGE':
             measureEvents.append({"name": 'bpm', "position": len(measureData), "value": float(line['value'])})
-        elif line['name'] == 'TTBREAK':
-            measureProperties['ttBreak'] = True
         elif line['name'] == 'LEVELHOLD':
             flagLevelhold = True
 
     def parseMeasureData(line):
-        nonlocal measures, measureData, measureDividend, measureDivisor, measureEvents, measureProperties
+        nonlocal measures, measureData, measureDividend, measureDivisor, measureEvents
         data = line['data']
         # If measure has ended, then append the measure and start anew
         if data.endswith(','):
             measureData += data[0:-1]
             measure = {
                 "length": [measureDividend, measureDivisor],
-                "properties": measureProperties,
                 "data": measureData,
                 "events": measureEvents,
             }
             measures.append(measure)
             measureData = ''
             measureEvents = []
-            measureProperties = {}
         # Otherwise, keep tracking measureData
         else:
             measureData += data
@@ -184,7 +178,6 @@ def getCourse(tjaHeaders, lines):
     measures = []
     measureDividend = 4
     measureDivisor = 4
-    measureProperties = {}
     measureData = ''
     measureEvents = []
     currentBranch = 'N'
@@ -219,7 +212,6 @@ def getCourse(tjaHeaders, lines):
     if measureData:
         measures.append({
             "length": [measureDividend, measureDivisor],
-            "properties": measureProperties,
             "data": measureData,
             "events": measureEvents,
         })

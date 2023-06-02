@@ -64,7 +64,7 @@ def preprocessTJAMeasures(tja):
         # Step 2: Split measure into submeasure
         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
                        'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
-                       'time_sig': measure['length'], 'data': [], 'properties': measure['properties']}
+                       'time_sig': measure['length'], 'data': []}
         for data in combined:
             if data['type'] == 'note':
                 measure_cur['data'].append(data)
@@ -79,7 +79,7 @@ def preprocessTJAMeasures(tja):
                     measuresCorrected.append(measure_cur)
                     measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
                                    'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
-                                   'time_sig': measure['length'], 'data': [], 'properties': measure['properties']}
+                                   'time_sig': measure['length'], 'data': []}
             elif data['type'] == 'scroll':
                 currentScroll = data['value']
                 measure_cur['scroll'] = currentScroll
