@@ -106,7 +106,7 @@ def getCourse(tjaHeaders, lines):
             measureData += data
 
     # Define state variables
-    headers = {}
+    headers = {'balloon': []}  # Charters sometimes exclude `BALLOON` entirely if there are none
     measures = []
     measureDividend = 4
     measureDivisor = 4
