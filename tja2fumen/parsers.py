@@ -94,7 +94,7 @@ def getCourse(tjaHeaders, lines):
             headers['scoreDiff'] = int(line['value']) if line['value'] else 0
         elif line["name"] == 'BALLOON':
             if line['value']:
-                balloons = [int(v) for v in line['value'].split(",")]
+                balloons = [int(v) for v in line['value'].split(",") if v]
             else:
                 balloons = []
             headers['balloon'] = balloons
