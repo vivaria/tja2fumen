@@ -154,6 +154,14 @@ def getCourse(tjaHeaders, lines):
             measureEvents.append({"name": 'bpm', "position": len(measureData), "value": float(line['value'])})
         elif line['name'] == 'LEVELHOLD':
             flagLevelhold = True
+        elif line['name'] == 'DELAY':
+            raise NotImplementedError
+        elif line['name'] == 'SECTION':
+            raise NotImplementedError
+        elif line['name'] == 'LYRIC':
+            pass
+        elif line['name'] == 'NEXTSONG':
+            pass
 
     def parseMeasureData(line):
         nonlocal measures, measureData, measureDividend, measureDivisor, measureEvents
