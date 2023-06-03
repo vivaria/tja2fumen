@@ -4,7 +4,7 @@ import re
 from tja2fumen.utils import readStruct, getBool, shortHex, nameValue, debugPrint, checkValidHeader, validateHeaderMetadata
 from tja2fumen.constants import (
     # TJA constants
-    HEADER_GLOBAL, HEADER_COURSE, BRANCH_COMMANDS, MEASURE_COMMANDS, COMMAND,
+    HEADER_GLOBAL, HEADER_COURSE, BRANCH_COMMANDS, MEASURE_COMMANDS, COMMAND, NORMALIZE_COURSE,
     # Fumen constants
     branchNames, noteTypes
 )
@@ -36,7 +36,7 @@ def parseTJA(tja):
         else:
             # Check to see if we're starting a new course
             if parsed['type'] == 'header' and parsed['scope'] == 'course' and parsed['name'] == 'COURSE':
-                currentCourse = parsed['value']
+                currentCourse = NORMALIZE_COURSE[parsed['value']]
                 if currentCourse not in courses.keys():
                     courses[currentCourse] = []
             # Append the line to the current course
@@ -85,7 +85,7 @@ def getCourse(tjaHeaders, lines):
     def parseHeaderMetadata(line):
         nonlocal headers
         if line["name"] == 'COURSE':
-            headers['course'] = line['value']
+            headers['course'] = NORMALIZE_COURSE[line['value']]
         elif line["name"] == 'LEVEL':
             headers['level'] = int(line['value']) if line['value'] else 0
         elif line["name"] == 'SCOREINIT':

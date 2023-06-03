@@ -96,6 +96,20 @@ unknownHeaderSample[76] = 78
 unknownHeaderSample[77] = 97
 unknownHeaderSample[78] = 188
 
+NORMALIZE_COURSE = {
+    '0': 'Easy',
+    'Easy': 'Easy',
+    '1': 'Normal',
+    'Normal': 'Normal',
+    '2': 'Hard',
+    'Hard': 'Hard',
+    '3': 'Oni',
+    'Oni': 'Oni',
+    '4': 'Ura',
+    'Ura': 'Ura',
+    'Edit': 'Ura'
+}
+
 DIFFICULTY_BYTES = {
     'Easy': [112, 23],
     'Normal': [88, 27],
