@@ -2,6 +2,7 @@ from tja2fumen.parsers import readFumen, parseTJA
 from tja2fumen.writers import writeFumen
 from tja2fumen.converters import convertTJAToFumen
 from tja2fumen.utils import checkMismatchedBytes
+from tja2fumen.constants import COURSE_IDS
 
 tja2fumen_version = "v0.1"
 
@@ -45,6 +46,6 @@ if __name__ == "__main__":
     fumen, convertedTJAs = main(fnameFumen=fnameFumen, fnameTJA=fnameTJA)
 
     for course, song in convertedTJAs.items():
-        outputName = ".".join(fnameTJA.split('.')[0:-1]) + f"_{course}.bin"
+        outputName = ".".join(fnameTJA.split('.')[0:-1]) + f"_{COURSE_IDS[course]}.bin"
         outputFile = open(outputName, "wb")
         writeFumen(outputFile, song)
