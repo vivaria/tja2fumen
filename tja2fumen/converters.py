@@ -151,9 +151,15 @@ def convertTJAToFumen(fumen, tja):
                 # Note positions must be calculated using the base measure duration (that uses a single BPM value)
                 # (In other words, note positions do not take into account any mid-measure BPM change adjustments.)
                 note_pos = measureDurationBase * (data['pos'] - measureTJA['pos_start']) / measureLength
-                # The duration of the current drumroll is the position of the drumroll-end note.
+                # Handle the note that represents the end of a drumroll/balloon
                 if data['value'] == "EndDRB":
-                    currentDrumroll['duration'] += (note_pos - currentDrumroll['pos'])
+                    # If a drumroll spans a single measure, then add the difference between start/end position
+                    if 'multimeasure' not in currentDrumroll.keys():
+                        currentDrumroll['duration'] += (note_pos - currentDrumroll['pos'])
+                    # Otherwise, if a drumroll spans multiple measures, then we want to add the duration between
+                    # the start of the measure (i.e. pos=0.0) and the drumroll's end position.
+                    else:
+                        currentDrumroll['duration'] += (note_pos - 0.0)
                     # 1182, 1385, 1588, 2469, 1568, 752, 1568
                     currentDrumroll['duration'] = float(int(currentDrumroll['duration']))
                     currentDrumroll = None
@@ -193,6 +199,7 @@ def convertTJAToFumen(fumen, tja):
         if currentDrumroll:
             if currentDrumroll['duration'] == 0.0:
                 currentDrumroll['duration'] += (measureDurationBase - currentDrumroll['pos'])
+                currentDrumroll['multimeasure'] = True
             else:
                 currentDrumroll['duration'] += measureDurationBase
 
