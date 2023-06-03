@@ -4,35 +4,15 @@ This repo a new attempt to write a tja2fumen chart converter to replace/compleme
 
 ### Goals
 
-- [X] Fix desyncronization issues due to BPMCHANGE commands. (See: https://github.com/Fluto/TakoTako/issues/16)
-- [X] Provide open source code, as opposed to distributing only a closed-source binary.
-- [ ] Provide a highly-documented reference for parsing both the TJA and Fumen file formats.
-- [ ] Stick to "pure Python", i.e. no external dependencies if possible.
-- [ ] Provide support for Windows/Linux/macOS via [`PyInstaller`](https://pyinstaller.org/en/stable/) or something similar.
+- Fix desyncronization issues due to BPMCHANGE commands. (See: https://github.com/Fluto/TakoTako/issues/16)
+- Provide open source code, as opposed to distributing only a closed-source binary.
+- Provide a highly-documented reference for parsing both the TJA and Fumen file formats.
+- Stick to "pure Python", i.e. no external dependencies if possible.
+- Provide support for Windows/Linux/macOS via [`PyInstaller`](https://pyinstaller.org/en/stable/) or something similar.
 
 ### Usage
 
-The converter is in a messy/experimental state, and is not yet fit for use due to lack of support for important TJA commands. 
-
-### Future work
-
-> **Note**: Simulator-specific commands (such as those used for Dan-i Dojo charts) are unlikely to be supported, due to the lack of support from official console releases.
-
-* Bugfixes
-  - [ ] Fix issue with BPMCHANGE + drumrolls. (Affected songs: Kokuryu, R.I.P. Hero, Challengers, etc.)
-  - [ ] Properly handle the offset at the beginning of the song (Affected songs: SUPERNOVA, etc.)
-  - [ ] Handle `areFilesGZipped=False` issue when combining charts with `TakoTako`/`tja2bin.exe` files (Affected songs: Aragami, MEGALOVANIA, exTora Trap!!).
-* Missing command support
-  - [ ] Support for branch commands (`#BRANCHSTART`, `#BRANCHEND`, `#N`, `#E`, `#M`, `#LEVELHOLD`, etc.)
-  - [ ] Support for barline manipulation commands (`#BARLINEON`, `#BARLINEOFF`)
-  - [ ] Support for delay commands (`#DELAY`)
-  - [ ] Support for P1/P2 charts (`#STYLE: Single`, `#STYLE: Double`, `#START P1`, `START P2`)
-* Project architecture
-  - [ ] Refactoring into a more Pythonic style (variable names (`camelCase` -> `under_score`), object-oriented note/branch/measure representations, etc.)
-  - [ ] Argument parsing + proper i/o handling
-  - [ ] Packaging into an executable
-
-Once these features are added, I will create an initial release. Until then, the source code in this repo is presented as-is.
+The converter is in a messy/experimental state, and is not yet fit for use due to lack of support for important TJA commands.
 
 ### Attribution
 
