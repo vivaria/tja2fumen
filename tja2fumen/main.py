@@ -1,4 +1,5 @@
 import argparse
+import os
 
 from tja2fumen.parsers import readFumen, parseTJA
 from tja2fumen.writers import writeFumen
@@ -56,6 +57,6 @@ if __name__ == "__main__":
     fumen, convertedTJAs = main(fnameTJA=fnameTJA)
 
     for course, song in convertedTJAs.items():
-        outputName = ".".join(fnameTJA.split('.')[0:-1]) + f"_{COURSE_IDS[course]}.bin"
+        outputName = os.path.splitext(fnameTJA)[0] + f"_{COURSE_IDS[course]}.bin"
         outputFile = open(outputName, "wb")
         writeFumen(outputFile, song)
