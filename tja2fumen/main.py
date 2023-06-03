@@ -57,6 +57,10 @@ if __name__ == "__main__":
     fumen, convertedTJAs = main(fnameTJA=fnameTJA)
 
     for course, song in convertedTJAs.items():
-        outputName = os.path.splitext(fnameTJA)[0] + f"_{COURSE_IDS[course]}.bin"
+        outputName = os.path.splitext(fnameTJA)[0]
+        if len(convertedTJAs) == 1:
+            outputName += ".bin"
+        else:
+            outputName += f"_{COURSE_IDS[course]}.bin"
         outputFile = open(outputName, "wb")
         writeFumen(outputFile, song)
