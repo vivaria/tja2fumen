@@ -153,7 +153,7 @@ def convertTJAToFumen(fumen, tja):
                 note_pos = measureDurationBase * (data['pos'] - measureTJA['pos_start']) / measureLength
                 # The duration of the current drumroll is the position of the drumroll-end note.
                 if data['value'] == "EndDRB":
-                    currentDrumroll['duration'] += note_pos
+                    currentDrumroll['duration'] += (note_pos - currentDrumroll['pos'])
                     # 1182, 1385, 1588, 2469, 1568, 752, 1568
                     currentDrumroll['duration'] = float(int(currentDrumroll['duration']))
                     currentDrumroll = None
