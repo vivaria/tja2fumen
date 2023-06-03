@@ -1,3 +1,5 @@
+import argparse
+
 from tja2fumen.parsers import readFumen, parseTJA
 from tja2fumen.writers import writeFumen
 from tja2fumen.converters import convertTJAToFumen
@@ -41,9 +43,17 @@ def main(fnameFumen=None, fnameTJA=None, validate=False):
 
 
 if __name__ == "__main__":
-    fnameFumen = "test-data/12373714_m.bin"
-    fnameTJA = "test-data/Unlimited Games.tja"  # NB: Contains 5 charts
-    fumen, convertedTJAs = main(fnameFumen=fnameFumen, fnameTJA=fnameTJA)
+    parser = argparse.ArgumentParser(
+        description="tja2fumen"
+    )
+    parser.add_argument(
+        "file.tja",
+        help="Path to a Taiko no Tatsujin TJA file.",
+    )
+    args = parser.parse_args()
+    fnameTJA = getattr(args, "file.tja")
+
+    fumen, convertedTJAs = main(fnameTJA=fnameTJA)
 
     for course, song in convertedTJAs.items():
         outputName = ".".join(fnameTJA.split('.')[0:-1]) + f"_{COURSE_IDS[course]}.bin"
