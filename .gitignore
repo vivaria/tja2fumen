@@ -1,0 +1,7 @@
+venv
+build
+dist
+*.spec
+*.tja
+*.bin
+*.exe
