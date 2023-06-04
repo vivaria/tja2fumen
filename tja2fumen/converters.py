@@ -128,12 +128,12 @@ def convertTJAToFumen(fumen, tja):
         else:
             # Compute the 1st measure's offset by subtracting the 2nd measure's duration from the tjaOffset
             if idx_m == 1:
-                fumenOffset = float(tja['metadata']['offset']) * 1000 * -1
-                tjaConverted['measures'][-1]['fumenOffset'] = fumenOffset - measureDuration
+                tjaOffset = float(tja['metadata']['offset']) * 1000 * -1
+                tjaConverted['measures'][-1]['fumenOffset'] = tjaOffset - measureDuration
             # Use the previous measure's offset plus the previous duration to compute the current measure's offset
             measureOffsetPrev = tjaConverted['measures'][-1]['fumenOffset']
-            measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationNext
-        measureDurationNext = measureDuration
+            measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationPrev
+        measureDurationPrev = measureDuration
 
         # Best guess at what 'hidden' status means for each measure:
         # - 'True' means the measure lands on a barline (i.e. most measures)
