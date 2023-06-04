@@ -1,7 +1,7 @@
 import os
 import re
 
-from tja2fumen.utils import readStruct, getBool, shortHex, nameValue, debugPrint, checkValidHeader, validateHeaderMetadata
+from tja2fumen.utils import readStruct, getBool, shortHex, nameValue, debugPrint, checkValidHeader
 from tja2fumen.constants import (
     # TJA constants
     HEADER_GLOBAL, HEADER_COURSE, BRANCH_COMMANDS, MEASURE_COMMANDS, COMMAND, NORMALIZE_COURSE,
