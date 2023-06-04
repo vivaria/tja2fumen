@@ -1,6 +1,6 @@
-venv
-build
-dist
+venv*
+build*
+dist*
 *.spec
 *.tja
 *.bin
