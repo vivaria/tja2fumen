@@ -101,6 +101,7 @@ def convertTJAToFumen(fumen, tja):
     # Hardcode currentBranch due to current lack of support for branching songs
     currentBranch = 'normal'  # TODO: Program in branch support
     tja['measures'] = preprocessTJAMeasures(tja)
+    measureDurationPrev = 0
     currentDrumroll = None
     total_notes = 0
 
