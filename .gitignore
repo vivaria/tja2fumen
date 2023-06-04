@@ -5,3 +5,4 @@ dist
 *.tja
 *.bin
 *.exe
+*.egg-info
