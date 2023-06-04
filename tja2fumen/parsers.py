@@ -98,6 +98,11 @@ def getCourse(tjaHeaders, lines):
             else:
                 balloons = []
             headers['balloon'] = balloons
+        # STYLE is a P1/P2 command, which we don't support yet, so normally this would be a NotImplemetedError.
+        # However, TakoTako outputs `STYLE:SINGLE` when converting Ura charts, so throwing an error here prevents
+        # Ura charts from being converted. See: https://github.com/vivaria/tja2fumen/issues/15#issuecomment-1575341088
+        elif line["name"] == 'STYLE':
+            pass
         else:
             raise NotImplementedError
 
