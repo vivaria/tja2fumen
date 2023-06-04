@@ -122,16 +122,15 @@ def convertTJAToFumen(fumen, tja):
             if measureTJA['bpm'] != measureTJANext['bpm']:
                 measureDuration -= (4 * 60_000 * ((1 / measureTJANext['bpm']) - (1 / measureTJA['bpm'])))
 
-        # Apply the change in offset to the overall offset to get the measure offset
-        # This is a bodge I'm using just for Rokuchounen to Ichiya Monogatari
-        # Its first measure happens _before_ the first barline
-        # So, we actually need to shift the offsets by 1 to get everything to line up
+        # Compute the millisecond offset for each measure
         if idx_m == 0:
-            # Compute fumen offset for the first measure that has a barline
-            fumenOffset = float(tja['metadata']['offset']) * -1000
-            measureFumen['fumenOffset'] = fumenOffset - measureDuration
+            pass  # NB: Pass for now, since we need the 2nd measure's duration to compute the 1st measure's offset
         else:
-            # Just refer back to the previous offset
+            # Compute the 1st measure's offset by subtracting the 2nd measure's duration from the tjaOffset
+            if idx_m == 1:
+                fumenOffset = float(tja['metadata']['offset']) * 1000 * -1
+                tjaConverted['measures'][-1]['fumenOffset'] = fumenOffset - measureDuration
+            # Use the previous measure's offset plus the previous duration to compute the current measure's offset
             measureOffsetPrev = tjaConverted['measures'][-1]['fumenOffset']
             measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationNext
         measureDurationNext = measureDuration
