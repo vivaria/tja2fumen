@@ -110,7 +110,7 @@ def convertTJAToFumen(fumen, tja):
     for idx_m, measureTJA in enumerate(tja['measures']):
         measureFumen = deepcopy(default_measure)
 
-        # Compute the fumenOffset change (i.e. the duration of the measure).
+        # Compute the duration of the measure
         measureSize = measureTJA['time_sig'][0] / measureTJA['time_sig'][1]
         measureLength = measureTJA['pos_end'] - measureTJA['pos_start']
         measureRatio = 1.0 if measureTJA['subdivisions'] == 0.0 else (measureLength / measureTJA['subdivisions'])
