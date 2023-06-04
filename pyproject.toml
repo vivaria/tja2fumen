@@ -1,0 +1,21 @@
+[project]
+name = "tja2fumen"
+version = "0.1.0"
+description = "Convert TJA chart files into fumen (.bin) chart files"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+keywords = ["taiko", "tatsujin", "fumen", "TJA"]
+
+[project.urls]  # Optional
+"Homepage" = "https://github.com/vivaria/tja2fumen/"
+"Bug Reports" = "https://github.com/vivaria/tja2fumen/issues/"
+"Source" = "https://github.com/vivaria/tja2fumen/"
+
+# The following would provide a command line executable called `sample`
+# which executes the function `main` from this package when invoked.
+[project.scripts]  # Optional
+tja2fumen = "tja2fumen:main"
+
+[project.optional-dependencies]
+build = ["pyinstaller"]
