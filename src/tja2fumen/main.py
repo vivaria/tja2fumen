@@ -1,46 +1,28 @@
 import argparse
 import os
 
-from tja2fumen.parsers import readFumen, parseTJA
+from tja2fumen.parsers import parseTJA
 from tja2fumen.writers import writeFumen
 from tja2fumen.converters import convertTJAToFumen
-from tja2fumen.utils import checkMismatchedBytes
 from tja2fumen.constants import COURSE_IDS
 
 tja2fumen_version = "v0.1"
 
 
-def main(fnameFumen=None, fnameTJA=None, validate=False):
-    if fnameFumen:
-        # Parse fumen
-        inputFile = open(fnameFumen, "rb")
-        parsedSongFumen = readFumen(inputFile)
-
-        # Steps to validate the `writeFumen` function to make sure it reproduces correct output
-        if validate:
-            outputName = inputFile.name.split('.')[0] + "_rebuilt.bin"
-            outputFile = open(outputName, "wb")
-            writeFumen(outputFile, parsedSongFumen)
-            # Read output file back in to validate that the rewritten song is a perfect match
-            print(False if checkMismatchedBytes(inputFile.name, outputFile.name) else True)
-    else:
-        parsedSongFumen = None
-
+def main(fnameTJA):
     convertedTJAs = {}
-    if fnameTJA:
-        # Parse tja
-        try:
-            inputFile = open(fnameTJA, "r", encoding="utf-8-sig")
-            parsedSongsTJA = parseTJA(inputFile)
-        except UnicodeDecodeError:
-            inputFile = open(fnameTJA, "r", encoding="shift-jis")
-            parsedSongsTJA = parseTJA(inputFile)
+    try:
+        inputFile = open(fnameTJA, "r", encoding="utf-8-sig")
+        parsedSongsTJA = parseTJA(inputFile)
+    except UnicodeDecodeError:
+        inputFile = open(fnameTJA, "r", encoding="shift-jis")
+        parsedSongsTJA = parseTJA(inputFile)
 
-        for course, song in parsedSongsTJA.items():
-            convertedTJA = convertTJAToFumen(parsedSongFumen, song)
-            convertedTJAs[course] = convertedTJA
+    for course, song in parsedSongsTJA.items():
+        convertedTJA = convertTJAToFumen(song)
+        convertedTJAs[course] = convertedTJA
 
-    return parsedSongFumen, convertedTJAs
+    return convertedTJAs
 
 
 if __name__ == "__main__":

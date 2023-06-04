@@ -97,7 +97,7 @@ def preprocessTJAMeasures(tja):
     return measuresCorrected
 
 
-def convertTJAToFumen(fumen, tja):
+def convertTJAToFumen(tja):
     # Hardcode currentBranch due to current lack of support for branching songs
     currentBranch = 'normal'  # TODO: Program in branch support
     tja['measures'] = preprocessTJAMeasures(tja)
