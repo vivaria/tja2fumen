@@ -96,5 +96,6 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path):
                     if ca_note['type'] not in ["Balloon", "Kusudama"]:
                         assert_song_property(co_note, ca_note, 'scoreInit', i_measure, i_branch, i_note)
                         assert_song_property(co_note, ca_note, 'scoreDiff', i_measure, i_branch, i_note)
+                    # NB: 'item' still needs to be implemented: https://github.com/vivaria/tja2fumen/issues/17
                     # assert_song_property(co_note, ca_note, 'item', i_measure, i_branch, i_note)
 

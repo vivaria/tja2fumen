@@ -4,6 +4,7 @@ from tja2fumen.utils import computeSoulGaugeByte
 from tja2fumen.constants import TJA_NOTE_TYPES, DIFFICULTY_BYTES, unknownHeaderSample
 
 # Filler metadata that the `writeFumen` function expects
+# TODO: Determine how to properly set the item byte (https://github.com/vivaria/tja2fumen/issues/17)
 default_note = {'type': '', 'pos': 0.0, 'item': 0, 'padding': 0.0,
                 'scoreInit': 0, 'scoreDiff': 0, 'duration': 0.0}
 default_branch = {'length': 0, 'padding': 0, 'speed': 1.0}
