@@ -261,16 +261,3 @@ def nameValue(*lists):
 
 def debugPrint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
-
-
-def checkMismatchedBytes(file1, file2):
-    with open(file1, 'rb') as file1, open(file2, 'rb') as file2:
-        data1, data2 = file1.read(), file2.read()
-    incorrect_bytes = {}
-    # Ignore header (first 432 + 80 = 512 bytes)
-    for i, (byte1, byte2) in enumerate(zip(data1[512:], data2[512:])):
-        if byte1 == byte2:
-            pass
-        else:
-            incorrect_bytes[hex(i+512)] = [byte1, byte2]
-    return incorrect_bytes
