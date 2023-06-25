@@ -292,13 +292,9 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         file = fumenFile
     size = os.fstat(file.fileno()).st_size
 
-    # Check for valid fumen header (first 432 bytes) using valid byte substrings
-    fumenHeader = file.read(432)
-    if not checkValidHeader(fumenHeader):
-        debugPrint(f"Invalid header!")
-    # Read the next 80 bytes, which contains unknown information
-    fumenHeaderUnknown = file.read(80)
-    # validateHeaderMetadata(fumenHeaderUnknown)
+    # Check for valid fumen header (first 512 bytes) using valid byte substrings
+    fumenHeader = file.read(512)
+    checkValidHeader(fumenHeader)
 
     # Determine:
     #   - The byte order (big or little endian)
@@ -319,8 +315,8 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
 
     # Initialize the dict that will contain the chart information
     song = {'measures': []}
-    song['headerPadding'] = fumenHeader
-    song['headerMetadata'] = fumenHeaderUnknown
+    song['headerPadding'] = fumenHeader[:432]
+    song['headerMetadata'] = fumenHeader[-80:]
     song['order'] = order
     song["length"] = totalMeasures
 

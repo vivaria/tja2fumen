@@ -5,28 +5,30 @@ import math
 from tja2fumen.constants import simpleHeaders, byte_strings
 
 
-def checkValidHeader(header):
-    # These simple headers (substrings repeated 36 times) are used for many Gen2 systems (AC, Wii, etc.)
-    if header in simpleHeaders:
-        return True
-    # Starting with Gen3, they began using unique headers for every song. (3DS and PSPDX are the big offenders.)
-    #   They seem to be some random combination of b_x00 + one of the non-null byte substrings.
-    #   To avoid enumerating every combination of 432 bytes, we do a lazy check instead.
-    elif (byte_strings['x00'] in header and
-            any(b in header for b in [byte_strings[key] for key in ['431', '432', '433', '434', 'V1', 'V2', 'V3']])):
-        return True
-    # The PS4 song 'wii5op' is a special case: It throws in this odd 'g1' string in combo with other substrings.
-    elif (byte_strings['g1'] in header and
-            any(b in header for b in [byte_strings[key] for key in ['431', 'V2']])):
-        return True
+def checkValidHeader(headerBytes):
+    # Fumen headers should contain 512 bytes.
+    assert len(headerBytes) == 512
+    # The header for fumens can be split into two groups: The first 432 bytes, and the last 80 bytes.
+    headerPadding = headerBytes[:432]
+    headerMetadata = headerBytes[-80:]
+
+    # 1. Check the header's padding bytes for several possible combinations
+    # 1a. These simple headers (substrings repeated 36 times) are used for many Gen2 systems (AC, Wii, etc.)
+    cond1 = headerPadding in simpleHeaders
+    # 1b. Starting with Gen3, they began using unique headers for every song. (3DS and PSPDX are the big offenders.)
+    #   - They seem to be some random combination of b_x00 + one of the non-null byte substrings.
+    #   - To avoid enumerating every combination of 432 bytes, we do a lazy check instead.
+    cond2 = (byte_strings['x00'] in headerPadding and
+             any(b in headerPadding for b in
+                 [byte_strings[key] for key in ['431', '432', '433', '434', 'V1', 'V2', 'V3']]))
+    # 1c. The PS4 song 'wii5op' is a special case: It throws in this odd 'g1' string in combo with 2 other substrings.
+    cond3 = (byte_strings['g1'] in headerPadding and
+             any(b in headerPadding for b in [byte_strings[key] for key in ['431', 'V2']]))
     # Otherwise, this is some unknown header we haven't seen before.
-    # Typically, these will be tja2bin.exe converted files with a completely invalid header.
-    else:
-        return False
+    assert cond1 or cond2 or cond3, "Header padding bytes do not match expected fumen byte substrings."
 
-
-def validateHeaderMetadata(headerBytes):
-    for idx, val in enumerate(headerBytes):
+    # 2. Check the header's metadata bytes
+    for idx, val in enumerate(headerMetadata):
         # 0. Unknown
         # Notes:
         #   * Breakdown of distribution of different byte combinations:
