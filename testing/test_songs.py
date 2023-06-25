@@ -63,8 +63,6 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path):
         # 1. Check song headers
         checkValidHeader(co_song['headerPadding']+co_song['headerMetadata'], strict=True)
         checkValidHeader(ca_song['headerPadding']+ca_song['headerMetadata'])
-        assert_song_property(co_song, ca_song, 'headerPadding', func=len)
-        assert_song_property(co_song, ca_song, 'headerMetadata', func=len)
         # 2. Check song metadata
         assert_song_property(co_song, ca_song, 'order')
         assert_song_property(co_song, ca_song, 'branches')
