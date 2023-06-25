@@ -29,7 +29,7 @@ def assert_song_property(obj1, obj2, prop, measure=None, branch=None, note=None,
         assert obj1[prop] == obj2[prop], msg_failure
 
 
-@pytest.mark.parametrize('id_song', ['song1', 'song2'])
+@pytest.mark.parametrize('id_song', ['mikdp'])
 def test_converted_tja_vs_cached_fumen(id_song, tmp_path):
     # Define the testing directory
     path_test = os.path.dirname(os.path.realpath(__file__))
