@@ -61,7 +61,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path):
         co_song = readFumen(path_out)
         ca_song = readFumen(os.path.join(path_bin, os.path.basename(path_out)))
         # 1. Check song headers
-        checkValidHeader(co_song['headerPadding']+co_song['headerMetadata'])
+        checkValidHeader(co_song['headerPadding']+co_song['headerMetadata'], strict=True)
         checkValidHeader(ca_song['headerPadding']+ca_song['headerMetadata'])
         assert_song_property(co_song, ca_song, 'headerPadding', func=len)
         assert_song_property(co_song, ca_song, 'headerMetadata', func=len)
@@ -102,15 +102,15 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path):
                     # assert_song_property(co_note, ca_note, 'item', i_measure, i_branch, i_note)
 
 
-def checkValidHeader(headerBytes):
+def checkValidHeader(headerBytes, strict=False):
     # Fumen headers should contain 512 bytes.
     assert len(headerBytes) == 512
-    # The header for fumens can be split into two groups: The first 432 bytes, and the last 80 bytes.
+    # The header for fumens can be split into 2 groups: The first 432 bytes (padding), and the last 80 bytes (metadata).
     headerPadding = headerBytes[:432]
     headerMetadata = headerBytes[-80:]
 
     # 1. Check the header's padding bytes for several possible combinations
-    # 1a. These simple headers (substrings repeated 36 times) are used for many Gen2 systems (AC, Wii, etc.)
+    # 1a. These simple headers (12-byte substrings repeated 36 times) are used for many Gen2 systems (AC, Wii, etc.)
     cond1 = headerPadding in simpleHeaders
     # 1b. Starting with Gen3, they began using unique headers for every song. (3DS and PSPDX are the big offenders.)
     #   - They seem to be some random combination of b_x00 + one of the non-null byte substrings.
@@ -143,7 +143,10 @@ def checkValidHeader(headerBytes):
         # Given that most platforms use the values (0, 0, 0, 0), and unique values are very platform-specific,
         # I'm going to stick with (0, 0, 0, 0) bytes when it comes to converting TJA files to fumens.
         if idx in [0, 1, 2, 3]:
-            pass
+            if strict:
+                assert val == 0, f"Expected 0 at position '{idx}', got '{val}' instead."
+            else:
+                pass
 
         # 1. <padding>
         # Notes: These values are ALWAYS (16, 39), for every valid fumen.
@@ -206,56 +209,80 @@ def checkValidHeader(headerBytes):
         #   * For the vast majority (99%) of charts, bytes 21, 22, and 23 have the values (255, 255, 255)
         #   * For a very tiny minority of charts (~5), byte 21 will be 254 or 253 instead.
         # Given that most platforms use the values (255, 255, 255), and unique values are very platform-specific,
-        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        # I'm going to stick with (255, 255, 255) when it comes to converting TJA files to fumens.
         elif idx in [21, 22, 23]:
-            assert val in [253, 254, 255], f"Expected 255 at position '{idx}', got '{val}' instead."
+            if strict:
+                assert val == 255, f"Expected 255 at position '{idx}', got '{val}' instead."
+            else:
+                assert val in [253, 254, 255], f"Expected 253/254/255 at position '{idx}', got '{val}' instead."
 
         # 7. <padding>
         # Notes:
         #   * For the vast majority (99%) of charts, bytes 21, 22, and 23 have the values (1, 1, 1)
         #   * For a small minority of charts (~100), one or both of bytes 30/34 will be 0 instead of 1
         # Given that most platforms use the values (1, 1, 1), and unique values are very platform-specific,
-        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        # I'm going to stick with (1, 1, 1) when it comes to converting TJA files to fumens.
         elif idx == 26:
             assert val == 1, f"Expected 1 at position '{idx}', got '{val}' instead."
         elif idx in [30, 34]:
-            assert val in [1, 0], f"Expected 1/0 at position '{idx}', got '{val}' instead."
+            if strict:
+                assert val == 1, f"Expected 1 at position '{idx}', got '{val}' instead."
+            else:
+                assert val in [1, 0], f"Expected 1/0 at position '{idx}', got '{val}' instead."
 
         # 8. Unknown
         # Notes:
         #   * For the vast majority (99%) of charts, bytes (28, 29) and (32, 33) have the values (0, 0)
         #   * But, for some games (Gen3Arcade, 3DS), unique values will be stored in these bytes.
         # Given that most platforms use the values (0, 0), and unique values are very platform-specific,
-        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        # I'm going to stick with (0, 0) when it comes to converting TJA files to fumens.
         elif idx in [28, 29]:
-            pass
+            if strict:
+                assert val == 0, f"Expected 0 at position '{idx}', got '{val}' instead."
+            else:
+                pass
         elif idx in [32, 33]:
-            pass
+            if strict:
+                assert val == 0, f"Expected 0 at position '{idx}', got '{val}' instead."
+            else:
+                pass
 
-        # 8. <padding>
+        # 9. <padding>
         # Notes:
         #   * For the vast majority (99%) of charts, bytes (36, 40, 48) and (52, 56, 50) have the values (20, 10, 1)
         #   * For a small minority of charts (~45), these values can be 0,1,2 instead.
         # Given that most platforms use the values (20, 10, 1), and unique values are very platform-specific,
-        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        # I'm going to stick with (20, 10, 0) when it comes to converting TJA files to fumens.
         elif idx in [36, 52]:
-            assert val in [20, 0, 1, 2], f"Expected 20 (or 0,1,2) at position '{idx}', got '{val}' instead."
+            if strict:
+                assert val == 20, f"Expected 20 at position '{idx}', got '{val}' instead."
+            else:
+                assert val in [20, 0, 1, 2], f"Expected 20 (or 0,1,2) at position '{idx}', got '{val}' instead."
         elif idx in [40, 56]:
-            assert val in [10, 0, 1], f"Expected 10 (or 0,1) at position '{idx}', got '{val}' instead."
+            if strict:
+                assert val == 10, f"Expected 10 at position '{idx}', got '{val}' instead."
+            else:
+                assert val in [10, 0, 1], f"Expected 10 (or 0,1) at position '{idx}', got '{val}' instead."
         elif idx in [48, 60]:
-            # NB: See below for an explanation about '255' for byte 60
-            assert val in [1, 0, 255], f"Expected 1 (or 0) at position '{idx}', got '{val}' instead."
+            if strict:
+                assert val == 1, f"Expected 1 at position '{idx}', got '{val}' instead."
+            else:
+                # NB: See below for an explanation for why '255' is included for byte 60
+                assert val in [1, 0, 255], f"Expected 1 (or 0) at position '{idx}', got '{val}' instead."
 
-        # 8. <padding>
+        # 10. <padding>
         # Notes:
         #   * For the vast majority (99%) of charts, bytes (61, 62, 63) have the values (0, 0, 0)
         #   * However, for iOS and iOSU charts (144 total), bytes (60, 61, 62, 63) are (255, 255, 255, 255) instead.
         # Given that most platforms use the values (0, 0, 0), and unique values are very platform-specific,
-        # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
+        # I'm going to stick with (0, 0, 0) when it comes to converting TJA files to fumens.
         elif idx in [61, 62, 63]:
-            assert val in [0, 255], f"Expected 0/255 at position '{idx}', got '{val}' instead."
+            if strict:
+                assert val == 0, f"Expected 0/255 at position '{idx}', got '{val}' instead."
+            else:
+                assert val in [0, 255], f"Expected 0/255 at position '{idx}', got '{val}' instead."
 
-        # 9. <padding>
+        # 11. <padding>
         # Notes:
         #   * Breakdown of distribution of different byte combinations:
         #       - 5809/7482 charts: (30, 30, 20)
@@ -266,11 +293,17 @@ def checkValidHeader(headerBytes):
         # Given that most platforms use the values (30, 30, 20), and unique values are very platform-specific,
         # I'm going to ignore the unique bytes when it comes to converting TJA files to fumens.
         elif idx in [64, 68]:
-            assert val in [30, 0, 1], f"Expected 30/0 at position '{idx}', got '{val}' instead."
+            if strict:
+                assert val == 30, f"Expected 30 at position '{idx}', got '{val}' instead."
+            else:
+                assert val in [30, 0, 1], f"Expected 30 (or 0,1) at position '{idx}', got '{val}' instead."
         elif idx == 72:
-            assert val in [20, 0], f"Expected 20/0 at position '{idx}', got '{val}' instead."
+            if strict:
+                assert val == 20, f"Expected 20 at position '{idx}', got '{val}' instead."
+            else:
+                assert val in [20, 0], f"Expected 20 (or 0) at position '{idx}', got '{val}' instead."
 
-        # 10. Difficulty (Gen2) and ???? (Gen3)
+        # 12. Difficulty (Gen2) and ???? (Gen3)
         # Notes:
         #   * In Gen2 charts (AC, Wii), these values would be one of 4 different byte combinations.
         #   * These values correspond to the difficulty of the song (no Uras in Gen2, hence 4 values):
@@ -280,12 +313,24 @@ def checkValidHeader(headerBytes):
         #      - [288, 193, 44] (Oni)
         #   * However, starting in Gen3 (AC, console), these bytes were given unique per-song, per-chart values.
         #      - In total, Gen3 contains 6449 unique combinations of bytes (with some minor overlaps between games).
-        # For TJA conversion, I plan to just stick with the Gen2 scheme (and make up the missing value for Uras),
-        # which would be much easier than trying to figure out the Gen3 scheme.
-        elif idx in [76, 77, 78]:
-            pass
+        # For TJA conversion, I plan to just stick with one set of values (78, 97, 188) -- also used by tja2bin.exe.
+        elif idx == 76:
+            if strict:
+                assert val == 78, f"Expected 78 at position '{idx}', got '{val}' instead."
+            else:
+                pass
+        elif idx == 77:
+            if strict:
+                assert val == 97, f"Expected 20 at position '{idx}', got '{val}' instead."
+            else:
+                pass
+        elif idx == 78:
+            if strict:
+                assert val == 188, f"Expected 20 at position '{idx}', got '{val}' instead."
+            else:
+                pass
 
-        # 11. Empty bytes
+        # 13. Empty bytes
         else:
             assert val == 0, f"Expected 0 at position '{idx}', got '{val}' instead."
 
