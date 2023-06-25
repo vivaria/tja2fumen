@@ -1,5 +1,5 @@
 from tja2fumen.utils import writeStruct, putBool
-from tja2fumen.constants import simpleHeaders, branchNames, typeNotes
+from tja2fumen.constants import branchNames, typeNotes
 
 
 def writeFumen(file, song):
@@ -7,8 +7,8 @@ def writeFumen(file, song):
     order = song['order']
 
     # Write the header
-    file.write(simpleHeaders[0])       # Write known, valid header
-    file.write(song['headerUnknown'])  # Write unknown header
+    file.write(song['headerPadding'])   # Write header padding bytes
+    file.write(song['headerMetadata'])  # Write header metadata bytes
 
     # Preallocate space in the file
     len_metadata = 8

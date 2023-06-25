@@ -316,14 +316,16 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         else:
             order = "<"
             totalMeasures = measuresLittle
-    unknownMetadata = readStruct(file, order, format_string="I", seek=0x204)[0]
 
     # Initialize the dict that will contain the chart information
     song = {'measures': []}
-    song['header'] = fumenHeader
-    song['headerUnknown'] = fumenHeaderUnknown
+    song['headerPadding'] = fumenHeader
+    song['headerMetadata'] = fumenHeaderUnknown
     song['order'] = order
     song["length"] = totalMeasures
+
+    # I am unsure what byte this represents
+    unknownMetadata = readStruct(file, order, format_string="I", seek=0x204)[0]
     song["unknownMetadata"] = unknownMetadata
 
     # Determine whether the song has branches from byte 0x1b0 (decimal 432)

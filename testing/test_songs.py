@@ -61,8 +61,8 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path):
         co_song = readFumen(path_out)
         ca_song = readFumen(os.path.join(path_bin, os.path.basename(path_out)))
         # 1. Check song headers
-        assert_song_property(co_song, ca_song, 'header', func=len)
-        assert_song_property(co_song, ca_song, 'headerUnknown', func=len)
+        assert_song_property(co_song, ca_song, 'headerPadding', func=len)
+        assert_song_property(co_song, ca_song, 'headerMetadata', func=len)
         # 2. Check song metadata
         assert_song_property(co_song, ca_song, 'order')
         assert_song_property(co_song, ca_song, 'branches')

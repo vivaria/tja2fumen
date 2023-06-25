@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from tja2fumen.utils import computeSoulGaugeByte
-from tja2fumen.constants import TJA_NOTE_TYPES, DIFFICULTY_BYTES, unknownHeaderSample
+from tja2fumen.constants import TJA_NOTE_TYPES, DIFFICULTY_BYTES, sampleHeaderMetadata, simpleHeaders
 
 # Filler metadata that the `writeFumen` function expects
 # TODO: Determine how to properly set the item byte (https://github.com/vivaria/tja2fumen/issues/17)
@@ -210,11 +210,12 @@ def convertTJAToFumen(tja):
         total_notes += note_counter
 
     # Take a stock header metadata sample and add song-specific metadata
-    headerMetadata = unknownHeaderSample
+    headerMetadata = sampleHeaderMetadata
     headerMetadata[8] = DIFFICULTY_BYTES[tja['metadata']['course']][0]
     headerMetadata[9] = DIFFICULTY_BYTES[tja['metadata']['course']][1]
     headerMetadata[20] = computeSoulGaugeByte(total_notes)
-    tjaConverted['headerUnknown'] = b"".join(i.to_bytes(1, 'little') for i in headerMetadata)
+    tjaConverted['headerMetadata'] = b"".join(i.to_bytes(1, 'little') for i in headerMetadata)
+    tjaConverted['headerPadding'] = simpleHeaders[0]  # Use a basic, known set of header bytes
     tjaConverted['order'] = '<'
     tjaConverted['length'] = len(tjaConverted['measures'])
     tjaConverted['unknownMetadata'] = 0
