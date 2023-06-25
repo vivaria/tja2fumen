@@ -15,7 +15,12 @@ from tja2fumen.constants import (
 ########################################################################################################################
 
 
-def parseTJA(tja):
+def parseTJA(fnameTJA):
+    try:
+        tja = open(fnameTJA, "r", encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        tja = open(fnameTJA, "r", encoding="shift-jis")
+
     # Split into lines
     lines = tja.read().splitlines()
     lines = [line for line in lines if line.strip()]  # Discard empty lines
