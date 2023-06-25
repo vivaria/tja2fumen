@@ -85,7 +85,7 @@ def preprocessTJAMeasures(tja):
                 currentScroll = data['value']
                 measure_cur['scroll'] = currentScroll
             elif data['type'] == 'gogo':
-                currentGogo = bool(data['value'])
+                currentGogo = bool(int(data['value']))
                 measure_cur['gogo'] = currentGogo
             elif data['type'] == 'barline':
                 pass
