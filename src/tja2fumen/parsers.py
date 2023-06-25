@@ -346,7 +346,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         #     - 'f': BPM              (represented by one float (4 bytes))
         #     - 'f': fumenOffset      (represented by one float (4 bytes))
         #     - 'B': gogo             (represented by one unsigned char (1 byte))
-        #     - 'B': hidden           (represented by one unsigned char (1 byte))
+        #     - 'B': barline           (represented by one unsigned char (1 byte))
         #     - 'H': <padding>        (represented by one unsigned short (2 bytes))
         #     - 'iiiiii': branchInfo  (represented by six integers (24 bytes))
         #     - 'i': <padding>        (represented by one integer (4 bytes)
@@ -363,7 +363,7 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
         #     measure["offset"] = ((prev["offset"] + measure["fumenOffset"] + 240000) /
         #                          (measure["bpm"] - prev["fumenOffset"] - 240000 / prev["bpm"]))
         measure["gogo"] = getBool(measureStruct[2])
-        measure["hidden"] = getBool(measureStruct[3])
+        measure["barline"] = getBool(measureStruct[3])
         measure["padding1"] = measureStruct[4]
         measure["branchInfo"] = list(measureStruct[5:11])
         measure["padding2"] = measureStruct[11]

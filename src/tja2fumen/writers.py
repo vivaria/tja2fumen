@@ -35,7 +35,7 @@ def writeFumen(file, song):
     file.seek(0x208)
     for measureNumber in range(song['length']):
         measure = song['measures'][measureNumber]
-        measureStruct = [measure['bpm'], measure['fumenOffset'], int(measure['gogo']), int(measure['hidden'])]
+        measureStruct = [measure['bpm'], measure['fumenOffset'], int(measure['gogo']), int(measure['barline'])]
         measureStruct.extend([measure['padding1']] + measure['branchInfo'] + [measure['padding2']])
         writeStruct(file, order, format_string="ffBBHiiiiiii", value_list=measureStruct)
 

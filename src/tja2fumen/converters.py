@@ -11,7 +11,7 @@ default_measure = {
     'bpm': 0.0,
     'fumenOffset': 0.0,
     'gogo': False,
-    'hidden': True,
+    'barline': True,
     'padding1': 0,
     'branchInfo': [-1, -1, -1, -1, -1, -1],
     'padding2': 0,
@@ -42,6 +42,7 @@ def preprocessTJAMeasures(tja):
     currentBPM = 0
     currentScroll = 1.0
     currentGogo = False
+    currentBarline = True
 
     measuresCorrected = []
     for measure in tja['measures']:
@@ -63,7 +64,7 @@ def preprocessTJAMeasures(tja):
                 combined.append(notes.pop(0))
 
         # Step 2: Split measure into submeasure
-        measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
+        measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                        'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
                        'time_sig': measure['length'], 'data': []}
         for data in combined:
@@ -88,7 +89,8 @@ def preprocessTJAMeasures(tja):
                 currentGogo = bool(int(data['value']))
                 measure_cur['gogo'] = currentGogo
             elif data['type'] == 'barline':
-                pass
+                currentBarline = bool(int(data['value']))
+                measure_cur['barline'] = currentBarline
             else:
                 print(f"Unexpected event type: {data['type']}")
         measure_cur['pos_end'] = len(measure['data'])
@@ -136,13 +138,14 @@ def convertTJAToFumen(tja):
             measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationPrev
         measureDurationPrev = measureDuration
 
-        # Best guess at what 'hidden' status means for each measure:
-        # - 'True' means the measure lands on a barline (i.e. most measures)
-        # - 'False' means that the measure is between barlines. For example:
-        #     1. Measures before the first barline
+        # Best guess at what 'barline' status means for each measure:
+        # - 'True' means the measure lands on a barline (i.e. most measures), and thus barline should be shown
+        # - 'False' means that the measure doesn't land on a barline, and thus barline should be hidden.
+        #   For example:
+        #     1. Measures where #BARLINEOFF has been set
         #     2. Sub-measures that don't fall on the barline
-        if idx_m == 0 or (measureRatio != 1.0 and measureTJA['pos_start'] != 0):
-            measureFumen['hidden'] = False
+        if measureTJA['barline'] is False or (measureRatio != 1.0 and measureTJA['pos_start'] != 0):
+            measureFumen['barline'] = False
 
         # Create note dictionaries based on TJA measure data (containing 0's plus 1/2/3/4/etc. for notes)
         note_counter = 0
