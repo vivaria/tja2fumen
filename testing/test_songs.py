@@ -165,54 +165,33 @@ def checkValidHeader(headerBytes, strict=False):
         elif idx == 9:
             assert val in [27, 31, 23], f"Expected 27/31/23 at position '{idx}', got '{val}' instead."
 
-        # 3. TODO: Note count / drumroll count / note score / song length / etc.
-        # Notes:
-        # - For Oni songs, bytes (12, 16, 20) correlate with note count (bytes 13, 17 are always 0):
-        #     * If we look at 10* Oni songs, we see the following 2 ends of the spectrum for bytes (12, 13, 16, 17, 20):
-        #         - (9, 0, 4, 0, 238): Sotsu Omeshii Full (1487 notes)
-        #         - (9, 0, 5, 0, 237): Shimedore 2000 (1414 notes)
-        #                        Shimedore 2000+ (1414 notes)
-        #                        Silent Jealousy (1408 notes)
-        #                        The Future of the Taiko Drum (1400 notes)
-        #                        Dairouketen Maou (1396 notes)
-        #         - (10, 0, 5, 0, 235): Yugen no Ran (1262 notes)
-        #         - [...]
-        #         - (27, 0, 14, 0, 201): Pan vs. Gohan! Daikessen! [Normal Route] (480 notes)
-        #         - (28, 0, 14, 0, 200): Anata to Tu-lat-tat-ta (468 notes)
-        #         - (34, 0, 17, 0, 189): GeGeGe no Kitaro [6th Season] (390 notes)
-        #     * Just to confirm, if we look at the top/bottom 9* songs, we see:
-        #         - (8, 0, 4, 0, 240): Hypnosismic -Division Battle Anthem- (1608 notes)
-        #         - (10, 0, 8, 0, 225): Rokuchounen to Ichiyo Monogatari (846 notes)
-        #         - (48, 0, 24, 0, 160): Inscrutable Battle (274 notes)
-        #     * So, to summarize, for Oni songs:
-        #         - As the number of notes increases, bytes 12/16 decrease, and byte 20 increases
-        #         - As the number of notes decreases, bytes 12/16 increase, and byte 20 decreases
-        #
-        # - However, the relationship doesn't hold when checking, for example, 1* Easy charts
-        #     * Bytes 13 and 17, which were previously always 0, are now 0/1/2:
-        #         - (249, 0, 187, 0, 132): Let's go! Smile Precure (67 notes)
-        #         - (249, 1, 123, 1, 3): Anata to Tu-lat-tat-ta (33 notes)
-        #         - (44, 2, 161, 1, 234): Do you want to build a Snowman? (30 notes)
-        #         - (0, 1, 192, 0, 128): Odoru Ponpokorin (65 notes)
-        #     * I'm having trouble making sense of the relationships between these bytes.
+        # 3. Unknown (possibly related to n_notes)
         elif idx in [12, 13]:
             pass
         elif idx in [16, 17]:
             pass
-        elif idx == 20:
-            pass
 
-        # 6. <padding>
+        # 6. Soul gauge bytes
         # Notes:
-        #   * For the vast majority (99%) of charts, bytes 21, 22, and 23 have the values (255, 255, 255)
-        #   * For a very tiny minority of charts (~5), byte 21 will be 254 or 253 instead.
-        # Given that most platforms use the values (255, 255, 255), and unique values are very platform-specific,
-        # I'm going to stick with (255, 255, 255) when it comes to converting TJA files to fumens.
-        elif idx in [21, 22, 23]:
-            if strict:
-                assert val == 255, f"Expected 255 at position '{idx}', got '{val}' instead."
-            else:
-                assert val in [253, 254, 255], f"Expected 253/254/255 at position '{idx}', got '{val}' instead."
+        #   * These bytes determine how quickly the soul gauge should increase
+        #   * The higher the number of notes, the higher these values will be (i.e. the slower the soul gauge will rise)
+        #   * In practice, most of the time [21, 22, 23] will be 255.
+        #   * So, this means that byte 20 largely determines the soul gauge increase.
+        #   * The precise mapping between n_notes and byte values is complex, and depends on difficulty/stars.
+        #      - See also: https://github.com/vivaria/tja2fumen/issues/14
+        #   * Re: Byte 21, a very small number of songs (~10) have values 253 or 254 instead of 255.
+        #      - This applies to Easy/Normal songs with VERY few notes (<30).
+        #      - For these songs, byte 20 will drop BELOW 1 and wrap around back to <=255, decrementing byte 21 by one.
+        #      - So, you can think of it like this:
+        #         * b21==253: (0*255) + 1-255 = 1-225    (VERY rapid soul gauge increase)
+        #         * b21==254: (1*255) + 1-255 = 256-510  (Rapid soul gauge increase)
+        #         * b21==255: (2*255) + 1-255 = 511-765  (Moderate to slow soul gauge increase, i.e. most songs)
+        elif idx == 20:
+            assert 1 <= val <= 255
+        elif idx == 21:
+            assert val in [253, 254, 255]
+        elif idx in [22, 23]:
+            assert val == 255
 
         # 7. <padding>
         # Notes:

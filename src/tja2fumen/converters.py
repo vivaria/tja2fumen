@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from tja2fumen.utils import computeSoulGaugeByte
+from tja2fumen.utils import computeSoulGaugeBytes
 from tja2fumen.constants import TJA_NOTE_TYPES, DIFFICULTY_BYTES, sampleHeaderMetadata, simpleHeaders
 
 # Filler metadata that the `writeFumen` function expects
@@ -213,7 +213,11 @@ def convertTJAToFumen(tja):
     headerMetadata = sampleHeaderMetadata
     headerMetadata[8] = DIFFICULTY_BYTES[tja['metadata']['course']][0]
     headerMetadata[9] = DIFFICULTY_BYTES[tja['metadata']['course']][1]
-    headerMetadata[20] = computeSoulGaugeByte(total_notes)
+    headerMetadata[20], headerMetadata[21] = computeSoulGaugeBytes(
+        n_notes=total_notes,
+        difficulty=tja['metadata']['course'],
+        stars=tja['metadata']['level']
+    )
     tjaConverted['headerMetadata'] = b"".join(i.to_bytes(1, 'little') for i in headerMetadata)
     tjaConverted['headerPadding'] = simpleHeaders[0]  # Use a basic, known set of header bytes
     tjaConverted['order'] = '<'

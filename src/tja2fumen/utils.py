@@ -1,13 +1,51 @@
+import os
 import sys
 import struct
-import math
+import csv
 
 
-def computeSoulGaugeByte(n_notes):
-    # I don't think this is fully accurate. It doesn't work for non-Oni songs, and it's usually off by a bit.
-    A = -85.548628
-    B = 44.780199
-    return round(A+B*math.log(n_notes))
+def computeSoulGaugeBytes(n_notes, difficulty, stars):
+    if difficulty in ['Oni', 'Ura']:
+        if 9 <= stars:
+            key = "Oni-9-10"
+        elif stars == 8:
+            key = "Oni-8"
+        elif stars <= 7:
+            key = "Oni-1-7"
+    elif difficulty == 'Hard':
+        if 5 <= stars:
+            key = "Hard-5-8"
+        elif stars == 4:
+            key = "Hard-4"
+        elif stars == 3:
+            key = "Hard-3"
+        elif stars <= 2:
+            key = "Hard-1-2"
+    elif difficulty == 'Normal':
+        if 5 <= stars:
+            key = "Normal-5-7"
+        elif stars == 4:
+            key = "Normal-4"
+        elif stars == 3:
+            key = "Normal-3"
+        elif stars <= 2:
+            key = "Normal-1-2"
+    elif difficulty == 'Easy':
+        if 4 <= stars:
+            key = "Easy-4-5"
+        elif 2 <= stars <= 3:
+            key = "Easy-2-3"
+        elif stars <= 1:
+            key = "Easy-1"
+    pkg_dir = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(pkg_dir, "soulgauge_LUTs", f"{key}.csv"), newline='') as csvfile:
+        lut_reader = csv.reader(csvfile, delimiter=',')
+        for row in lut_reader:
+            if int(row[0]) == n_notes:
+                soulGaugeByte20 = int(row[1]) % 255
+                soulGaugeByte21 = 253 + (int(row[1]) // 255)
+                return soulGaugeByte20, soulGaugeByte21
+        raise ValueError(f"n_notes value '{n_notes}' not in lookup table (1-2500)")
 
 
 def readStruct(file, order, format_string, seek=None):
