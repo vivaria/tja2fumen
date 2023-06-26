@@ -8,8 +8,14 @@ from tja2fumen.converters import convertTJAToFumen
 from tja2fumen.constants import COURSE_IDS
 
 
-def main(argv):
-    # Parse args
+def main(argv=None):
+    # NB: We want to return variables during testing, but not during CLI (or else they will be printed to stderr)
+    if argv:
+        return_vars = True
+    else:
+        argv = sys.argv[1:]
+        return_vars = False
+
     parser = argparse.ArgumentParser(
         description="tja2fumen"
     )
@@ -35,8 +41,10 @@ def main(argv):
     for fumenData, outputName in zip(parsedSongsFumen.values(), outputFilenames):
         writeFumen(open(outputName, "wb"), fumenData)
 
-    return parsedSongsTJA, parsedSongsFumen, outputFilenames
+    if return_vars:
+        return parsedSongsTJA, parsedSongsFumen, outputFilenames
 
 
+# NB: This entry point is necessary for the Pyinstaller executable
 if __name__ == "__main__":
-    main(argv=sys.argv[1:])
+    main()
