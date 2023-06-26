@@ -80,7 +80,7 @@ def preprocessTJAMeasures(tja):
                 else:
                     measure_cur['pos_end'] = data['pos']
                     measuresCorrected.append(measure_cur)
-                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
+                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                                    'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
                                    'time_sig': measure['length'], 'data': []}
             elif data['type'] == 'scroll':
