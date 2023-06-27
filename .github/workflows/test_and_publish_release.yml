@@ -15,9 +15,6 @@ jobs:
     steps:
     - name: Checkout tja2fumen (main branch)
       uses: actions/checkout@v3
-      with:
-        ref: ${{ env.MAIN_BRANCH }}
-        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v4
