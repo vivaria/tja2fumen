@@ -19,3 +19,6 @@ tja2fumen = "tja2fumen:main"
 
 [project.optional-dependencies]
 build = ["pyinstaller"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
