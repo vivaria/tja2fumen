@@ -1,4 +1,4 @@
-name: "Create release"
+name: "Test and publish release"
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
         required: true
 
 jobs:
-  create-release:
+  test-and-publish-release:
     runs-on: windows-2019
     # Only create the release if workflow is run manually. (This allows the other steps in the workflow to test PRs.)
     if: github.event_name == 'workflow_dispatch'
