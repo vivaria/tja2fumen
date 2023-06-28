@@ -6,12 +6,16 @@ on:
       release_version:
         description: 'Release version number'
         required: true
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
 
 jobs:
   test-and-publish-release:
     runs-on: windows-2019
-    # Only create the release if workflow is run manually. (This allows the other steps in the workflow to test PRs.)
-    if: github.event_name == 'workflow_dispatch'
     steps:
     - name: Checkout tja2fumen (main branch)
       uses: actions/checkout@v3
@@ -21,16 +25,29 @@ jobs:
       with:
         python-version: '3.8.x'
 
-    - name: Install dependencies
+    - name: Install test dependencies
+      run: |
+        pip install pytest
+        pip install -e .
+
+    - name: Run tests (Python API)
+      run: |
+        pytest testing --entry-point python-api
+
+    - name: Install build dependencies
       run: pip install toml-cli build twine pyinstaller
 
     # The GitHub Actions bot email was taken from: https://github.community/t/github-actions-bot-email-address/17204/6
     - name: Set bot user data for commits
+      # Only set git user data if workflow is run manually. (This allows the other steps in the workflow to test PRs.)
+      if: github.event_name == 'workflow_dispatch'
       run: |
         git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --global user.name "GitHub Actions Bot"
 
     - name: Update pyproject.toml version (for release)
+      # Only update the version number if workflow is run manually. (This allows the other steps in the workflow to test PRs.)
+      if: github.event_name == 'workflow_dispatch'
       run: |
         toml set --toml-path pyproject.toml project.version "${{ github.event.inputs.release_version }}"
         git add pyproject.toml
@@ -39,16 +56,32 @@ jobs:
     - name: Build wheel/sdist
       run: python -m build
 
+    - name: Uninstall editable tja2fumen and install built wheel
+      shell: bash
+      run: |
+        pip uninstall tja2fumen
+        pip install dist\*.whl
+
+    - name: Run tests (installed wheel)
+      run: pytest testing --entry-point python-cli
+
     - name: Build pyinstaller executable
       run: |
         pyinstaller src\tja2fumen\__init__.py --name tja2fumen-${{ github.event.inputs.release_version }} --add-data="src\tja2fumen\soulgauge_LUTs\*.csv;tja2fumen\soulgauge_LUTs" --onefile
 
+    - name: Run tests (installed wheel)
+      run: pytest testing --entry-point exe
+
     - name: Push release changes
+      # Only push the new tags if workflow is run manually. (This allows the other steps in the workflow to test PRs.)
+      if: github.event_name == 'workflow_dispatch'
       run: |
         git tag ${{ github.event.inputs.release_version }}
         git push --tags
 
     - uses: ncipollo/release-action@v1
+      # Only create release if workflow is run manually. (This allows the other steps in the workflow to test PRs.)
+      if: github.event_name == 'workflow_dispatch'
       name: Create release
       id: create_release
       with:
@@ -60,4 +93,6 @@ jobs:
         draft: true
 
     - name: Publish distribution to PyPI
+      # Only publish distribution if workflow is run manually. (This allows the other steps in the workflow to test PRs.)
+      if: github.event_name == 'workflow_dispatch'
       run: twine upload dist/*.whl dist/*.tar.gz --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
