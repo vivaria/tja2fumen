@@ -60,7 +60,7 @@ jobs:
       shell: bash
       run: |
         pip uninstall tja2fumen -y
-        pip install dist\*.whl
+        pip install dist/*.whl
 
     - name: Run tests (installed wheel)
       run: pytest testing --entry-point python-cli
