@@ -59,7 +59,7 @@ jobs:
     - name: Uninstall editable tja2fumen and install built wheel
       shell: bash
       run: |
-        pip uninstall tja2fumen
+        pip uninstall tja2fumen -y
         pip install dist\*.whl
 
     - name: Run tests (installed wheel)
