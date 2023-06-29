@@ -99,7 +99,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                     # assert_song_property(co_note, ca_note, 'item', i_measure, i_branch, i_note)
 
 
-def assert_song_property(obj1, obj2, prop, measure=None, branch=None, note=None, func=None, abs=None):
+def assert_song_property(converted_obj, cached_obj, prop, measure=None, branch=None, note=None, func=None, abs=None):
     # NB: TJA parser/converter uses 0-based indexing, but TJA files use 1-based indexing.
     #     So, we increment 1 in the error message to more easily identify problematic lines in TJA files.
     msg_failure = f"'{prop}' mismatch"
@@ -107,11 +107,11 @@ def assert_song_property(obj1, obj2, prop, measure=None, branch=None, note=None,
     msg_failure += f", branch '{branch}'" if branch is not None else ""
     msg_failure += f", note '{note+1}'" if note is not None else ""
     if func:
-        assert func(obj1[prop]) == func(obj2[prop]), msg_failure
+        assert func(converted_obj[prop]) == func(cached_obj[prop]), msg_failure
     elif abs:
-        assert obj1[prop] == pytest.approx(obj2[prop], abs=abs), msg_failure
+        assert converted_obj[prop] == pytest.approx(cached_obj[prop], abs=abs), msg_failure
     else:
-        assert obj1[prop] == obj2[prop], msg_failure
+        assert converted_obj[prop] == cached_obj[prop], msg_failure
 
 
 def normalize_type(note_type):
