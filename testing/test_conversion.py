@@ -15,8 +15,7 @@ from src.tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE, simpleHeaders,
     # Passing charts
     pytest.param('mikdp'),
     # Failing charts (NB: These will be XFAIL in CI, but FAIL in local tests.)
-    pytest.param('ia6cho', marks=pytest.mark.xfail("CI" in os.environ, raises=AssertionError,
-                 reason='Fumen has several inexplicable empty measures at start.')),
+    pytest.param('ia6cho'),
 ])
 def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
     # Define the testing directory
