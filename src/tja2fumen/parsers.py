@@ -1,7 +1,7 @@
 import os
 import re
 
-from tja2fumen.utils import readStruct, getBool, shortHex, nameValue, debugPrint
+from tja2fumen.utils import readStruct, getBool, shortHex
 from tja2fumen.constants import (
     # TJA constants
     HEADER_GLOBAL, HEADER_COURSE, BRANCH_COMMANDS, MEASURE_COMMANDS, COMMAND, NORMALIZE_COURSE,
@@ -279,7 +279,7 @@ def applyFumenStructureToParsedTJA(globalHeader, courseHeader, measures):
 # TODO: Figure out what the unknown Wii1, Wii4, and PS4 notes represent (just in case they're important somehow)
 
 
-def readFumen(fumenFile, byteOrder=None, debug=False):
+def readFumen(fumenFile, byteOrder=None):
     """
     Parse bytes of a fumen .bin file into nested measure, branch, and note dictionaries.
 
@@ -327,14 +327,6 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
     hasBranches = getBool(readStruct(file, order, format_string="B", seek=0x1b0)[0])
     song["branches"] = hasBranches
 
-    # Print general debug metadata about the song
-    if debug:
-        debugPrint("Total measures: {0}, {1} branches, {2}-endian".format(
-            totalMeasures,
-            "has" if hasBranches else "no",
-            "Big" if order == ">" else "Little"
-        ))
-
     # Start reading measure data from position 0x208 (decimal 520)
     file.seek(0x208)
     for measureNumber in range(totalMeasures):
@@ -381,32 +373,8 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
             branch["padding"] = branchStruct[1]
             branch["speed"] = branchStruct[2]
 
-            # Print debug metadata about the branches
-            if debug and (hasBranches or branchNumber == 0 or totalNotes != 0):
-                branchName = " ({0})".format(
-                    branchNames[branchNumber]
-                ) if hasBranches or branchNumber != 0 else ""
-                fileOffset = file.tell()
-                debugPrint("")
-                debugPrint("Measure #{0}{1} at {2}-{3} ({4})".format(
-                    measureNumber + 1,
-                    branchName,
-                    shortHex(fileOffset - 0x8),
-                    shortHex(fileOffset + 0x18 * totalNotes),
-                    nameValue(measure, branch)
-                ))
-                debugPrint("Total notes: {0}".format(totalNotes))
-
             # Iterate through each note in the measure (per branch)
             for noteNumber in range(totalNotes):
-                if debug:
-                    fileOffset = file.tell()
-                    debugPrint("Note #{0} at {1}-{2}".format(
-                        noteNumber + 1,
-                        shortHex(fileOffset),
-                        shortHex(fileOffset + 0x17)
-                    ), end="")
-
                 # Parse the note data using the following `format_string`:
                 #   "ififHHf" (7 format characters, 24 bytes per note cluster)
                 #     - 'i': note type
@@ -448,10 +416,6 @@ def readFumen(fumenFile, byteOrder=None, debug=False):
                     note["duration"] = noteStruct[6]
                 else:
                     note['duration'] = noteStruct[6]
-
-                # Print debug information about the note
-                if debug:
-                    debugPrint(" ({0})".format(nameValue(note)))
 
                 # Seek forward 8 bytes to account for padding bytes at the end of drumrolls
                 if noteType == 0x6 or noteType == 0x9 or noteType == 0x62:

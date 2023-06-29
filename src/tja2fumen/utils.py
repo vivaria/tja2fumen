@@ -1,5 +1,4 @@
 import os
-import sys
 import struct
 import csv
 
@@ -93,21 +92,3 @@ def getBool(number):
 
 def putBool(boolean):
     return 0x1 if boolean is True else 0x0 if boolean is False else boolean
-
-
-def nameValue(*lists):
-    string = []
-    for lst in lists:
-        for name in lst:
-            if name == "type":
-                string.append(lst[name])
-            elif name != "length" and type(name) is not int:
-                value = lst[name]
-                if type(value) == float and value % 1 == 0.0:
-                    value = int(value)
-                string.append("{0}: {1}".format(name, value))
-    return ", ".join(string)
-
-
-def debugPrint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
