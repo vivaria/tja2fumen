@@ -68,9 +68,13 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
         assert_song_property(co_song, ca_song, 'branches')
         assert_song_property(co_song, ca_song, 'scoreInit')
         assert_song_property(co_song, ca_song, 'scoreDiff')
-        assert_song_property(co_song, ca_song, 'measures', func=len)
         # 3. Check measure data
-        for i_measure, (co_measure, ca_measure) in enumerate(zip(co_song['measures'], ca_song['measures'])):
+        for i_measure in range(max([len(co_song['measures']), len(ca_song['measures'])])):
+            # NB: We could assert that len(measures) is the same for both songs, then iterate through zipped measures.
+            # But, if there is a mismatched number of measures, we want to know _where_ it occurs. So, we let the
+            # comparison go on using the max length of both songs until something else fails.
+            co_measure = co_song['measures'][i_measure]
+            ca_measure = ca_song['measures'][i_measure]
             # 3a. Check measure metadata
             assert_song_property(co_measure, ca_measure, 'bpm', i_measure, abs=0.01)
             assert_song_property(co_measure, ca_measure, 'fumenOffset', i_measure, abs=0.5)
