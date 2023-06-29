@@ -28,17 +28,13 @@ jobs:
       with:
         python-version: '3.8.x'
 
-    - name: Install test dependencies
+    - name: Install tja2fumen and its dev dependencies
       run: |
-        pip install pytest
-        pip install -e .
+        pip install .[dev]
 
     - name: Run tests (Python API)
       run: |
         pytest testing --entry-point python-api
-
-    - name: Install build dependencies
-      run: pip install toml-cli build twine pyinstaller
 
     # The GitHub Actions bot email was taken from: https://github.community/t/github-actions-bot-email-address/17204/6
     - name: Set bot user data for commits

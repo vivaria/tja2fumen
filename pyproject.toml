@@ -1,6 +1,6 @@
 [project]
 name = "tja2fumen"
-version = "0.0.1"
+version = "0.0.dev0"
 description = "Convert TJA chart files into fumen (.bin) chart files"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -18,7 +18,7 @@ keywords = ["taiko", "tatsujin", "fumen", "TJA"]
 tja2fumen = "tja2fumen:main"
 
 [project.optional-dependencies]
-build = ["pyinstaller"]
+dev = ["pytest", "build", "pyinstaller", "twine", "toml-cli"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
