@@ -43,6 +43,8 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
     # Fetch output fumen paths
     paths_out = glob.glob(os.path.join(path_temp, "*.bin"))
     assert paths_out, f"No bin files generated in {path_temp}"
+    order = "xmhne"  # Ura Oni -> Oni -> Hard -> Normal -> Easy
+    paths_out = sorted(paths_out, key=lambda s: [order.index(c) if c in order else len(order) for c in s])
 
     # Extract cached fumen files to working directory
     path_binzip = os.path.join(path_test, "data", f"{id_song}.zip")
