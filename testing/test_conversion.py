@@ -66,7 +66,6 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
         assert_song_property(co_song, ca_song, 'branches')
         assert_song_property(co_song, ca_song, 'scoreInit')
         assert_song_property(co_song, ca_song, 'scoreDiff')
-        assert_song_property(co_song, ca_song, 'length')
         assert_song_property(co_song, ca_song, 'measures', func=len)
         # 3. Check measure data
         for i_measure, (co_measure, ca_measure) in enumerate(zip(co_song['measures'], ca_song['measures'])):

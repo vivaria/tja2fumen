@@ -13,7 +13,7 @@ def writeFumen(file, song):
     # Preallocate space in the file
     len_metadata = 8
     len_measures = 0
-    for measureNumber in range(song['length']):
+    for measureNumber in range(len(song['measures'])):
         len_measures += 40
         measure = song['measures'][measureNumber]
         for branchNumber in range(len(branchNames)):
@@ -28,12 +28,12 @@ def writeFumen(file, song):
 
     # Write metadata
     writeStruct(file, order, format_string="B", value_list=[putBool(song['branches'])], seek=0x1b0)
-    writeStruct(file, order, format_string="I", value_list=[song['length']], seek=0x200)
+    writeStruct(file, order, format_string="I", value_list=[len(song['measures'])], seek=0x200)
     writeStruct(file, order, format_string="I", value_list=[song['unknownMetadata']], seek=0x204)
 
     # Write measure data
     file.seek(0x208)
-    for measureNumber in range(song['length']):
+    for measureNumber in range(len(song['measures'])):
         measure = song['measures'][measureNumber]
         measureStruct = [measure['bpm'], measure['fumenOffset'], int(measure['gogo']), int(measure['barline'])]
         measureStruct.extend([measure['padding1']] + measure['branchInfo'] + [measure['padding2']])

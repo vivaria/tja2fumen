@@ -317,7 +317,6 @@ def readFumen(fumenFile, byteOrder=None):
     song['headerPadding'] = fumenHeader[:432]
     song['headerMetadata'] = fumenHeader[-80:]
     song['order'] = order
-    song["length"] = totalMeasures
 
     # I am unsure what byte this represents
     unknownMetadata = readStruct(file, order, format_string="I", seek=0x204)[0]

@@ -221,7 +221,6 @@ def convertTJAToFumen(tja):
     tjaConverted['headerMetadata'] = b"".join(i.to_bytes(1, 'little') for i in headerMetadata)
     tjaConverted['headerPadding'] = simpleHeaders[0]  # Use a basic, known set of header bytes
     tjaConverted['order'] = '<'
-    tjaConverted['length'] = len(tjaConverted['measures'])
     tjaConverted['unknownMetadata'] = 0
     tjaConverted['branches'] = False
     tjaConverted['scoreInit'] = tja['scoreInit']
