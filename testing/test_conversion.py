@@ -34,7 +34,7 @@ def assert_song_property(obj1, obj2, prop, measure=None, branch=None, note=None,
     # Passing charts
     pytest.param('mikdp'),
     # Failing charts (NB: These will be XFAIL in CI, but FAIL in local tests.)
-    pytest.param('ia6cho', marks=pytest.mark.xfail("CI" in os.environ,
+    pytest.param('ia6cho', marks=pytest.mark.xfail("CI" in os.environ, raises=AssertionError,
                  reason='Fumen has several inexplicable empty measures at start.')),
 ])
 def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
