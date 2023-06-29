@@ -50,7 +50,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
     elif entry_point == "python-cli":
         os.system(f"tja2fumen {path_tja_tmp}")
     elif entry_point == "exe":
-        exe_path = os.path.join(os.path.split(path_test)[0], "dist", "tja2fumen.exe")
+        exe_path = glob.glob(os.path.join(os.path.split(path_test)[0], "dist", "*.exe"))[0]
         os.system(f"{exe_path} {path_tja_tmp}")
 
     # Fetch output fumen paths
