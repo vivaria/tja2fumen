@@ -56,8 +56,8 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
         i_difficult_id = os.path.basename(path_out).split(".")[0].split("_")[1]
         i_difficulty = NORMALIZE_COURSE[{v: k for k, v in COURSE_IDS.items()}[i_difficult_id]]  # noqa
         # 0. Read fumen data (converted vs. cached)
-        co_song = readFumen(path_out)
-        ca_song = readFumen(os.path.join(path_bin, os.path.basename(path_out)))
+        co_song = readFumen(path_out, exclude_empty_measures=True)
+        ca_song = readFumen(os.path.join(path_bin, os.path.basename(path_out)), exclude_empty_measures=True)
         # 1. Check song headers
         checkValidHeader(co_song['headerPadding']+co_song['headerMetadata'], strict=True)
         checkValidHeader(ca_song['headerPadding']+ca_song['headerMetadata'])

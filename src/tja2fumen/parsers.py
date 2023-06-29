@@ -279,7 +279,7 @@ def applyFumenStructureToParsedTJA(globalHeader, courseHeader, measures):
 # TODO: Figure out what the unknown Wii1, Wii4, and PS4 notes represent (just in case they're important somehow)
 
 
-def readFumen(fumenFile, byteOrder=None):
+def readFumen(fumenFile, byteOrder=None, exclude_empty_measures=False):
     """
     Parse bytes of a fumen .bin file into nested measure, branch, and note dictionaries.
 
@@ -432,4 +432,13 @@ def readFumen(fumenFile, byteOrder=None):
             break
 
     file.close()
+
+    # NB: Official fumens often include empty measures as a way of inserting barlines for visual effect.
+    #     But, TJA authors tend not to add these empty measures, because even without them, the song plays correctly.
+    #     So, in tests, if we want to only compare the timing of the non-empty measures between an official fumen and
+    #     a converted non-official TJA, then it's useful to  exclude the empty measures.
+    if exclude_empty_measures:
+        song['measures'] = [m for m in song['measures']
+                            if m['normal']['length'] or m['advanced']['length'] or m['master']['length']]
+
     return song
