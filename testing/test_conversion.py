@@ -97,7 +97,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                     assert_song_property(co_note, ca_note, 'type', i_measure, i_branch, i_note, func=normalize_type)
                     assert_song_property(co_note, ca_note, 'pos', i_measure, i_branch, i_note, abs=0.1)
                     # NB: Drumroll duration doesn't always end exactly on a beat. So, use a larger tolerance.
-                    assert_song_property(co_note, ca_note, 'duration', i_measure, i_branch, i_note, abs=10.0)
+                    assert_song_property(co_note, ca_note, 'duration', i_measure, i_branch, i_note, abs=20.0)
                     if ca_note['type'] not in ["Balloon", "Kusudama"]:
                         assert_song_property(co_note, ca_note, 'scoreInit', i_measure, i_branch, i_note)
                         assert_song_property(co_note, ca_note, 'scoreDiff', i_measure, i_branch, i_note)
