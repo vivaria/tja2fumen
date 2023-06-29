@@ -55,6 +55,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
 
     # Fetch output fumen paths
     paths_out = glob.glob(os.path.join(path_temp, "*.bin"))
+    assert paths_out, f"No bin files generated in {path_temp}"
 
     # Extract cached fumen files to working directory
     path_binzip = os.path.join(path_test, "data", f"{id_song}.zip")
