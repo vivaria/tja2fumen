@@ -2,6 +2,7 @@ import os
 import shutil
 import zipfile
 import re
+import glob
 
 import pytest
 
@@ -30,7 +31,7 @@ def assert_song_property(obj1, obj2, prop, measure=None, branch=None, note=None,
 
 
 @pytest.mark.parametrize('id_song', ['mikdp'])
-def test_converted_tja_vs_cached_fumen(id_song, tmp_path):
+def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
     # Define the testing directory
     path_test = os.path.dirname(os.path.realpath(__file__))
 
@@ -44,7 +45,17 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path):
     shutil.copy(path_tja, path_tja_tmp)
 
     # Convert TJA file to fumen files
-    _, _, paths_out = convert(argv=[path_tja_tmp])
+    if entry_point == "python-api":
+        convert(argv=[path_tja_tmp])
+    elif entry_point == "python-cli":
+        os.system(f"tja2fumen {path_tja_tmp}")
+    elif entry_point == "exe":
+        exe_path = glob.glob(os.path.join(os.path.split(path_test)[0], "dist", "*.exe"))[0]
+        os.system(f"{exe_path} {path_tja_tmp}")
+
+    # Fetch output fumen paths
+    paths_out = glob.glob(os.path.join(path_temp, "*.bin"))
+    assert paths_out, f"No bin files generated in {path_temp}"
 
     # Extract cached fumen files to working directory
     path_binzip = os.path.join(path_test, "data", f"{id_song}.zip")
