@@ -11,25 +11,6 @@ from src.tja2fumen.parsers import readFumen
 from src.tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE, simpleHeaders, byte_strings
 
 
-def normalize_type(note_type):
-    return re.sub(r'[0-9]', '', note_type)
-
-
-def assert_song_property(obj1, obj2, prop, measure=None, branch=None, note=None, func=None, abs=None):
-    # NB: TJA parser/converter uses 0-based indexing, but TJA files use 1-based indexing.
-    #     So, we increment 1 in the error message to more easily identify problematic lines in TJA files.
-    msg_failure = f"'{prop}' mismatch"
-    msg_failure += f": measure '{measure+1}'" if measure is not None else ""
-    msg_failure += f", branch '{branch}'" if branch is not None else ""
-    msg_failure += f", note '{note+1}'" if note is not None else ""
-    if func:
-        assert func(obj1[prop]) == func(obj2[prop]), msg_failure
-    elif abs:
-        assert obj1[prop] == pytest.approx(obj2[prop], abs=abs), msg_failure
-    else:
-        assert obj1[prop] == obj2[prop], msg_failure
-
-
 @pytest.mark.parametrize('id_song', [
     # Passing charts
     pytest.param('mikdp'),
@@ -115,6 +96,25 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                         assert_song_property(co_note, ca_note, 'scoreDiff', i_measure, i_branch, i_note)
                     # NB: 'item' still needs to be implemented: https://github.com/vivaria/tja2fumen/issues/17
                     # assert_song_property(co_note, ca_note, 'item', i_measure, i_branch, i_note)
+
+
+def assert_song_property(obj1, obj2, prop, measure=None, branch=None, note=None, func=None, abs=None):
+    # NB: TJA parser/converter uses 0-based indexing, but TJA files use 1-based indexing.
+    #     So, we increment 1 in the error message to more easily identify problematic lines in TJA files.
+    msg_failure = f"'{prop}' mismatch"
+    msg_failure += f": measure '{measure+1}'" if measure is not None else ""
+    msg_failure += f", branch '{branch}'" if branch is not None else ""
+    msg_failure += f", note '{note+1}'" if note is not None else ""
+    if func:
+        assert func(obj1[prop]) == func(obj2[prop]), msg_failure
+    elif abs:
+        assert obj1[prop] == pytest.approx(obj2[prop], abs=abs), msg_failure
+    else:
+        assert obj1[prop] == obj2[prop], msg_failure
+
+
+def normalize_type(note_type):
+    return re.sub(r'[0-9]', '', note_type)
 
 
 def checkValidHeader(headerBytes, strict=False):
