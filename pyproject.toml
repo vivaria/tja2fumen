@@ -22,3 +22,7 @@ build = ["pyinstaller"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-v --tb=short"
+console_output_style = "count"
