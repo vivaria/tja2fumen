@@ -71,6 +71,20 @@ def preprocessTJAMeasures(tja):
         for data in combined:
             if data['type'] == 'note':
                 measure_cur['data'].append(data)
+                # Update the current measure's SCROLL/GOGO/BARLINE status.
+                measure_cur['scroll'] = currentScroll
+                measure_cur['gogo'] = currentGogo
+                measure_cur['barline'] = currentBarline
+                # NB: The reason we update the measure's SCROLL/GOGO/BARLINE during the "note" event is because of
+                # an ordering problem for mid-measure BPMCHANGEs. For example, imagine the following two TJA charts:
+                #   33                     11021020
+                #   #GOGOEND               #BPMCHANGE 178
+                #   #BPMCHANGE 107         #SCROLL 1.04
+                #   33,                    1102,
+                # In both examples, BPMCHANGE + one other command happen mid-measure. But, the ordering differs.
+                # This is relevant because in fumen files, "BPMCHANGE" signals the start of a new sub-measure.
+                # Yet, in both cases, we want the 2nd command to apply to the notes _after_ the BPMCHANGE.
+                # So, we make sure to only apply SCROLL/GOGO/BARLINE changes once we actually encounter new notes.
             elif data['type'] == 'bpm':
                 currentBPM = float(data['value'])
                 # Case 1: BPM change at the start of a measure; just change BPM
@@ -85,13 +99,10 @@ def preprocessTJAMeasures(tja):
                                    'time_sig': measure['length'], 'data': []}
             elif data['type'] == 'scroll':
                 currentScroll = data['value']
-                measure_cur['scroll'] = currentScroll
             elif data['type'] == 'gogo':
                 currentGogo = bool(int(data['value']))
-                measure_cur['gogo'] = currentGogo
             elif data['type'] == 'barline':
                 currentBarline = bool(int(data['value']))
-                measure_cur['barline'] = currentBarline
             else:
                 print(f"Unexpected event type: {data['type']}")
         measure_cur['pos_end'] = len(measure['data'])
