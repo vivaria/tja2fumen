@@ -109,7 +109,6 @@ def getCourse(lines):
     measures = []
     measureEvents = []
     for line in lines:
-
         # 1. Parse branch commands
         if line["type"] == 'command' and line['name'] in BRANCH_COMMANDS:
             if line["name"] == 'BRANCHSTART':
@@ -178,7 +177,7 @@ def getCourse(lines):
             else:
                 raise NotImplementedError
 
-        # Parse measure data
+        # 3. Parse measure data
         elif line['type'] == 'data' and currentBranch == targetBranch:
             data = line['data']
             # If measure has ended, then append the measure and start anew
