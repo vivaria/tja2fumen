@@ -36,8 +36,6 @@ def parseTJA(fnameTJA):
         match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
         match_data = re.match(r"^(([0-9]|A|B|C|F|G)*,?).*$", line)
 
-        parsed = {"type": 'unknown', "value": line}
-        # Case 1: Comments (ignore)
         if match_comment:
             continue
         elif match_header:
