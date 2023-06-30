@@ -2,11 +2,12 @@ from tja2fumen.utils import writeStruct, putBool
 from tja2fumen.constants import branchNames, typeNotes
 
 
-def writeFumen(file, song):
+def writeFumen(path_out, song):
     # Fetch the byte order (little/big endian)
     order = song['order']
 
     # Write the header
+    file = open(path_out, "wb")
     file.write(song['headerPadding'])   # Write header padding bytes
     file.write(song['headerMetadata'])  # Write header metadata bytes
 

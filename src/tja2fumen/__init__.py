@@ -39,7 +39,7 @@ def main(argv=None):
 
     # Write fumen data to files
     for fumenData, outputName in zip(parsedSongsFumen.values(), outputFilenames):
-        writeFumen(open(outputName, "wb"), fumenData)
+        writeFumen(outputName, fumenData)
 
     if return_vars:
         return parsedSongsTJA, parsedSongsFumen, outputFilenames

@@ -286,10 +286,7 @@ def readFumen(fumenFile, exclude_empty_measures=False):
     For more information on any of the terms used in this function (e.g. scoreInit, scoreDiff),
     please refer to KatieFrog's excellent guide: https://gist.github.com/KatieFrogs/e000f406bbc70a12f3c34a07303eec8b
     """
-    if type(fumenFile) is str:
-        file = open(fumenFile, "rb")
-    else:
-        file = fumenFile
+    file = open(fumenFile, "rb")
     size = os.fstat(file.fileno()).st_size
 
     # Fetch the header bytes
