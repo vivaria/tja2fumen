@@ -98,16 +98,16 @@ def parseTJA(fnameTJA):
 
 def getCourse(lines):
     # Define state variables
-    measures = []
     measureDividend = 4
     measureDivisor = 4
     measureData = ''
-    measureEvents = []
     currentBranch = 'N'
     targetBranch = 'N'
     flagLevelhold = False
 
     # Process course lines
+    measures = []
+    measureEvents = []
     for line in lines:
 
         # 1. Parse branch commands
