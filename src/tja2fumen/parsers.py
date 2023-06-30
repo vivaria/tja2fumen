@@ -2,12 +2,7 @@ import os
 import re
 
 from tja2fumen.utils import readStruct, getBool, shortHex
-from tja2fumen.constants import (
-    # TJA constants
-    HEADER_GLOBAL, HEADER_COURSE, NORMALIZE_COURSE, TJA_NOTE_TYPES,
-    # Fumen constants
-    branchNames, noteTypes
-)
+from tja2fumen.constants import NORMALIZE_COURSE, TJA_NOTE_TYPES, branchNames, noteTypes
 
 
 ########################################################################################################################
@@ -36,37 +31,36 @@ def parseTJA(fnameTJA):
         if match_header:
             nameUpper = match_header.group(1).upper()
             value = match_header.group(2).strip()
-            if nameUpper in HEADER_GLOBAL:
+            if nameUpper in ['BPM', 'OFFSET']:
                 headerGlobal[nameUpper.lower()] = value
-            elif nameUpper in HEADER_COURSE:
-                if nameUpper == 'COURSE':
-                    currentCourse = NORMALIZE_COURSE[value]
-                    if currentCourse not in courses.keys():
-                        courses[currentCourse] = {
-                            'metadata': {**headerGlobal, **{'course': currentCourse, 'level': 0, 'balloon': [],
-                                                            'scoreInit': 0, 'scoreDiff': 0}},
-                            'measures': [{"name": 'BPMCHANGE', "value": headerGlobal['bpm']}],
-                            'scoreInit': 0,
-                            'scoreDiff': 0,
-                        }
-                elif nameUpper == 'LEVEL':
-                    courses[currentCourse]['metadata']['level'] = int(value) if value else 0
-                elif nameUpper == 'SCOREINIT':
-                    courses[currentCourse]['scoreInit'] = int(value) if value else 0
-                elif nameUpper == 'SCOREDIFF':
-                    courses[currentCourse]['scoreDiff'] = int(value) if value else 0
-                elif nameUpper == 'BALLOON':
-                    if value:
-                        balloons = [int(v) for v in value.split(",") if v]
-                        courses[currentCourse]['metadata']['balloon'] = balloons
-                # STYLE is a P1/P2 command, which we don't support yet, so normally this would be a
-                # NotImplemetedError. However, TakoTako outputs `STYLE:SINGLE` when converting Ura
-                # charts, so throwing an error here would prevent Ura charts from being converted.
-                # See: https://github.com/vivaria/tja2fumen/issues/15#issuecomment-1575341088
-                elif nameUpper == 'STYLE':
-                    pass
-                else:
-                    raise NotImplementedError
+            elif nameUpper == 'COURSE':
+                currentCourse = NORMALIZE_COURSE[value]
+                if currentCourse not in courses.keys():
+                    courses[currentCourse] = {
+                        'metadata': {**headerGlobal, **{'course': currentCourse, 'level': 0, 'balloon': [],
+                                                        'scoreInit': 0, 'scoreDiff': 0}},
+                        'measures': [{"name": 'BPMCHANGE', "value": headerGlobal['bpm']}],
+                        'scoreInit': 0,
+                        'scoreDiff': 0,
+                    }
+            elif nameUpper == 'LEVEL':
+                courses[currentCourse]['metadata']['level'] = int(value) if value else 0
+            elif nameUpper == 'SCOREINIT':
+                courses[currentCourse]['scoreInit'] = int(value) if value else 0
+            elif nameUpper == 'SCOREDIFF':
+                courses[currentCourse]['scoreDiff'] = int(value) if value else 0
+            elif nameUpper == 'BALLOON':
+                if value:
+                    balloons = [int(v) for v in value.split(",") if v]
+                    courses[currentCourse]['metadata']['balloon'] = balloons
+            # STYLE is a P1/P2 command, which we don't support yet, so normally this would be a
+            # NotImplemetedError. However, TakoTako outputs `STYLE:SINGLE` when converting Ura
+            # charts, so throwing an error here would prevent Ura charts from being converted.
+            # See: https://github.com/vivaria/tja2fumen/issues/15#issuecomment-1575341088
+            elif nameUpper == 'STYLE':
+                pass
+            else:
+                pass  # Ignore other header fields such as 'TITLE', 'SUBTITLE', 'WAVE', etc.
 
         # Case 2: Non-header, non-comment (//) lines
         elif not re.match(r"//.*", line):
