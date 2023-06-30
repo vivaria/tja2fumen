@@ -121,7 +121,42 @@ def parseCourseMeasures(lines):
 
         # 2. Parse commands
         else:
-            if line["name"] == 'BRANCHSTART':
+            # Measure commands
+            if line['name'] == 'GOGOSTART':
+                measureEvents.append({"name": 'gogo', "position": len(measureNotes), "value": '1'})
+            elif line['name'] == 'GOGOEND':
+                measureEvents.append({"name": 'gogo', "position": len(measureNotes), "value": '0'})
+            elif line['name'] == 'BARLINEON':
+                measureEvents.append({"name": 'barline', "position": len(measureNotes), "value": '1'})
+            elif line['name'] == 'BARLINEOFF':
+                measureEvents.append({"name": 'barline', "position": len(measureNotes), "value": '0'})
+            elif line['name'] == 'SCROLL':
+                measureEvents.append({"name": 'scroll', "position": len(measureNotes), "value": float(line['value'])})
+            elif line['name'] == 'BPMCHANGE':
+                measureEvents.append({"name": 'bpm', "position": len(measureNotes), "value": float(line['value'])})
+            elif line['name'] == 'MEASURE':
+                matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
+                if not matchMeasure:
+                    continue
+                measureDividend = int(matchMeasure.group(1))
+                measureDivisor = int(matchMeasure.group(2))
+
+            # Branch commands
+            elif line["name"] == 'START' or line['name'] == 'END':
+                currentBranch = 'N'
+                targetBranch = 'N'
+                flagLevelhold = False
+            elif line['name'] == 'LEVELHOLD':
+                flagLevelhold = True
+            elif line["name"] == 'N':
+                currentBranch = 'N'
+            elif line["name"] == 'E':
+                currentBranch = 'E'
+            elif line["name"] == 'M':
+                currentBranch = 'M'
+            elif line["name"] == 'BRANCHEND':
+                currentBranch = targetBranch
+            elif line["name"] == 'BRANCHSTART':
                 if flagLevelhold:
                     continue
                 values = line['value'].split(',')
@@ -139,46 +174,18 @@ def parseCourseMeasures(lines):
                         targetBranch = 'E'
                     else:
                         targetBranch = 'N'
-            elif line["name"] == 'BRANCHEND':
-                currentBranch = targetBranch
-            elif line["name"] == 'N':
-                currentBranch = 'N'
-            elif line["name"] == 'E':
-                currentBranch = 'E'
-            elif line["name"] == 'M':
-                currentBranch = 'M'
-            elif line["name"] == 'START' or line['name'] == 'END':
-                currentBranch = 'N'
-                targetBranch = 'N'
-                flagLevelhold = False
-            elif line['name'] == 'SECTION':
-                raise NotImplementedError
-            elif line['name'] == 'MEASURE':
-                matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
-                if not matchMeasure:
-                    continue
-                measureDividend = int(matchMeasure.group(1))
-                measureDivisor = int(matchMeasure.group(2))
-            elif line['name'] == 'GOGOSTART':
-                measureEvents.append({"name": 'gogo', "position": len(measureNotes), "value": '1'})
-            elif line['name'] == 'GOGOEND':
-                measureEvents.append({"name": 'gogo', "position": len(measureNotes), "value": '0'})
-            elif line['name'] == 'BARLINEON':
-                measureEvents.append({"name": 'barline', "position": len(measureNotes), "value": '1'})
-            elif line['name'] == 'BARLINEOFF':
-                measureEvents.append({"name": 'barline', "position": len(measureNotes), "value": '0'})
-            elif line['name'] == 'SCROLL':
-                measureEvents.append({"name": 'scroll', "position": len(measureNotes), "value": float(line['value'])})
-            elif line['name'] == 'BPMCHANGE':
-                measureEvents.append({"name": 'bpm', "position": len(measureNotes), "value": float(line['value'])})
-            elif line['name'] == 'LEVELHOLD':
-                flagLevelhold = True
-            elif line['name'] == 'DELAY':
-                raise NotImplementedError
+
+            # Ignored commands
             elif line['name'] == 'LYRIC':
                 pass
             elif line['name'] == 'NEXTSONG':
                 pass
+
+            # Not implemented commands
+            elif line['name'] == 'SECTION':
+                raise NotImplementedError
+            elif line['name'] == 'DELAY':
+                raise NotImplementedError
             else:
                 raise NotImplementedError
 
