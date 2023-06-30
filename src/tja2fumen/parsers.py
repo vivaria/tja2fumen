@@ -45,23 +45,20 @@ def parseTJA(fnameTJA):
             if nameUpper in HEADER_GLOBAL:
                 headers[nameUpper.lower()] = value.strip()
             elif nameUpper in HEADER_COURSE:
-                parsed = {"type": 'header', "scope": 'course', "name": nameUpper, "value": value.strip()}
-                if parsed['name'] == 'COURSE':
-                    currentCourse = NORMALIZE_COURSE[parsed['value']]
+                if nameUpper == 'COURSE':
+                    currentCourse = NORMALIZE_COURSE[value.strip()]
                     if currentCourse not in courses.keys():
                         courses[currentCourse] = []
-                courses[currentCourse].append(parsed)
+                courses[currentCourse].append({"type": 'header', "scope": 'course', "name": nameUpper, "value": value.strip()})
 
         elif match_command:
             nameUpper = match_command.group(1).upper()
             value = match_command.group(2) if match_command.group(2) else ''
             if nameUpper in COMMAND:
-                parsed = {"type": 'command', "name": nameUpper, "value": value.strip()}
-                courses[currentCourse].append(parsed)
+                courses[currentCourse].append({"type": 'command', "name": nameUpper, "value": value.strip()})
 
         elif match_data:
-            parsed = {"type": 'data', "data": match_data.group(1)}
-            courses[currentCourse].append(parsed)
+            courses[currentCourse].append({"type": 'data', "data": match_data.group(1)})
 
     # Convert parsed course lines into actual note data
     songs = {}
