@@ -44,28 +44,22 @@ def parseTJA(fnameTJA):
             nameUpper = match_header.group(1).upper()
             value = match_header.group(2)
             if nameUpper in HEADER_GLOBAL:
-                parsed = {"type": 'header', "scope": 'global', "name": nameUpper, "value": value.strip()}
+                headers[nameUpper.lower()] = value.strip()
             elif nameUpper in HEADER_COURSE:
                 parsed = {"type": 'header', "scope": 'course', "name": nameUpper, "value": value.strip()}
+                if parsed['name'] == 'COURSE':
+                    currentCourse = NORMALIZE_COURSE[parsed['value']]
+                    if currentCourse not in courses.keys():
+                        courses[currentCourse] = []
+                courses[currentCourse].append(parsed)
         elif match_command:
             nameUpper = match_command.group(1).upper()
             value = match_command.group(2) if match_command.group(2) else ''
             if nameUpper in COMMAND:
                 parsed = {"type": 'command', "name": nameUpper, "value": value.strip()}
+                courses[currentCourse].append(parsed)
         elif match_data:
             parsed = {"type": 'data', "data": match_data.group(1)}
-
-        # Case 2: Global header metadata
-        if parsed['type'] == 'header' and parsed['scope'] == 'global':
-            headers[parsed['name'].lower()] = parsed['value']
-        # Case 3: Course data (metadata, commands, note data)
-        else:
-            # Check to see if we're starting a new course
-            if parsed['type'] == 'header' and parsed['scope'] == 'course' and parsed['name'] == 'COURSE':
-                currentCourse = NORMALIZE_COURSE[parsed['value']]
-                if currentCourse not in courses.keys():
-                    courses[currentCourse] = []
-            # Append the line to the current course
             courses[currentCourse].append(parsed)
 
     # Convert parsed course lines into actual note data
