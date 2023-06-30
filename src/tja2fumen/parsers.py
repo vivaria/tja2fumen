@@ -19,7 +19,8 @@ def parseTJA(fnameTJA):
     # Read in the non-empty lines
     lines = [line for line in tja.read().splitlines() if line.strip() != '']
 
-    headerGlobal = {}
+    songBPM = 0
+    songOffset = 0
     courses = {}
     currentCourse = ''
     for line in lines:
@@ -29,15 +30,17 @@ def parseTJA(fnameTJA):
         if match_header:
             nameUpper = match_header.group(1).upper()
             value = match_header.group(2).strip()
-            if nameUpper in ['BPM', 'OFFSET']:
-                headerGlobal[nameUpper.lower()] = value
+            if nameUpper == 'BPM':
+                songBPM = value
+            elif nameUpper == 'OFFSET':
+                songOffset = value
             elif nameUpper == 'COURSE':
                 currentCourse = NORMALIZE_COURSE[value]
                 if currentCourse not in courses.keys():
                     courses[currentCourse] = {
-                        'metadata': {**headerGlobal, **{'course': currentCourse, 'level': 0, 'balloon': [],
-                                                        'scoreInit': 0, 'scoreDiff': 0}},
-                        'measures': [{"name": 'BPMCHANGE', "value": headerGlobal['bpm']}],
+                        'metadata': {'course': currentCourse, 'bpm': songBPM, 'offset': songOffset, 'level': 0,
+                                     'balloon': [], 'scoreInit': 0, 'scoreDiff': 0},
+                        'measures': [{"name": 'BPMCHANGE', "value": songBPM}],
                     }
             elif nameUpper == 'LEVEL':
                 courses[currentCourse]['metadata']['level'] = int(value) if value else 0
