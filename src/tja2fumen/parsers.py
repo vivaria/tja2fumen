@@ -51,7 +51,7 @@ def parseTJA(fnameTJA):
                         courses[currentCourse] = {
                             'headers': {'course': currentCourse, 'level': 0, 'balloon': [],
                                         'scoreInit': 0, 'scoreDiff': 0},
-                            'measure_lines': []
+                            'measure_lines': [{"name": 'BPMCHANGE', "value": headers['bpm']}]
                         }
                 elif nameUpper == 'LEVEL':
                     courses[currentCourse]['headers']['level'] = int(value) if value else 0
@@ -80,10 +80,6 @@ def parseTJA(fnameTJA):
                 nameUpper = 'DATA'
                 value = match_data.group(1)
             courses[currentCourse]['measure_lines'].append({"name": nameUpper, "value": value})
-
-    # Insert faux BPMCHANGE events into the start of each course corresponding to the global BPM property
-    for courseData in courses.values():
-        courseData['measure_lines'].insert(0, {"name": 'BPMCHANGE', "value": headers['bpm']})
 
     # Convert parsed course lines into actual note data
     songs = {}
