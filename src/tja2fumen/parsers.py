@@ -18,11 +18,19 @@ def parseTJA(fnameTJA):
 
     # Read in the non-empty lines
     lines = [line for line in tja.read().splitlines() if line.strip() != '']
+    courses = getCourseData(lines)
+    for courseData in courses.values():
+        courseData['measures'] = parseCourseMeasures(courseData['measures'])
 
-    songBPM = 0
-    songOffset = 0
+    return courses
+
+
+def getCourseData(lines):
     courses = {}
     currentCourse = ''
+    songBPM = 0
+    songOffset = 0
+
     for line in lines:
 
         # Case 1: Header lines
@@ -72,10 +80,6 @@ def parseTJA(fnameTJA):
                 nameUpper = 'NOTES'
                 value = match_notes.group(1)
             courses[currentCourse]['measures'].append({"name": nameUpper, "value": value})
-
-    # Convert parsed course lines into actual note data
-    for courseData in courses.values():
-        courseData['measures'] = parseCourseMeasures(courseData['measures'])
 
     return courses
 
