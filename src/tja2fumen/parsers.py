@@ -26,7 +26,7 @@ def parseTJA(fnameTJA):
     lines = [line for line in lines if line.strip()]  # Discard empty lines
 
     # Line by line
-    headers = {}
+    headerGlobal = {}
     courses = {}
     currentCourse = ''
     for line in lines:
@@ -37,7 +37,7 @@ def parseTJA(fnameTJA):
             nameUpper = match_header.group(1).upper()
             value = match_header.group(2).strip()
             if nameUpper in HEADER_GLOBAL:
-                headers[nameUpper.lower()] = value
+                headerGlobal[nameUpper.lower()] = value
             elif nameUpper in HEADER_COURSE:
                 if nameUpper == 'COURSE':
                     currentCourse = NORMALIZE_COURSE[value]
@@ -45,7 +45,7 @@ def parseTJA(fnameTJA):
                         courses[currentCourse] = {
                             'headers': {'course': currentCourse, 'level': 0, 'balloon': [],
                                         'scoreInit': 0, 'scoreDiff': 0},
-                            'measure_lines': [{"name": 'BPMCHANGE', "value": headers['bpm']}]
+                            'measure_lines': [{"name": 'BPMCHANGE', "value": headerGlobal['bpm']}]
                         }
                 elif nameUpper == 'LEVEL':
                     courses[currentCourse]['headers']['level'] = int(value) if value else 0
@@ -85,7 +85,7 @@ def parseTJA(fnameTJA):
 
         # applyFumenStructureToParsedTJA
         tja = {'measures': [], 'metadata': {}}
-        for k, v in headers.items():
+        for k, v in headerGlobal.items():
             tja['metadata'][k] = v
         for k, v in courseData['headers'].items():
             if k in ['scoreInit', 'scoreDiff']:
