@@ -69,13 +69,13 @@ def parseTJA(fnameTJA):
         # Case 2: Non-header, non-comment (//) lines
         elif not re.match(r"//.*", line):
             match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
-            match_data = re.match(r"^(([0-9]|A|B|C|F|G)*,?).*$", line)
+            match_notes = re.match(r"^(([0-9]|A|B|C|F|G)*,?).*$", line)
             if match_command:
                 nameUpper = match_command.group(1).upper()
                 value = match_command.group(2).strip() if match_command.group(2) else ''
-            elif match_data:
-                nameUpper = 'DATA'
-                value = match_data.group(1)
+            elif match_notes:
+                nameUpper = 'NOTES'
+                value = match_notes.group(1)
             courses[currentCourse]['measure_lines'].append({"name": nameUpper, "value": value})
 
     # Convert parsed course lines into actual note data
@@ -93,7 +93,7 @@ def getCourse(lines):
     # Define state variables
     measureDividend = 4
     measureDivisor = 4
-    measureData = ''
+    measureNotes = ''
     currentBranch = 'N'
     targetBranch = 'N'
     flagLevelhold = False
@@ -148,17 +148,17 @@ def getCourse(lines):
                 measureDividend = int(matchMeasure.group(1))
                 measureDivisor = int(matchMeasure.group(2))
             elif line['name'] == 'GOGOSTART':
-                measureEvents.append({"name": 'gogo', "position": len(measureData), "value": '1'})
+                measureEvents.append({"name": 'gogo', "position": len(measureNotes), "value": '1'})
             elif line['name'] == 'GOGOEND':
-                measureEvents.append({"name": 'gogo', "position": len(measureData), "value": '0'})
+                measureEvents.append({"name": 'gogo', "position": len(measureNotes), "value": '0'})
             elif line['name'] == 'BARLINEON':
-                measureEvents.append({"name": 'barline', "position": len(measureData), "value": '1'})
+                measureEvents.append({"name": 'barline', "position": len(measureNotes), "value": '1'})
             elif line['name'] == 'BARLINEOFF':
-                measureEvents.append({"name": 'barline', "position": len(measureData), "value": '0'})
+                measureEvents.append({"name": 'barline', "position": len(measureNotes), "value": '0'})
             elif line['name'] == 'SCROLL':
-                measureEvents.append({"name": 'scroll', "position": len(measureData), "value": float(line['value'])})
+                measureEvents.append({"name": 'scroll', "position": len(measureNotes), "value": float(line['value'])})
             elif line['name'] == 'BPMCHANGE':
-                measureEvents.append({"name": 'bpm', "position": len(measureData), "value": float(line['value'])})
+                measureEvents.append({"name": 'bpm', "position": len(measureNotes), "value": float(line['value'])})
             elif line['name'] == 'LEVELHOLD':
                 flagLevelhold = True
             elif line['name'] == 'DELAY':
@@ -170,29 +170,29 @@ def getCourse(lines):
             else:
                 raise NotImplementedError
 
-        # 3. Parse measure data
-        elif line['name'] == 'DATA' and currentBranch == targetBranch:
-            data = line['value']
+        # 3. Parse measure noets
+        elif line['name'] == 'NOTES' and currentBranch == targetBranch:
+            notes = line['value']
             # If measure has ended, then append the measure and start anew
-            if data.endswith(','):
-                measureData += data[0:-1]
+            if notes.endswith(','):
+                measureNotes += notes[0:-1]
                 measure = {
                     "length": [measureDividend, measureDivisor],
-                    "data": measureData,
+                    "data": measureNotes,
                     "events": measureEvents,
                 }
                 measures.append(measure)
-                measureData = ''
+                measureNotes = ''
                 measureEvents = []
-            # Otherwise, keep tracking measureData
+            # Otherwise, keep tracking measureNotes
             else:
-                measureData += data
+                measureNotes += notes
 
     # If there is measure data (i.e. the file doesn't end on a "measure end" symbol ','), append whatever is left
-    if measureData:
+    if measureNotes:
         measures.append({
             "length": [measureDividend, measureDivisor],
-            "data": measureData,
+            "data": measureNotes,
             "events": measureEvents,
         })
     # Otherwise, if the file ends on a measure event (e.g. #GOGOEND), append any remaining events
