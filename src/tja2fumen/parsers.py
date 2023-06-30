@@ -12,11 +12,11 @@ from tja2fumen.constants import NORMALIZE_COURSE, TJA_NOTE_TYPES, branchNames, n
 
 def parseTJA(fnameTJA):
     try:
-        tja = open(fnameTJA, "r", encoding="utf-8-sig")
+        tja_text = open(fnameTJA, "r", encoding="utf-8-sig").read()
     except UnicodeDecodeError:
-        tja = open(fnameTJA, "r", encoding="shift-jis")
+        tja_text = open(fnameTJA, "r", encoding="shift-jis").read()
 
-    lines = [line for line in tja.read().splitlines() if line.strip() != '']
+    lines = [line for line in tja_text.splitlines() if line.strip() != '']
     courses = getCourseData(lines)
     for courseData in courses.values():
         courseData['measures'] = parseCourseMeasures(courseData['measures'])
