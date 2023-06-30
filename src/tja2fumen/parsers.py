@@ -76,16 +76,14 @@ def parseTJA(fnameTJA):
             if match_command:
                 nameUpper = match_command.group(1).upper()
                 value = match_command.group(2).strip() if match_command.group(2) else ''
-                line_type = "command"
             elif match_data:
-                nameUpper = ''
+                nameUpper = 'DATA'
                 value = match_data.group(1)
-                line_type = "data"
-            courses[currentCourse]['measure_lines'].append({"type": line_type, "name": nameUpper, "value": value})
+            courses[currentCourse]['measure_lines'].append({"name": nameUpper, "value": value})
 
     # Insert faux BPMCHANGE events into the start of each course corresponding to the global BPM property
     for courseData in courses.values():
-        courseData['measure_lines'].insert(0, {"type": 'command', "name": 'BPMCHANGE', "value": headers['bpm']})
+        courseData['measure_lines'].insert(0, {"name": 'BPMCHANGE', "value": headers['bpm']})
 
     # Convert parsed course lines into actual note data
     songs = {}
@@ -112,7 +110,7 @@ def getCourse(lines):
     measureEvents = []
     for line in lines:
         # 1. Parse branch commands
-        if line["type"] == 'command' and line['name'] in BRANCH_COMMANDS:
+        if line['name'] in BRANCH_COMMANDS:
             if line["name"] == 'BRANCHSTART':
                 if flagLevelhold:
                     return
@@ -149,7 +147,7 @@ def getCourse(lines):
                 raise NotImplementedError
 
         # 2. Parse measure commands
-        elif line["type"] == 'command' and line['name'] in MEASURE_COMMANDS and currentBranch == targetBranch:
+        elif line['name'] in MEASURE_COMMANDS and currentBranch == targetBranch:
             if line['name'] == 'MEASURE':
                 matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
                 if not matchMeasure:
@@ -180,7 +178,7 @@ def getCourse(lines):
                 raise NotImplementedError
 
         # 3. Parse measure data
-        elif line['type'] == 'data' and currentBranch == targetBranch:
+        elif line['name'] == 'DATA' and currentBranch == targetBranch:
             data = line['value']
             # If measure has ended, then append the measure and start anew
             if data.endswith(','):
