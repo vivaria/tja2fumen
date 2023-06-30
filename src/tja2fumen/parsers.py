@@ -41,21 +41,21 @@ def parseTJA(fnameTJA):
 
         elif match_header:
             nameUpper = match_header.group(1).upper()
-            value = match_header.group(2)
+            value = match_header.group(2).strip()
             if nameUpper in HEADER_GLOBAL:
-                headers[nameUpper.lower()] = value.strip()
+                headers[nameUpper.lower()] = value
             elif nameUpper in HEADER_COURSE:
                 if nameUpper == 'COURSE':
-                    currentCourse = NORMALIZE_COURSE[value.strip()]
+                    currentCourse = NORMALIZE_COURSE[value]
                     if currentCourse not in courses.keys():
                         courses[currentCourse] = []
-                courses[currentCourse].append({"type": 'header', "name": nameUpper, "value": value.strip()})
+                courses[currentCourse].append({"type": 'header', "name": nameUpper, "value": value})
 
         elif match_command:
             nameUpper = match_command.group(1).upper()
-            value = match_command.group(2) if match_command.group(2) else ''
+            value = match_command.group(2).strip() if match_command.group(2) else ''
             if nameUpper in COMMAND:
-                courses[currentCourse].append({"type": 'command', "name": nameUpper, "value": value.strip()})
+                courses[currentCourse].append({"type": 'command', "name": nameUpper, "value": value})
 
         elif match_data:
             courses[currentCourse].append({"type": 'data', "data": match_data.group(1)})
