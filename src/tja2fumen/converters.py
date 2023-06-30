@@ -22,12 +22,86 @@ default_measure = {
 }
 
 
+def processTJACommands(tja):
+    """
+    Merge TJA 'data' and 'event' fields into a single measure property, and split
+    measures into sub-measures whenever a mid-measure BPM change occurs.
+
+    The TJA parser produces measure objects with two important properties:
+      - 'data': Contains the note data (1: don, 2: ka, etc.) along with spacing (s)
+      - 'events' Contains event commands such as MEASURE, BPMCHANGE, GOGOTIME, etc.
+
+    However, notes and events can be intertwined within a single measure. So, it's
+    not possible to process them separately; they must be considered as single sequence.
+
+    A particular danger is BPM changes. TJA allows multiple BPMs within a single measure,
+    but the fumen format permits one BPM per measure. So, a TJA measure must be split up
+    if it has multiple BPM changes within a measure.
+
+    In the future, this logic should probably be moved into the TJA parser itself.
+    """
+    currentBPM = 0
+    currentScroll = 1.0
+    currentGogo = False
+    currentBarline = True
+
+    measuresCorrected = []
+    for measure in tja['measures']:
+        # Split measure into submeasure
+        measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
+                       'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
+                       'time_sig': measure['length'], 'data': []}
+        for data in measure['combined']:
+            if data['type'] == 'note':
+                measure_cur['data'].append(data)
+                # Update the current measure's SCROLL/GOGO/BARLINE status.
+                measure_cur['scroll'] = currentScroll
+                measure_cur['gogo'] = currentGogo
+                measure_cur['barline'] = currentBarline
+                # NB: The reason we update the measure's SCROLL/GOGO/BARLINE during the "note" event is because of
+                # an ordering problem for mid-measure BPMCHANGEs. For example, imagine the following two TJA charts:
+                #   33                     11021020
+                #   #GOGOEND               #BPMCHANGE 178
+                #   #BPMCHANGE 107         #SCROLL 1.04
+                #   33,                    1102,
+                # In both examples, BPMCHANGE + one other command happen mid-measure. But, the ordering differs.
+                # This is relevant because in fumen files, "BPMCHANGE" signals the start of a new sub-measure.
+                # Yet, in both cases, we want the 2nd command to apply to the notes _after_ the BPMCHANGE.
+                # So, we make sure to only apply SCROLL/GOGO/BARLINE changes once we actually encounter new notes.
+            elif data['type'] == 'bpm':
+                currentBPM = float(data['value'])
+                # Case 1: BPM change at the start of a measure; just change BPM
+                if data['pos'] == 0:
+                    measure_cur['bpm'] = currentBPM
+                # Case 2: BPM change mid-measure, so start a new sub-measure
+                else:
+                    measure_cur['pos_end'] = data['pos']
+                    measuresCorrected.append(measure_cur)
+                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
+                                   'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
+                                   'time_sig': measure['length'], 'data': []}
+            elif data['type'] == 'scroll':
+                currentScroll = data['value']
+            elif data['type'] == 'gogo':
+                currentGogo = bool(int(data['value']))
+            elif data['type'] == 'barline':
+                currentBarline = bool(int(data['value']))
+            else:
+                print(f"Unexpected event type: {data['type']}")
+        measure_cur['pos_end'] = len(measure['data'])
+        measuresCorrected.append(measure_cur)
+
+    return measuresCorrected
+
+
 def convertTJAToFumen(tja):
     # Hardcode currentBranch due to current lack of support for branching songs
     currentBranch = 'normal'  # TODO: Program in branch support
     measureDurationPrev = 0
     currentDrumroll = None
     total_notes = 0
+
+    tja['measures'] = processTJACommands(tja)
 
     # Parse TJA measures to create converted TJA -> Fumen file
     tjaConverted = {'measures': []}
