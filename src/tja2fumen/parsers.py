@@ -106,7 +106,7 @@ def getCourse(lines):
         if line['name'] in BRANCH_COMMANDS:
             if line["name"] == 'BRANCHSTART':
                 if flagLevelhold:
-                    return
+                    continue
                 values = line['value'].split(',')
                 if values[0] == 'r':
                     if len(values) >= 3:
@@ -144,7 +144,7 @@ def getCourse(lines):
             if line['name'] == 'MEASURE':
                 matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
                 if not matchMeasure:
-                    return
+                    continue
                 measureDividend = int(matchMeasure.group(1))
                 measureDivisor = int(matchMeasure.group(2))
             elif line['name'] == 'GOGOSTART':
