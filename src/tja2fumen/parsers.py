@@ -4,7 +4,7 @@ import re
 from tja2fumen.utils import readStruct, getBool, shortHex
 from tja2fumen.constants import (
     # TJA constants
-    HEADER_GLOBAL, HEADER_COURSE, BRANCH_COMMANDS, MEASURE_COMMANDS, COMMAND, NORMALIZE_COURSE, TJA_NOTE_TYPES,
+    HEADER_GLOBAL, HEADER_COURSE, BRANCH_COMMANDS, MEASURE_COMMANDS, NORMALIZE_COURSE, TJA_NOTE_TYPES,
     # Fumen constants
     branchNames, noteTypes
 )
@@ -72,14 +72,16 @@ def parseTJA(fnameTJA):
                 else:
                     raise NotImplementedError
 
-        elif match_command:
-            nameUpper = match_command.group(1).upper()
-            value = match_command.group(2).strip() if match_command.group(2) else ''
-            if nameUpper in COMMAND:
-                courses[currentCourse]['measure_lines'].append({"type": 'command', "name": nameUpper, "value": value})
-
-        elif match_data:
-            courses[currentCourse]['measure_lines'].append({"type": 'data', "data": match_data.group(1)})
+        else:
+            if match_command:
+                nameUpper = match_command.group(1).upper()
+                value = match_command.group(2).strip() if match_command.group(2) else ''
+                line_type = "command"
+            elif match_data:
+                nameUpper = ''
+                value = match_data.group(1)
+                line_type = "data"
+            courses[currentCourse]['measure_lines'].append({"type": line_type, "name": nameUpper, "value": value})
 
     # Insert faux BPMCHANGE events into the start of each course corresponding to the global BPM property
     for courseData in courses.values():
@@ -179,7 +181,7 @@ def getCourse(lines):
 
         # 3. Parse measure data
         elif line['type'] == 'data' and currentBranch == targetBranch:
-            data = line['data']
+            data = line['value']
             # If measure has ended, then append the measure and start anew
             if data.endswith(','):
                 measureData += data[0:-1]
