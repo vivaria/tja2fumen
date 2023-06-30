@@ -43,20 +43,22 @@ def parseTJA(fnameTJA):
                     currentCourse = NORMALIZE_COURSE[value]
                     if currentCourse not in courses.keys():
                         courses[currentCourse] = {
-                            'headers': {'course': currentCourse, 'level': 0, 'balloon': [],
-                                        'scoreInit': 0, 'scoreDiff': 0},
-                            'measure_lines': [{"name": 'BPMCHANGE', "value": headerGlobal['bpm']}]
+                            'metadata': {**headerGlobal, **{'course': currentCourse, 'level': 0, 'balloon': [],
+                                                            'scoreInit': 0, 'scoreDiff': 0}},
+                            'measures': [{"name": 'BPMCHANGE', "value": headerGlobal['bpm']}],
+                            'scoreInit': 0,
+                            'scoreDiff': 0,
                         }
                 elif nameUpper == 'LEVEL':
-                    courses[currentCourse]['headers']['level'] = int(value) if value else 0
+                    courses[currentCourse]['metadata']['level'] = int(value) if value else 0
                 elif nameUpper == 'SCOREINIT':
-                    courses[currentCourse]['headers']['scoreInit'] = int(value) if value else 0
+                    courses[currentCourse]['scoreInit'] = int(value) if value else 0
                 elif nameUpper == 'SCOREDIFF':
-                    courses[currentCourse]['headers']['scoreDiff'] = int(value) if value else 0
+                    courses[currentCourse]['scoreDiff'] = int(value) if value else 0
                 elif nameUpper == 'BALLOON':
                     if value:
                         balloons = [int(v) for v in value.split(",") if v]
-                        courses[currentCourse]['headers']['balloon'] = balloons
+                        courses[currentCourse]['metadata']['balloon'] = balloons
                 # STYLE is a P1/P2 command, which we don't support yet, so normally this would be a
                 # NotImplemetedError. However, TakoTako outputs `STYLE:SINGLE` when converting Ura
                 # charts, so throwing an error here would prevent Ura charts from being converted.
@@ -76,27 +78,14 @@ def parseTJA(fnameTJA):
             elif match_notes:
                 nameUpper = 'NOTES'
                 value = match_notes.group(1)
-            courses[currentCourse]['measure_lines'].append({"name": nameUpper, "value": value})
+            courses[currentCourse]['measures'].append({"name": nameUpper, "value": value})
 
     # Convert parsed course lines into actual note data
     songs = {}
     for courseName, courseData in courses.items():
-        courseMeasures = parseCourseMeasures(courseData['measure_lines'])
-
-        # applyFumenStructureToParsedTJA
-        tja = {'measures': [], 'metadata': {}}
-        for k, v in headerGlobal.items():
-            tja['metadata'][k] = v
-        for k, v in courseData['headers'].items():
-            if k in ['scoreInit', 'scoreDiff']:
-                tja[k] = v
-            else:
-                tja['metadata'][k] = v
-        for i, measure in enumerate(courseMeasures):
-            tja['measures'].append(measure)
-
-        tja['measures'] = preprocessTJAMeasures(tja)
-        songs[courseName] = tja
+        courseData['measures'] = parseCourseMeasures(courseData['measures'])
+        courseData['measures'] = preprocessTJAMeasures(courseData)
+        songs[courseName] = courseData
 
     return songs
 
