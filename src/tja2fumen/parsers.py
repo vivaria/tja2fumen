@@ -38,6 +38,7 @@ def parseTJA(fnameTJA):
 
         if match_comment:
             continue
+
         elif match_header:
             nameUpper = match_header.group(1).upper()
             value = match_header.group(2)
@@ -50,12 +51,14 @@ def parseTJA(fnameTJA):
                     if currentCourse not in courses.keys():
                         courses[currentCourse] = []
                 courses[currentCourse].append(parsed)
+
         elif match_command:
             nameUpper = match_command.group(1).upper()
             value = match_command.group(2) if match_command.group(2) else ''
             if nameUpper in COMMAND:
                 parsed = {"type": 'command', "name": nameUpper, "value": value.strip()}
                 courses[currentCourse].append(parsed)
+
         elif match_data:
             parsed = {"type": 'data', "data": match_data.group(1)}
             courses[currentCourse].append(parsed)
