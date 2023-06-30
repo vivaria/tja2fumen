@@ -1,7 +1,8 @@
 from copy import deepcopy
+import re
 
 from tja2fumen.utils import computeSoulGaugeBytes
-from tja2fumen.constants import TJA_NOTE_TYPES, DIFFICULTY_BYTES, sampleHeaderMetadata, simpleHeaders
+from tja2fumen.constants import DIFFICULTY_BYTES, sampleHeaderMetadata, simpleHeaders
 
 # Filler metadata that the `writeFumen` function expects
 # TODO: Determine how to properly set the item byte (https://github.com/vivaria/tja2fumen/issues/17)
@@ -22,7 +23,7 @@ default_measure = {
 }
 
 
-def preprocessTJAMeasures(tja):
+def processTJACommands(tja):
     """
     Merge TJA 'data' and 'event' fields into a single measure property, and split
     measures into sub-measures whenever a mid-measure BPM change occurs.
@@ -40,35 +41,20 @@ def preprocessTJAMeasures(tja):
 
     In the future, this logic should probably be moved into the TJA parser itself.
     """
-    currentBPM = 0
+    currentBPM = float(tja['metadata']['bpm'])
     currentScroll = 1.0
     currentGogo = False
     currentBarline = True
+    currentDividend = 4
+    currentDivisor = 4
 
     measuresCorrected = []
     for measure in tja['measures']:
-        # Step 1: Combine notes and events
-        notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
-                 for i, note in enumerate(measure['data']) if note != '0']
-        events = [{'pos': e['position'], 'type': e['name'], 'value': e['value']}
-                  for e in measure['events']]
-        combined = []
-        while notes or events:
-            if events and notes:
-                if notes[0]['pos'] >= events[0]['pos']:
-                    combined.append(events.pop(0))
-                else:
-                    combined.append(notes.pop(0))
-            elif events:
-                combined.append(events.pop(0))
-            elif notes:
-                combined.append(notes.pop(0))
-
-        # Step 2: Split measure into submeasure
+        # Split measure into submeasure
         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                        'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
-                       'time_sig': measure['length'], 'data': []}
-        for data in combined:
+                       'time_sig': [currentDividend, currentDivisor], 'data': []}
+        for data in measure['combined']:
             if data['type'] == 'note':
                 measure_cur['data'].append(data)
                 # Update the current measure's SCROLL/GOGO/BARLINE status.
@@ -96,7 +82,14 @@ def preprocessTJAMeasures(tja):
                     measuresCorrected.append(measure_cur)
                     measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                                    'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
-                                   'time_sig': measure['length'], 'data': []}
+                                   'time_sig': [currentDividend, currentDivisor], 'data': []}
+            elif data['type'] == 'measure':
+                matchMeasure = re.match(r"(\d+)/(\d+)", data['value'])
+                if not matchMeasure:
+                    continue
+                currentDividend = int(matchMeasure.group(1))
+                currentDivisor = int(matchMeasure.group(2))
+                measure_cur['time_sig'] = [currentDividend, currentDivisor]
             elif data['type'] == 'scroll':
                 currentScroll = data['value']
             elif data['type'] == 'gogo':
@@ -114,10 +107,11 @@ def preprocessTJAMeasures(tja):
 def convertTJAToFumen(tja):
     # Hardcode currentBranch due to current lack of support for branching songs
     currentBranch = 'normal'  # TODO: Program in branch support
-    tja['measures'] = preprocessTJAMeasures(tja)
     measureDurationPrev = 0
     currentDrumroll = None
     total_notes = 0
+
+    tja['measures'] = processTJACommands(tja)
 
     # Parse TJA measures to create converted TJA -> Fumen file
     tjaConverted = {'measures': []}
@@ -188,8 +182,8 @@ def convertTJAToFumen(tja):
                 note = deepcopy(default_note)
                 note['pos'] = note_pos
                 note['type'] = data['value']
-                note['scoreInit'] = tja['scoreInit']  # Probably not fully accurate
-                note['scoreDiff'] = tja['scoreDiff']  # Probably not fully accurate
+                note['scoreInit'] = tja['metadata']['scoreInit']  # Probably not fully accurate
+                note['scoreDiff'] = tja['metadata']['scoreDiff']  # Probably not fully accurate
                 # Handle drumroll/balloon-specific metadata
                 if note['type'] in ["Balloon", "Kusudama"]:
                     note['hits'] = tja['metadata']['balloon'].pop(0)
@@ -234,7 +228,7 @@ def convertTJAToFumen(tja):
     tjaConverted['order'] = '<'
     tjaConverted['unknownMetadata'] = 0
     tjaConverted['branches'] = False
-    tjaConverted['scoreInit'] = tja['scoreInit']
-    tjaConverted['scoreDiff'] = tja['scoreDiff']
+    tjaConverted['scoreInit'] = tja['metadata']['scoreInit']
+    tjaConverted['scoreDiff'] = tja['metadata']['scoreDiff']
 
     return tjaConverted
