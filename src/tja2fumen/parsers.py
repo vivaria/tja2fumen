@@ -16,11 +16,9 @@ def parseTJA(fnameTJA):
     except UnicodeDecodeError:
         tja = open(fnameTJA, "r", encoding="shift-jis")
 
-    # Split into lines
-    lines = tja.read().splitlines()
-    lines = [line for line in lines if line.strip()]  # Discard empty lines
+    # Read in the non-empty lines
+    lines = [line for line in tja.read().splitlines() if line.strip() != '']
 
-    # Line by line
     headerGlobal = {}
     courses = {}
     currentCourse = ''
