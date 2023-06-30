@@ -48,23 +48,44 @@ def parseTJA(fnameTJA):
                 if nameUpper == 'COURSE':
                     currentCourse = NORMALIZE_COURSE[value]
                     if currentCourse not in courses.keys():
-                        courses[currentCourse] = []
-                courses[currentCourse].append({"type": 'header', "name": nameUpper, "value": value})
+                        courses[currentCourse] = {
+                            'headers': {'course': currentCourse, 'level': 0, 'balloon': [],
+                                        'scoreInit': 0, 'scoreDiff': 0},
+                            'measure_lines': []
+                        }
+                elif nameUpper == 'LEVEL':
+                    courses[currentCourse]['headers']['level'] = int(value) if value else 0
+                elif nameUpper == 'SCOREINIT':
+                    courses[currentCourse]['headers']['scoreInit'] = int(value) if value else 0
+                elif nameUpper == 'SCOREDIFF':
+                    courses[currentCourse]['headers']['scoreDiff'] = int(value) if value else 0
+                elif nameUpper == 'BALLOON':
+                    if value:
+                        balloons = [int(v) for v in value.split(",") if v]
+                        courses[currentCourse]['headers']['balloon'] = balloons
+                # STYLE is a P1/P2 command, which we don't support yet, so normally this would be a
+                # NotImplemetedError. However, TakoTako outputs `STYLE:SINGLE` when converting Ura
+                # charts, so throwing an error here would prevent Ura charts from being converted.
+                # See: https://github.com/vivaria/tja2fumen/issues/15#issuecomment-1575341088
+                elif nameUpper == 'STYLE':
+                    pass
+                else:
+                    raise NotImplementedError
 
         elif match_command:
             nameUpper = match_command.group(1).upper()
             value = match_command.group(2).strip() if match_command.group(2) else ''
             if nameUpper in COMMAND:
-                courses[currentCourse].append({"type": 'command', "name": nameUpper, "value": value})
+                courses[currentCourse]['measure_lines'].append({"type": 'command', "name": nameUpper, "value": value})
 
         elif match_data:
-            courses[currentCourse].append({"type": 'data', "data": match_data.group(1)})
+            courses[currentCourse]['measure_lines'].append({"type": 'data', "data": match_data.group(1)})
 
     # Convert parsed course lines into actual note data
     songs = {}
-    for courseName, courseLines in courses.items():
-        courseHeader, courseMeasures = getCourse(headers, courseLines)
-        tja = applyFumenStructureToParsedTJA(headers, courseHeader, courseMeasures)
+    for courseName, courseData in courses.items():
+        courseMeasures = getCourse(headers, courseData['measure_lines'])
+        tja = applyFumenStructureToParsedTJA(headers, courseData['headers'], courseMeasures)
         tja['measures'] = preprocessTJAMeasures(tja)
         songs[courseName] = tja
 
@@ -72,30 +93,6 @@ def parseTJA(fnameTJA):
 
 
 def getCourse(tjaHeaders, lines):
-    def parseHeaderMetadata(line):
-        nonlocal headers
-        if line["name"] == 'COURSE':
-            headers['course'] = NORMALIZE_COURSE[line['value']]
-        elif line["name"] == 'LEVEL':
-            headers['level'] = int(line['value']) if line['value'] else 0
-        elif line["name"] == 'SCOREINIT':
-            headers['scoreInit'] = int(line['value']) if line['value'] else 0
-        elif line["name"] == 'SCOREDIFF':
-            headers['scoreDiff'] = int(line['value']) if line['value'] else 0
-        elif line["name"] == 'BALLOON':
-            if line['value']:
-                balloons = [int(v) for v in line['value'].split(",") if v]
-            else:
-                balloons = []
-            headers['balloon'] = balloons
-        # STYLE is a P1/P2 command, which we don't support yet, so normally this would be a NotImplemetedError.
-        # However, TakoTako outputs `STYLE:SINGLE` when converting Ura charts, so throwing an error here prevents
-        # Ura charts from being converted. See: https://github.com/vivaria/tja2fumen/issues/15#issuecomment-1575341088
-        elif line["name"] == 'STYLE':
-            pass
-        else:
-            raise NotImplementedError
-
     def parseBranchCommands(line):
         nonlocal flagLevelhold, targetBranch, currentBranch
         if line["name"] == 'BRANCHSTART':
@@ -183,7 +180,6 @@ def getCourse(tjaHeaders, lines):
             measureData += data
 
     # Define state variables
-    headers = {'balloon': []}  # Charters sometimes exclude `BALLOON` entirely if there are none
     measures = []
     measureDividend = 4
     measureDivisor = 4
@@ -195,9 +191,7 @@ def getCourse(tjaHeaders, lines):
 
     # Process course lines
     for line in lines:
-        if line["type"] == 'header':
-            parseHeaderMetadata(line)
-        elif line["type"] == 'command' and line['name'] in BRANCH_COMMANDS:
+        if line["type"] == 'command' and line['name'] in BRANCH_COMMANDS:
             parseBranchCommands(line)
         elif line["type"] == 'command' and line['name'] in MEASURE_COMMANDS and currentBranch == targetBranch:
             parseMeasureCommands(line)
@@ -232,7 +226,7 @@ def getCourse(tjaHeaders, lines):
             # noinspection PyTypeChecker
             measures[len(measures) - 1]['events'].append(event)
 
-    return headers, measures
+    return measures
 
 
 def applyFumenStructureToParsedTJA(globalHeader, courseHeader, measures):
