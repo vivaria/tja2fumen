@@ -81,10 +81,14 @@ def parseTJA(fnameTJA):
         elif match_data:
             courses[currentCourse]['measure_lines'].append({"type": 'data', "data": match_data.group(1)})
 
+    # Insert faux BPMCHANGE events into the start of each course corresponding to the global BPM property
+    for courseData in courses.values():
+        courseData['measure_lines'].insert(0, {"type": 'command', "name": 'BPMCHANGE', "value": headers['bpm']})
+
     # Convert parsed course lines into actual note data
     songs = {}
     for courseName, courseData in courses.items():
-        courseMeasures = getCourse(headers, courseData['measure_lines'])
+        courseMeasures = getCourse(courseData['measure_lines'])
         tja = applyFumenStructureToParsedTJA(headers, courseData['headers'], courseMeasures)
         tja['measures'] = preprocessTJAMeasures(tja)
         songs[courseName] = tja
@@ -92,7 +96,7 @@ def parseTJA(fnameTJA):
     return songs
 
 
-def getCourse(tjaHeaders, lines):
+def getCourse(lines):
     def parseBranchCommands(line):
         nonlocal flagLevelhold, targetBranch, currentBranch
         if line["name"] == 'BRANCHSTART':
@@ -197,19 +201,6 @@ def getCourse(tjaHeaders, lines):
             parseMeasureCommands(line)
         elif line['type'] == 'data' and currentBranch == targetBranch:
             parseMeasureData(line)
-
-    # Post-processing: Ensure the first measure has a BPM event
-    if measures:
-        firstBPMEventFound = False
-        # Search for BPM event in the first measure
-        for i in range(len(measures[0]['events'])):
-            evt = measures[0]['events'][i]
-            if evt['name'] == 'bpm' and evt['position'] == 0:
-                firstBPMEventFound = True
-        # If not present, insert a BPM event into the first measure using the global header metadata
-        if not firstBPMEventFound:
-            # noinspection PyTypeChecker
-            measures[0]['events'].insert(0, {"name": 'bpm', "position": 0, "value": tjaHeaders['bpm']})
 
     # Post-processing: In case the file doesn't end on a "measure end" symbol (','), append whatever is left
     if measureData:
