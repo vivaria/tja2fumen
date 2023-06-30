@@ -81,7 +81,7 @@ def parseTJA(fnameTJA):
     # Convert parsed course lines into actual note data
     songs = {}
     for courseName, courseData in courses.items():
-        courseMeasures = getCourse(courseData['measure_lines'])
+        courseMeasures = parseCourseMeasures(courseData['measure_lines'])
 
         # applyFumenStructureToParsedTJA
         tja = {'measures': [], 'metadata': {}}
@@ -101,7 +101,7 @@ def parseTJA(fnameTJA):
     return songs
 
 
-def getCourse(lines):
+def parseCourseMeasures(lines):
     # Define state variables
     measureDividend = 4
     measureDivisor = 4
