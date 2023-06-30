@@ -40,7 +40,7 @@ def parseTJA(fnameTJA):
                     courses[currentCourse] = {
                         'metadata': {'course': currentCourse, 'bpm': songBPM, 'offset': songOffset, 'level': 0,
                                      'balloon': [], 'scoreInit': 0, 'scoreDiff': 0},
-                        'measures': [{"name": 'BPMCHANGE', "value": songBPM}],
+                        'measures': [],
                     }
             elif nameUpper == 'LEVEL':
                 courses[currentCourse]['metadata']['level'] = int(value) if value else 0

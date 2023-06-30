@@ -41,7 +41,7 @@ def processTJACommands(tja):
 
     In the future, this logic should probably be moved into the TJA parser itself.
     """
-    currentBPM = 0
+    currentBPM = float(tja['metadata']['bpm'])
     currentScroll = 1.0
     currentGogo = False
     currentBarline = True
