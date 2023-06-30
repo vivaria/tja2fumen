@@ -82,7 +82,19 @@ def parseTJA(fnameTJA):
     songs = {}
     for courseName, courseData in courses.items():
         courseMeasures = getCourse(courseData['measure_lines'])
-        tja = applyFumenStructureToParsedTJA(headers, courseData['headers'], courseMeasures)
+
+        # applyFumenStructureToParsedTJA
+        tja = {'measures': [], 'metadata': {}}
+        for k, v in headers.items():
+            tja['metadata'][k] = v
+        for k, v in courseData['headers'].items():
+            if k in ['scoreInit', 'scoreDiff']:
+                tja[k] = v
+            else:
+                tja['metadata'][k] = v
+        for i, measure in enumerate(courseMeasures):
+            tja['measures'].append(measure)
+
         tja['measures'] = preprocessTJAMeasures(tja)
         songs[courseName] = tja
 
@@ -203,25 +215,6 @@ def getCourse(lines):
             measures[len(measures) - 1]['events'].append(event)
 
     return measures
-
-
-def applyFumenStructureToParsedTJA(globalHeader, courseHeader, measures):
-    """Merge song metadata, course metadata, and course data into a single fumen-like object."""
-    song = {'measures': [], 'metadata': {}}
-
-    for k, v in globalHeader.items():
-        song['metadata'][k] = v
-
-    for k, v in courseHeader.items():
-        if k in ['scoreInit', 'scoreDiff']:
-            song[k] = v
-        else:
-            song['metadata'][k] = v
-
-    for i, measure in enumerate(measures):
-        song['measures'].append(measure)
-
-    return song
 
 
 def preprocessTJAMeasures(tja):
