@@ -279,7 +279,7 @@ def applyFumenStructureToParsedTJA(globalHeader, courseHeader, measures):
 # TODO: Figure out what the unknown Wii1, Wii4, and PS4 notes represent (just in case they're important somehow)
 
 
-def readFumen(fumenFile, byteOrder=None, exclude_empty_measures=False):
+def readFumen(fumenFile, exclude_empty_measures=False):
     """
     Parse bytes of a fumen .bin file into nested measure, branch, and note dictionaries.
 
@@ -298,19 +298,14 @@ def readFumen(fumenFile, byteOrder=None, exclude_empty_measures=False):
     # Determine:
     #   - The byte order (big or little endian)
     #   - The total number of measures from byte 0x200 (decimal 512)
-    if byteOrder:
-        order = ">" if byteOrder == "big" else "<"
-        totalMeasures = readStruct(file, order, format_string="I", seek=0x200)[0]
+    measuresBig = readStruct(file, order="", format_string=">I", seek=0x200)[0]
+    measuresLittle = readStruct(file, order="", format_string="<I", seek=0x200)[0]
+    if measuresBig < measuresLittle:
+        order = ">"
+        totalMeasures = measuresBig
     else:
-        # Use the number of measures to determine the byte order
-        measuresBig = readStruct(file, order="", format_string=">I", seek=0x200)[0]
-        measuresLittle = readStruct(file, order="", format_string="<I", seek=0x200)[0]
-        if measuresBig < measuresLittle:
-            order = ">"
-            totalMeasures = measuresBig
-        else:
-            order = "<"
-            totalMeasures = measuresLittle
+        order = "<"
+        totalMeasures = measuresLittle
 
     # Initialize the dict that will contain the chart information
     song = {'measures': []}
