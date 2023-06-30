@@ -97,92 +97,6 @@ def parseTJA(fnameTJA):
 
 
 def getCourse(lines):
-    def parseBranchCommands(line):
-        nonlocal flagLevelhold, targetBranch, currentBranch
-        if line["name"] == 'BRANCHSTART':
-            if flagLevelhold:
-                return
-            values = line['value'].split(',')
-            if values[0] == 'r':
-                if len(values) >= 3:
-                    targetBranch = 'M'
-                elif len(values) == 2:
-                    targetBranch = 'E'
-                else:
-                    targetBranch = 'N'
-            elif values[0] == 'p':
-                if len(values) >= 3 and float(values[2]) <= 100:
-                    targetBranch = 'M'
-                elif len(values) >= 2 and float(values[1]) <= 100:
-                    targetBranch = 'E'
-                else:
-                    targetBranch = 'N'
-        elif line["name"] == 'BRANCHEND':
-            currentBranch = targetBranch
-        elif line["name"] == 'N':
-            currentBranch = 'N'
-        elif line["name"] == 'E':
-            currentBranch = 'E'
-        elif line["name"] == 'M':
-            currentBranch = 'M'
-        elif line["name"] == 'START' or line['name'] == 'END':
-            currentBranch = 'N'
-            targetBranch = 'N'
-            flagLevelhold = False
-        elif line['name'] == 'SECTION':
-            raise NotImplementedError
-        else:
-            raise NotImplementedError
-
-    def parseMeasureCommands(line):
-        nonlocal measureDivisor, measureDividend, measureEvents, flagLevelhold
-        if line['name'] == 'MEASURE':
-            matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
-            if not matchMeasure:
-                return
-            measureDividend = int(matchMeasure.group(1))
-            measureDivisor = int(matchMeasure.group(2))
-        elif line['name'] == 'GOGOSTART':
-            measureEvents.append({"name": 'gogo', "position": len(measureData), "value": '1'})
-        elif line['name'] == 'GOGOEND':
-            measureEvents.append({"name": 'gogo', "position": len(measureData), "value": '0'})
-        elif line['name'] == 'BARLINEON':
-            measureEvents.append({"name": 'barline', "position": len(measureData), "value": '1'})
-        elif line['name'] == 'BARLINEOFF':
-            measureEvents.append({"name": 'barline', "position": len(measureData), "value": '0'})
-        elif line['name'] == 'SCROLL':
-            measureEvents.append({"name": 'scroll', "position": len(measureData), "value": float(line['value'])})
-        elif line['name'] == 'BPMCHANGE':
-            measureEvents.append({"name": 'bpm', "position": len(measureData), "value": float(line['value'])})
-        elif line['name'] == 'LEVELHOLD':
-            flagLevelhold = True
-        elif line['name'] == 'DELAY':
-            raise NotImplementedError
-        elif line['name'] == 'LYRIC':
-            pass
-        elif line['name'] == 'NEXTSONG':
-            pass
-        else:
-            raise NotImplementedError
-
-    def parseMeasureData(line):
-        nonlocal measures, measureData, measureDividend, measureDivisor, measureEvents
-        data = line['data']
-        # If measure has ended, then append the measure and start anew
-        if data.endswith(','):
-            measureData += data[0:-1]
-            measure = {
-                "length": [measureDividend, measureDivisor],
-                "data": measureData,
-                "events": measureEvents,
-            }
-            measures.append(measure)
-            measureData = ''
-            measureEvents = []
-        # Otherwise, keep tracking measureData
-        else:
-            measureData += data
-
     # Define state variables
     measures = []
     measureDividend = 4
@@ -195,12 +109,92 @@ def getCourse(lines):
 
     # Process course lines
     for line in lines:
+
+        # 1. Parse branch commands
         if line["type"] == 'command' and line['name'] in BRANCH_COMMANDS:
-            parseBranchCommands(line)
+            if line["name"] == 'BRANCHSTART':
+                if flagLevelhold:
+                    return
+                values = line['value'].split(',')
+                if values[0] == 'r':
+                    if len(values) >= 3:
+                        targetBranch = 'M'
+                    elif len(values) == 2:
+                        targetBranch = 'E'
+                    else:
+                        targetBranch = 'N'
+                elif values[0] == 'p':
+                    if len(values) >= 3 and float(values[2]) <= 100:
+                        targetBranch = 'M'
+                    elif len(values) >= 2 and float(values[1]) <= 100:
+                        targetBranch = 'E'
+                    else:
+                        targetBranch = 'N'
+            elif line["name"] == 'BRANCHEND':
+                currentBranch = targetBranch
+            elif line["name"] == 'N':
+                currentBranch = 'N'
+            elif line["name"] == 'E':
+                currentBranch = 'E'
+            elif line["name"] == 'M':
+                currentBranch = 'M'
+            elif line["name"] == 'START' or line['name'] == 'END':
+                currentBranch = 'N'
+                targetBranch = 'N'
+                flagLevelhold = False
+            elif line['name'] == 'SECTION':
+                raise NotImplementedError
+            else:
+                raise NotImplementedError
+
+        # 2. Parse measure commands
         elif line["type"] == 'command' and line['name'] in MEASURE_COMMANDS and currentBranch == targetBranch:
-            parseMeasureCommands(line)
+            if line['name'] == 'MEASURE':
+                matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
+                if not matchMeasure:
+                    return
+                measureDividend = int(matchMeasure.group(1))
+                measureDivisor = int(matchMeasure.group(2))
+            elif line['name'] == 'GOGOSTART':
+                measureEvents.append({"name": 'gogo', "position": len(measureData), "value": '1'})
+            elif line['name'] == 'GOGOEND':
+                measureEvents.append({"name": 'gogo', "position": len(measureData), "value": '0'})
+            elif line['name'] == 'BARLINEON':
+                measureEvents.append({"name": 'barline', "position": len(measureData), "value": '1'})
+            elif line['name'] == 'BARLINEOFF':
+                measureEvents.append({"name": 'barline', "position": len(measureData), "value": '0'})
+            elif line['name'] == 'SCROLL':
+                measureEvents.append({"name": 'scroll', "position": len(measureData), "value": float(line['value'])})
+            elif line['name'] == 'BPMCHANGE':
+                measureEvents.append({"name": 'bpm', "position": len(measureData), "value": float(line['value'])})
+            elif line['name'] == 'LEVELHOLD':
+                flagLevelhold = True
+            elif line['name'] == 'DELAY':
+                raise NotImplementedError
+            elif line['name'] == 'LYRIC':
+                pass
+            elif line['name'] == 'NEXTSONG':
+                pass
+            else:
+                raise NotImplementedError
+
+        # Parse measure data
         elif line['type'] == 'data' and currentBranch == targetBranch:
-            parseMeasureData(line)
+            data = line['data']
+            # If measure has ended, then append the measure and start anew
+            if data.endswith(','):
+                measureData += data[0:-1]
+                measure = {
+                    "length": [measureDividend, measureDivisor],
+                    "data": measureData,
+                    "events": measureEvents,
+                }
+                measures.append(measure)
+                measureData = ''
+                measureEvents = []
+            # Otherwise, keep tracking measureData
+            else:
+                measureData += data
 
     # Post-processing: In case the file doesn't end on a "measure end" symbol (','), append whatever is left
     if measureData:
