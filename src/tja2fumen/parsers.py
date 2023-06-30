@@ -91,13 +91,13 @@ def parseCourseMeasures(lines):
     # Define state variables
     measureDividend = 4
     measureDivisor = 4
-    measureNotes = ''
     currentBranch = 'N'
     targetBranch = 'N'
     flagLevelhold = False
 
     # Process course lines
     measures = []
+    measureNotes = ''
     measureEvents = []
     for line in lines:
         assert currentBranch == targetBranch
