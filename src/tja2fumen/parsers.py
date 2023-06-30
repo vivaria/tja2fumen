@@ -37,8 +37,9 @@ def parseTJA(fnameTJA):
         match_data = re.match(r"^(([0-9]|A|B|C|F|G)*,?).*$", line)
 
         parsed = {"type": 'unknown', "value": line}
+        # Case 1: Comments (ignore)
         if match_comment:
-            parsed = {"type": 'comment', "value": line}
+            continue
         elif match_header:
             nameUpper = match_header.group(1).upper()
             value = match_header.group(2)
@@ -54,11 +55,8 @@ def parseTJA(fnameTJA):
         elif match_data:
             parsed = {"type": 'data', "data": match_data.group(1)}
 
-        # Case 1: Comments (ignore)
-        if parsed['type'] == 'comment':
-            pass
         # Case 2: Global header metadata
-        elif parsed['type'] == 'header' and parsed['scope'] == 'global':
+        if parsed['type'] == 'header' and parsed['scope'] == 'global':
             headers[parsed['name'].lower()] = parsed['value']
         # Case 3: Course data (metadata, commands, note data)
         else:
