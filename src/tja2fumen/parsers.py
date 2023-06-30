@@ -4,7 +4,7 @@ import re
 from tja2fumen.utils import readStruct, getBool, shortHex
 from tja2fumen.constants import (
     # TJA constants
-    HEADER_GLOBAL, HEADER_COURSE, BRANCH_COMMANDS, MEASURE_COMMANDS, NORMALIZE_COURSE, TJA_NOTE_TYPES,
+    HEADER_GLOBAL, HEADER_COURSE, NORMALIZE_COURSE, TJA_NOTE_TYPES,
     # Fumen constants
     branchNames, noteTypes
 )
