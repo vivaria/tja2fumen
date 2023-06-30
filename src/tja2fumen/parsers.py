@@ -83,8 +83,6 @@ def parseTJA(fnameTJA):
 
 def parseCourseMeasures(lines):
     # Define state variables
-    measureDividend = 4
-    measureDivisor = 4
     currentBranch = 'N'
     targetBranch = 'N'
     flagLevelhold = False
@@ -102,7 +100,6 @@ def parseCourseMeasures(lines):
             if notes.endswith(','):
                 measureNotes += notes[0:-1]
                 measure = {
-                    "length": [measureDividend, measureDivisor],
                     "data": measureNotes,
                     "events": measureEvents,
                 }
@@ -129,11 +126,7 @@ def parseCourseMeasures(lines):
             elif line['name'] == 'BPMCHANGE':
                 measureEvents.append({"name": 'bpm', "position": len(measureNotes), "value": float(line['value'])})
             elif line['name'] == 'MEASURE':
-                matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
-                if not matchMeasure:
-                    continue
-                measureDividend = int(matchMeasure.group(1))
-                measureDivisor = int(matchMeasure.group(2))
+                measureEvents.append({"name": 'measure', "position": len(measureNotes), "value": line['value']})
 
             # Branch commands
             elif line["name"] == 'START' or line['name'] == 'END':
@@ -186,7 +179,6 @@ def parseCourseMeasures(lines):
     # If there is measure data (i.e. the file doesn't end on a "measure end" symbol ','), append whatever is left
     if measureNotes:
         measures.append({
-            "length": [measureDividend, measureDivisor],
             "data": measureNotes,
             "events": measureEvents,
         })

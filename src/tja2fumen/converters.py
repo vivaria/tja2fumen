@@ -1,4 +1,5 @@
 from copy import deepcopy
+import re
 
 from tja2fumen.utils import computeSoulGaugeBytes
 from tja2fumen.constants import DIFFICULTY_BYTES, sampleHeaderMetadata, simpleHeaders
@@ -44,13 +45,15 @@ def processTJACommands(tja):
     currentScroll = 1.0
     currentGogo = False
     currentBarline = True
+    measureDividend = 4
+    measureDivisor = 4
 
     measuresCorrected = []
     for measure in tja['measures']:
         # Split measure into submeasure
         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                        'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
-                       'time_sig': measure['length'], 'data': []}
+                       'time_sig': [measureDividend, measureDivisor], 'data': []}
         for data in measure['combined']:
             if data['type'] == 'note':
                 measure_cur['data'].append(data)
@@ -79,7 +82,14 @@ def processTJACommands(tja):
                     measuresCorrected.append(measure_cur)
                     measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                                    'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
-                                   'time_sig': measure['length'], 'data': []}
+                                   'time_sig': [measureDividend, measureDivisor], 'data': []}
+            elif data['type'] == 'measure':
+                matchMeasure = re.match(r"(\d+)/(\d+)", data['value'])
+                if not matchMeasure:
+                    continue
+                measureDividend = int(matchMeasure.group(1))
+                measureDivisor = int(matchMeasure.group(2))
+                measure_cur['time_sig'] = [measureDividend, measureDivisor]
             elif data['type'] == 'scroll':
                 currentScroll = data['value']
             elif data['type'] == 'gogo':
