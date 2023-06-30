@@ -6,9 +6,9 @@ import glob
 
 import pytest
 
-from src.tja2fumen import main as convert
-from src.tja2fumen.parsers import readFumen
-from src.tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE, simpleHeaders, byte_strings
+from tja2fumen import main as convert
+from tja2fumen.parsers import readFumen
+from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE, simpleHeaders, byte_strings
 
 
 @pytest.mark.parametrize('id_song', [
