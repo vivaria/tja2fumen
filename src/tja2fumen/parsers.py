@@ -100,8 +100,27 @@ def parseCourseMeasures(lines):
     measures = []
     measureEvents = []
     for line in lines:
-        # 1. Parse branch commands
-        if line['name'] in BRANCH_COMMANDS:
+        assert currentBranch == targetBranch
+        # 1. Parse measure notes
+        if line['name'] == 'NOTES':
+            notes = line['value']
+            # If measure has ended, then append the measure and start anew
+            if notes.endswith(','):
+                measureNotes += notes[0:-1]
+                measure = {
+                    "length": [measureDividend, measureDivisor],
+                    "data": measureNotes,
+                    "events": measureEvents,
+                }
+                measures.append(measure)
+                measureNotes = ''
+                measureEvents = []
+            # Otherwise, keep tracking measureNotes
+            else:
+                measureNotes += notes
+
+        # 2. Parse commands
+        else:
             if line["name"] == 'BRANCHSTART':
                 if flagLevelhold:
                     continue
@@ -134,12 +153,7 @@ def parseCourseMeasures(lines):
                 flagLevelhold = False
             elif line['name'] == 'SECTION':
                 raise NotImplementedError
-            else:
-                raise NotImplementedError
-
-        # 2. Parse measure commands
-        elif line['name'] in MEASURE_COMMANDS and currentBranch == targetBranch:
-            if line['name'] == 'MEASURE':
+            elif line['name'] == 'MEASURE':
                 matchMeasure = re.match(r"(\d+)/(\d+)", line['value'])
                 if not matchMeasure:
                     continue
@@ -167,24 +181,6 @@ def parseCourseMeasures(lines):
                 pass
             else:
                 raise NotImplementedError
-
-        # 3. Parse measure noets
-        elif line['name'] == 'NOTES' and currentBranch == targetBranch:
-            notes = line['value']
-            # If measure has ended, then append the measure and start anew
-            if notes.endswith(','):
-                measureNotes += notes[0:-1]
-                measure = {
-                    "length": [measureDividend, measureDivisor],
-                    "data": measureNotes,
-                    "events": measureEvents,
-                }
-                measures.append(measure)
-                measureNotes = ''
-                measureEvents = []
-            # Otherwise, keep tracking measureNotes
-            else:
-                measureNotes += notes
 
     # If there is measure data (i.e. the file doesn't end on a "measure end" symbol ','), append whatever is left
     if measureNotes:
