@@ -40,15 +40,13 @@ def parseTJA(fnameTJA):
                         'metadata': {**headerGlobal, **{'course': currentCourse, 'level': 0, 'balloon': [],
                                                         'scoreInit': 0, 'scoreDiff': 0}},
                         'measures': [{"name": 'BPMCHANGE', "value": headerGlobal['bpm']}],
-                        'scoreInit': 0,
-                        'scoreDiff': 0,
                     }
             elif nameUpper == 'LEVEL':
                 courses[currentCourse]['metadata']['level'] = int(value) if value else 0
             elif nameUpper == 'SCOREINIT':
-                courses[currentCourse]['scoreInit'] = int(value) if value else 0
+                courses[currentCourse]['metadata']['scoreInit'] = int(value) if value else 0
             elif nameUpper == 'SCOREDIFF':
-                courses[currentCourse]['scoreDiff'] = int(value) if value else 0
+                courses[currentCourse]['metadata']['scoreDiff'] = int(value) if value else 0
             elif nameUpper == 'BALLOON':
                 if value:
                     balloons = [int(v) for v in value.split(",") if v]

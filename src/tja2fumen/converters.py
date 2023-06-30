@@ -182,8 +182,8 @@ def convertTJAToFumen(tja):
                 note = deepcopy(default_note)
                 note['pos'] = note_pos
                 note['type'] = data['value']
-                note['scoreInit'] = tja['scoreInit']  # Probably not fully accurate
-                note['scoreDiff'] = tja['scoreDiff']  # Probably not fully accurate
+                note['scoreInit'] = tja['metadata']['scoreInit']  # Probably not fully accurate
+                note['scoreDiff'] = tja['metadata']['scoreDiff']  # Probably not fully accurate
                 # Handle drumroll/balloon-specific metadata
                 if note['type'] in ["Balloon", "Kusudama"]:
                     note['hits'] = tja['metadata']['balloon'].pop(0)
@@ -228,7 +228,7 @@ def convertTJAToFumen(tja):
     tjaConverted['order'] = '<'
     tjaConverted['unknownMetadata'] = 0
     tjaConverted['branches'] = False
-    tjaConverted['scoreInit'] = tja['scoreInit']
-    tjaConverted['scoreDiff'] = tja['scoreDiff']
+    tjaConverted['scoreInit'] = tja['metadata']['scoreInit']
+    tjaConverted['scoreDiff'] = tja['metadata']['scoreDiff']
 
     return tjaConverted
