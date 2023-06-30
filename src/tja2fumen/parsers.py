@@ -203,6 +203,25 @@ def parseCourseMeasures(lines):
             # noinspection PyTypeChecker
             measures[len(measures) - 1]['events'].append(event)
 
+    # Merge measure data and measure events
+    for measure in measures:
+        notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
+                 for i, note in enumerate(measure['data']) if note != '0']
+        events = [{'pos': e['position'], 'type': e['name'], 'value': e['value']}
+                  for e in measure['events']]
+        combined = []
+        while notes or events:
+            if events and notes:
+                if notes[0]['pos'] >= events[0]['pos']:
+                    combined.append(events.pop(0))
+                else:
+                    combined.append(notes.pop(0))
+            elif events:
+                combined.append(events.pop(0))
+            elif notes:
+                combined.append(notes.pop(0))
+        measure['combined'] = combined
+
     return measures
 
 
@@ -231,28 +250,11 @@ def preprocessTJAMeasures(tja):
 
     measuresCorrected = []
     for measure in tja['measures']:
-        # Step 1: Combine notes and events
-        notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
-                 for i, note in enumerate(measure['data']) if note != '0']
-        events = [{'pos': e['position'], 'type': e['name'], 'value': e['value']}
-                  for e in measure['events']]
-        combined = []
-        while notes or events:
-            if events and notes:
-                if notes[0]['pos'] >= events[0]['pos']:
-                    combined.append(events.pop(0))
-                else:
-                    combined.append(notes.pop(0))
-            elif events:
-                combined.append(events.pop(0))
-            elif notes:
-                combined.append(notes.pop(0))
-
-        # Step 2: Split measure into submeasure
+        # Split measure into submeasure
         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                        'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
                        'time_sig': measure['length'], 'data': []}
-        for data in combined:
+        for data in measure['combined']:
             if data['type'] == 'note':
                 measure_cur['data'].append(data)
                 # Update the current measure's SCROLL/GOGO/BARLINE status.
