@@ -196,15 +196,14 @@ def getCourse(lines):
             else:
                 measureData += data
 
-    # Post-processing: In case the file doesn't end on a "measure end" symbol (','), append whatever is left
+    # If there is measure data (i.e. the file doesn't end on a "measure end" symbol ','), append whatever is left
     if measureData:
         measures.append({
             "length": [measureDividend, measureDivisor],
             "data": measureData,
             "events": measureEvents,
         })
-
-    # Post-processing: Otherwise, if the file ends on a measure event (e.g. #GOGOEND), append any remaining events
+    # Otherwise, if the file ends on a measure event (e.g. #GOGOEND), append any remaining events
     elif measureEvents:
         for event in measureEvents:
             event['position'] = len(measures[len(measures) - 1]['data'])
