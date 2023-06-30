@@ -1,4 +1,6 @@
-﻿BPM:186
+﻿// This song features mid-measure BPMCHANGE commands.
+// It also mixes in SCROLL and MEASURE commands next to the BPMCHANGE commands.
+BPM:186
 OFFSET:-11.430
 
 COURSE:Edit

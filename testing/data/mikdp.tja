@@ -1,3 +1,5 @@
+// This is a basic song with notes, balloons, and drumrolls.
+// It does not feature BPMCHANGEs, branches, or multiplayer commands.
 BPM:181
 OFFSET:-1.99
 
