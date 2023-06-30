@@ -49,7 +49,7 @@ def parseTJA(fnameTJA):
                     currentCourse = NORMALIZE_COURSE[value.strip()]
                     if currentCourse not in courses.keys():
                         courses[currentCourse] = []
-                courses[currentCourse].append({"type": 'header', "scope": 'course', "name": nameUpper, "value": value.strip()})
+                courses[currentCourse].append({"type": 'header', "name": nameUpper, "value": value.strip()})
 
         elif match_command:
             nameUpper = match_command.group(1).upper()
