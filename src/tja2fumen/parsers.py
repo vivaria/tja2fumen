@@ -81,12 +81,10 @@ def parseTJA(fnameTJA):
             courses[currentCourse]['measures'].append({"name": nameUpper, "value": value})
 
     # Convert parsed course lines into actual note data
-    songs = {}
-    for courseName, courseData in courses.items():
+    for courseData in courses.values():
         courseData['measures'] = parseCourseMeasures(courseData['measures'])
-        songs[courseName] = courseData
 
-    return songs
+    return courses
 
 
 def parseCourseMeasures(lines):
