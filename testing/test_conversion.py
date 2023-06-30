@@ -12,9 +12,7 @@ from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE, simpleHeaders, byt
 
 
 @pytest.mark.parametrize('id_song', [
-    # Passing charts
     pytest.param('mikdp'),
-    # Failing charts (NB: These will be XFAIL in CI, but FAIL in local tests.)
     pytest.param('ia6cho'),
 ])
 def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
