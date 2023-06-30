@@ -16,7 +16,6 @@ def parseTJA(fnameTJA):
     except UnicodeDecodeError:
         tja = open(fnameTJA, "r", encoding="shift-jis")
 
-    # Read in the non-empty lines
     lines = [line for line in tja.read().splitlines() if line.strip() != '']
     courses = getCourseData(lines)
     for courseData in courses.values():
@@ -32,16 +31,19 @@ def getCourseData(lines):
     songOffset = 0
 
     for line in lines:
-
-        # Case 1: Header lines
+        # Case 1: Header metadata
         match_header = re.match(r"^([A-Z]+):(.*)", line)
         if match_header:
             nameUpper = match_header.group(1).upper()
             value = match_header.group(2).strip()
+
+            # Global header fields
             if nameUpper == 'BPM':
                 songBPM = value
             elif nameUpper == 'OFFSET':
                 songOffset = value
+
+            # Course-specific header fields
             elif nameUpper == 'COURSE':
                 currentCourse = NORMALIZE_COURSE[value]
                 if currentCourse not in courses.keys():
@@ -69,8 +71,8 @@ def getCourseData(lines):
             else:
                 pass  # Ignore other header fields such as 'TITLE', 'SUBTITLE', 'WAVE', etc.
 
-        # Case 2: Non-header, non-comment (//) lines
-        elif not re.match(r"//.*", line):
+        # Case 2: Commands and note data (to be further processed course-by-course later on)
+        elif not re.match(r"//.*", line):  # Exclude comment-only lines ('//')
             match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
             match_notes = re.match(r"^(([0-9]|A|B|C|F|G)*,?).*$", line)
             if match_command:
@@ -189,10 +191,9 @@ def parseCourseMeasures(lines):
     elif measureEvents:
         for event in measureEvents:
             event['position'] = len(measures[len(measures) - 1]['data'])
-            # noinspection PyTypeChecker
             measures[len(measures) - 1]['events'].append(event)
 
-    # Merge measure data and measure events
+    # Merge measure data and measure events in chronological order
     for measure in measures:
         notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
                  for i, note in enumerate(measure['data']) if note != '0']
