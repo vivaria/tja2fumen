@@ -30,16 +30,10 @@ def parseTJA(fnameTJA):
     courses = {}
     currentCourse = ''
     for line in lines:
-        # Regex matches for various line types
-        match_comment = re.match(r"//.*", line)
+
+        # Case 1: Header lines
         match_header = re.match(r"^([A-Z]+):(.*)", line)
-        match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
-        match_data = re.match(r"^(([0-9]|A|B|C|F|G)*,?).*$", line)
-
-        if match_comment:
-            continue
-
-        elif match_header:
+        if match_header:
             nameUpper = match_header.group(1).upper()
             value = match_header.group(2).strip()
             if nameUpper in HEADER_GLOBAL:
@@ -72,7 +66,10 @@ def parseTJA(fnameTJA):
                 else:
                     raise NotImplementedError
 
-        else:
+        # Case 2: Non-header, non-comment (//) lines
+        elif not re.match(r"//.*", line):
+            match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
+            match_data = re.match(r"^(([0-9]|A|B|C|F|G)*,?).*$", line)
             if match_command:
                 nameUpper = match_command.group(1).upper()
                 value = match_command.group(2).strip() if match_command.group(2) else ''
