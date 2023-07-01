@@ -19,7 +19,7 @@ def parseTJA(fnameTJA):
     lines = [line for line in tja_text.splitlines() if line.strip() != '']
     courses = getCourseData(lines)
     for courseData in courses.values():
-        courseData['measures'] = parseCourseMeasures(courseData['measures'])
+        courseData['branches'] = parseCourseMeasures(courseData['data'])
 
     return courses
 
@@ -50,7 +50,7 @@ def getCourseData(lines):
                     courses[currentCourse] = {
                         'metadata': {'course': currentCourse, 'bpm': songBPM, 'offset': songOffset, 'level': 0,
                                      'balloon': [], 'scoreInit': 0, 'scoreDiff': 0},
-                        'measures': [],
+                        'data': [],
                     }
             elif nameUpper == 'LEVEL':
                 courses[currentCourse]['metadata']['level'] = int(value) if value else 0
@@ -81,34 +81,42 @@ def getCourseData(lines):
             elif match_notes:
                 nameUpper = 'NOTES'
                 value = match_notes.group(1)
-            courses[currentCourse]['measures'].append({"name": nameUpper, "value": value})
+            courses[currentCourse]['data'].append({"name": nameUpper, "value": value})
 
     return courses
 
 
 def parseCourseMeasures(lines):
-    # Define state variables
-    currentBranch = 'N'
-    targetBranch = 'N'
+    # Check if the course has branches or not
+    hasBranches = True if [l for l in lines if l['name'] == 'BRANCHSTART'] else False
+    if hasBranches:
+        currentBranch = 'all'
+        targetBranch = 'all'
+    else:
+        currentBranch = 'normal'
+        targetBranch = 'normal'
     flagLevelhold = False
 
     # Process course lines
-    measures = []
+    branches = {'normal': [], 'advanced': [], 'master': []}
     measureNotes = ''
     measureEvents = []
     for line in lines:
-        assert currentBranch == targetBranch
         # 1. Parse measure notes
         if line['name'] == 'NOTES':
             notes = line['value']
             # If measure has ended, then append the measure and start anew
             if notes.endswith(','):
                 measureNotes += notes[0:-1]
-                measure = {
+                measureCurrent = {
                     "data": measureNotes,
                     "events": measureEvents,
                 }
-                measures.append(measure)
+                if currentBranch == 'all':
+                    for branch in branches.keys():
+                        branches[branch].append(measureCurrent)
+                else:
+                    branches[currentBranch].append(measureCurrent)
                 measureNotes = ''
                 measureEvents = []
             # Otherwise, keep tracking measureNotes
@@ -135,17 +143,21 @@ def parseCourseMeasures(lines):
 
             # Branch commands
             elif line["name"] == 'START' or line['name'] == 'END':
-                currentBranch = 'N'
-                targetBranch = 'N'
+                if hasBranches:
+                    currentBranch = 'all'
+                    targetBranch = 'all'
+                else:
+                    currentBranch = 'normal'
+                    targetBranch = 'normal'
                 flagLevelhold = False
             elif line['name'] == 'LEVELHOLD':
                 flagLevelhold = True
             elif line["name"] == 'N':
-                currentBranch = 'N'
+                currentBranch = 'normal'
             elif line["name"] == 'E':
-                currentBranch = 'E'
+                currentBranch = 'advanced'
             elif line["name"] == 'M':
-                currentBranch = 'M'
+                currentBranch = 'master'
             elif line["name"] == 'BRANCHEND':
                 currentBranch = targetBranch
             elif line["name"] == 'BRANCHSTART':
@@ -154,18 +166,21 @@ def parseCourseMeasures(lines):
                 values = line['value'].split(',')
                 if values[0] == 'r':
                     if len(values) >= 3:
-                        targetBranch = 'M'
+                        targetBranch = 'master'
                     elif len(values) == 2:
-                        targetBranch = 'E'
+                        targetBranch = 'advanced'
                     else:
-                        targetBranch = 'N'
-                elif values[0] == 'p':
+                        targetBranch = 'normal'
+                elif values[0] == 'p':  # p = percentage
+                    values[1] = float(values[1]) / 100  # %
+                    values[2] = float(values[2]) / 100  # %
+                    measureEvents.append({"name": 'branchStart', "position": len(measureNotes), "value": values})
                     if len(values) >= 3 and float(values[2]) <= 100:
-                        targetBranch = 'M'
+                        targetBranch = 'master'
                     elif len(values) >= 2 and float(values[1]) <= 100:
-                        targetBranch = 'E'
+                        targetBranch = 'advanced'
                     else:
-                        targetBranch = 'N'
+                        targetBranch = 'normal'
 
             # Ignored commands
             elif line['name'] == 'LYRIC':
@@ -175,7 +190,7 @@ def parseCourseMeasures(lines):
 
             # Not implemented commands
             elif line['name'] == 'SECTION':
-                raise NotImplementedError
+                pass  # TODO: Implement
             elif line['name'] == 'DELAY':
                 raise NotImplementedError
             else:
@@ -183,36 +198,43 @@ def parseCourseMeasures(lines):
 
     # If there is measure data (i.e. the file doesn't end on a "measure end" symbol ','), append whatever is left
     if measureNotes:
-        measures.append({
+        branches[currentBranch].append({
             "data": measureNotes,
             "events": measureEvents,
         })
     # Otherwise, if the file ends on a measure event (e.g. #GOGOEND), append any remaining events
     elif measureEvents:
         for event in measureEvents:
-            event['position'] = len(measures[len(measures) - 1]['data'])
-            measures[len(measures) - 1]['events'].append(event)
+            event['position'] = len(branches[len(branches) - 1]['data'])
+            branches[currentBranch][len(branches[currentBranch]) - 1]['events'].append(event)
 
     # Merge measure data and measure events in chronological order
-    for measure in measures:
-        notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
-                 for i, note in enumerate(measure['data']) if note != '0']
-        events = [{'pos': e['position'], 'type': e['name'], 'value': e['value']}
-                  for e in measure['events']]
-        combined = []
-        while notes or events:
-            if events and notes:
-                if notes[0]['pos'] >= events[0]['pos']:
+    for branchName, branch in branches.items():
+        for measure in branch:
+            notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
+                     for i, note in enumerate(measure['data']) if note != '0']
+            events = [{'pos': e['position'], 'type': e['name'], 'value': e['value']}
+                      for e in measure['events']]
+            combined = []
+            while notes or events:
+                if events and notes:
+                    if notes[0]['pos'] >= events[0]['pos']:
+                        combined.append(events.pop(0))
+                    else:
+                        combined.append(notes.pop(0))
+                elif events:
                     combined.append(events.pop(0))
-                else:
+                elif notes:
                     combined.append(notes.pop(0))
-            elif events:
-                combined.append(events.pop(0))
-            elif notes:
-                combined.append(notes.pop(0))
-        measure['combined'] = combined
+            measure['combined'] = combined
 
-    return measures
+    # Ensure all branches have the same number of measures
+    if hasBranches:
+        branch_lens = [len(b) for b in branches.values()]
+        if not branch_lens.count(branch_lens[0]) == len(branch_lens):
+            raise ValueError("Branches do not have the same number of measures.")
+
+    return branches
 
 
 ########################################################################################################################
