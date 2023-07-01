@@ -138,9 +138,9 @@ def convertTJAToFumen(tja):
             # Compute the 1st measure's offset by subtracting the 2nd measure's duration from the tjaOffset
             if idx_m == 1:
                 tjaOffset = float(tja['metadata']['offset']) * 1000 * -1
-                tjaConverted['measures'][-1]['fumenOffset'] = tjaOffset - measureDurationPrev
+                tjaConverted['measures'][idx_m-1]['fumenOffset'] = tjaOffset - measureDurationPrev
             # Use the previous measure's offset plus the previous duration to compute the current measure's offset
-            measureOffsetPrev = tjaConverted['measures'][-1]['fumenOffset']
+            measureOffsetPrev = tjaConverted['measures'][idx_m-1]['fumenOffset']
             measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationPrev
         measureDurationPrev = measureDuration
 
