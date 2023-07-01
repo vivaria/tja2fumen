@@ -228,7 +228,8 @@ def parseCourseMeasures(lines):
     # Ensure all branches have the same number of measures
     if hasBranches:
         branch_lens = [len(b) for b in branches.values()]
-        assert branch_lens.count(branch_lens[0]) == len(branch_lens)
+        if not branch_lens.count(branch_lens[0]) == len(branch_lens):
+            raise ValueError("Branches do not have the same number of measures.")
 
     return branches
 

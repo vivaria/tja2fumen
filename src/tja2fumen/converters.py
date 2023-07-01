@@ -102,6 +102,16 @@ def processTJACommands(tja):
             measure_cur['pos_end'] = len(measure['data'])
             branchesCorrected[branchName].append(measure_cur)
 
+    hasBranches = all(len(b) for b in branchesCorrected.values())
+    if hasBranches:
+        branch_lens = [len(b) for b in branches.values()]
+        if not branch_lens.count(branch_lens[0]) == len(branch_lens):
+            raise ValueError("Branches do not have the same number of measures.")
+        else:
+            branchCorrected_lens = [len(b) for b in branchesCorrected.values()]
+            if not branchCorrected_lens.count(branchCorrected_lens[0]) == len(branchCorrected_lens):
+                raise ValueError("Branches do not have matching GOGO/SCROLL/BPM commands.")
+
     return branchesCorrected
 
 
