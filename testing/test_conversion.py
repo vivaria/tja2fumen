@@ -153,23 +153,26 @@ def checkValidHeader(headerBytes, strict=False):
 
     # 2. Check the header's metadata bytes
     for idx, val in enumerate(headerMetadata):
+        # Whether the song has branches
+        if idx == 0:
+            assert val in [0, 1], f"Expected 0/1 at position '{idx}', got '{val}' instead."
+
         # 0. Unknown
         # Notes:
         #   * Breakdown of distribution of different byte combinations:
-        #       - 5739/7482 charts: [0, 0, 0, 0]    (Most platforms)
-        #       -  386/7482 charts: [0, 151, 68, 0]
-        #       -  269/7482 charts: [0, 1, 57, 0]
-        #       -   93/7482 charts: [1, 0, 0, 0]
-        #       -   93/7482 charts: [0, 64, 153, 0]
+        #       - 5832/7482 charts: [0, 0, 0]    (Most platforms)
+        #       -  386/7482 charts: [151, 68, 0]
+        #       -  269/7482 charts: [1, 57, 0]
+        #       -   93/7482 charts: [64, 153, 0]
         #       -   And more...
         #       -   After this, we see a long tail of hundreds of different unique byte combinations.
         #   * Games with the greatest number of unique byte combinations:
         #       - VitaMS: 258 unique byte combinations
         #       - iOSU: 164 unique byte combinations
         #       - Vita: 153 unique byte combinations
-        # Given that most platforms use the values (0, 0, 0, 0), and unique values are very platform-specific,
-        # I'm going to stick with (0, 0, 0, 0) bytes when it comes to converting TJA files to fumens.
-        if idx in [0, 1, 2, 3]:
+        # Given that most platforms use the values (0, 0, 0), and unique values are very platform-specific,
+        # I'm going to stick with (0, 0, 0) bytes when it comes to converting TJA files to fumens.
+        elif idx in [1, 2, 3]:
             if strict:
                 assert val == 0, f"Expected 0 at position '{idx}', got '{val}' instead."
             else:
