@@ -26,7 +26,7 @@ default_measure = {
 def processTJACommands(tja):
     """
     Merge TJA 'data' and 'event' fields into a single measure property, and split
-    measures into sub-measures whenever a mid-measure BPM change occurs.
+    measures into sub-measures whenever a mid-measure BPM/SCROLL/GOGO change occurs.
 
     The TJA parser produces measure objects with two important properties:
       - 'data': Contains the note data (1: don, 2: ka, etc.) along with spacing (s)
@@ -50,39 +50,18 @@ def processTJACommands(tja):
 
     measuresCorrected = []
     for measure in tja['measures']:
-        # Split measure into submeasure
         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                        'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
                        'time_sig': [currentDividend, currentDivisor], 'data': []}
         for data in measure['combined']:
+            # Handle note data
             if data['type'] == 'note':
                 measure_cur['data'].append(data)
-                # Update the current measure's SCROLL/GOGO/BARLINE status.
-                measure_cur['scroll'] = currentScroll
-                measure_cur['gogo'] = currentGogo
+
+            # Handle commands that can only be placed between measures (i.e. no mid-measure variations)
+            elif data['type'] == 'barline':
+                currentBarline = bool(int(data['value']))
                 measure_cur['barline'] = currentBarline
-                # NB: The reason we update the measure's SCROLL/GOGO/BARLINE during the "note" event is because of
-                # an ordering problem for mid-measure BPMCHANGEs. For example, imagine the following two TJA charts:
-                #   33                     11021020
-                #   #GOGOEND               #BPMCHANGE 178
-                #   #BPMCHANGE 107         #SCROLL 1.04
-                #   33,                    1102,
-                # In both examples, BPMCHANGE + one other command happen mid-measure. But, the ordering differs.
-                # This is relevant because in fumen files, "BPMCHANGE" signals the start of a new sub-measure.
-                # Yet, in both cases, we want the 2nd command to apply to the notes _after_ the BPMCHANGE.
-                # So, we make sure to only apply SCROLL/GOGO/BARLINE changes once we actually encounter new notes.
-            elif data['type'] == 'bpm':
-                currentBPM = float(data['value'])
-                # Case 1: BPM change at the start of a measure; just change BPM
-                if data['pos'] == 0:
-                    measure_cur['bpm'] = currentBPM
-                # Case 2: BPM change mid-measure, so start a new sub-measure
-                else:
-                    measure_cur['pos_end'] = data['pos']
-                    measuresCorrected.append(measure_cur)
-                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
-                                   'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
-                                   'time_sig': [currentDividend, currentDivisor], 'data': []}
             elif data['type'] == 'measure':
                 matchMeasure = re.match(r"(\d+)/(\d+)", data['value'])
                 if not matchMeasure:
@@ -90,14 +69,33 @@ def processTJACommands(tja):
                 currentDividend = int(matchMeasure.group(1))
                 currentDivisor = int(matchMeasure.group(2))
                 measure_cur['time_sig'] = [currentDividend, currentDivisor]
-            elif data['type'] == 'scroll':
-                currentScroll = data['value']
-            elif data['type'] == 'gogo':
-                currentGogo = bool(int(data['value']))
-            elif data['type'] == 'barline':
-                currentBarline = bool(int(data['value']))
+
+            # Handle commands that can be placed in the middle of a measure.
+            #    NB: For fumen files, if there is a mid-measure change to BPM/SCROLL/GOGO, then the measure will
+            #    actually be split into two small submeasures. So, we need to start a new measure in those cases.
+            elif data['type'] in ['bpm', 'scroll', 'gogo']:
+                # Parse the values
+                if data['type'] == 'bpm':
+                    new_val = currentBPM = float(data['value'])
+                elif data['type'] == 'scroll':
+                    new_val = currentScroll = data['value']
+                elif data['type'] == 'gogo':
+                    new_val = currentGogo = bool(int(data['value']))
+                # Check for mid-measure commands
+                # - Case 1: Command happens at the start of a measure; just change the value directly
+                if data['pos'] == 0:
+                    measure_cur[data['type']] = new_val
+                # - Case 2: Command occurs mid-measure, so start a new sub-measure
+                else:
+                    measure_cur['pos_end'] = data['pos']
+                    measuresCorrected.append(measure_cur)
+                    measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
+                                   'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
+                                   'time_sig': [currentDividend, currentDivisor], 'data': []}
+
             else:
                 print(f"Unexpected event type: {data['type']}")
+
         measure_cur['pos_end'] = len(measure['data'])
         measuresCorrected.append(measure_cur)
 
