@@ -78,6 +78,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
             assert_song_property(co_measure, ca_measure, 'fumenOffset', i_measure, abs=0.5)
             assert_song_property(co_measure, ca_measure, 'gogo', i_measure)
             assert_song_property(co_measure, ca_measure, 'barline', i_measure)
+            assert_song_property(co_measure, ca_measure, 'branchInfo', i_measure)
             # 3b. Check measure notes
             for i_branch in ['normal', 'advanced', 'master']:
                 co_branch = co_measure[i_branch]

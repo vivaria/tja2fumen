@@ -171,7 +171,10 @@ def parseCourseMeasures(lines):
                         targetBranch = 'advanced'
                     else:
                         targetBranch = 'normal'
-                elif values[0] == 'p':
+                elif values[0] == 'p':  # p = percentage
+                    values[1] = float(values[1]) / 100  # %
+                    values[2] = float(values[2]) / 100  # %
+                    measureEvents.append({"name": 'branchStart', "position": len(measureNotes), "value": values})
                     if len(values) >= 3 and float(values[2]) <= 100:
                         targetBranch = 'master'
                     elif len(values) >= 2 and float(values[1]) <= 100:

@@ -15,6 +15,7 @@ default_measure = {
     'gogo': False,
     'barline': True,
     'padding1': 0,
+    'branchStart': None,
     'branchInfo': [-1, -1, -1, -1, -1, -1],
     'padding2': 0,
     'normal': deepcopy(default_branch),
@@ -54,13 +55,15 @@ def processTJACommands(tja):
             # Split measure into submeasure
             measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                            'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
-                           'time_sig': [currentDividend, currentDivisor], 'data': []}
+                           'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
             for data in measure['combined']:
                 # Handle note data
                 if data['type'] == 'note':
                     measure_cur['data'].append(data)
 
                 # Handle commands that can only be placed between measures (i.e. no mid-measure variations)
+                elif data['type'] == 'branchStart':
+                    measure_cur['branchStart'] = data['value']
                 elif data['type'] == 'barline':
                     currentBarline = bool(int(data['value']))
                     measure_cur['barline'] = currentBarline
@@ -94,7 +97,7 @@ def processTJACommands(tja):
                         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
                                        'barline': currentBarline,
                                        'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
-                                       'time_sig': [currentDividend, currentDivisor], 'data': []}
+                                       'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
 
                 else:
                     print(f"Unexpected event type: {data['type']}")
@@ -124,11 +127,31 @@ def convertTJAToFumen(tja):
         if not len(branch):
             continue
         total_notes = 0
+        total_notes_branch = 0
+        note_counter_branch = 0
         measureDurationPrev = 0
         currentDrumroll = None
         courseBalloons = tja['metadata']['balloon'].copy()
         for idx_m, measureTJA in enumerate(branch):
             measureFumen = tjaConverted['measures'][idx_m]
+
+            # Check to see if the measure contains a branching condition
+            if measureTJA['branchStart']:
+                measureFumen['branchStart'] = measureTJA['branchStart']
+            if measureFumen['branchStart']:
+                if measureFumen['branchStart'][0] == 'p':
+                    if currentBranch == 'normal':
+                        idx_b1, idx_b2 = 0, 1
+                    elif currentBranch == 'advanced':
+                        idx_b1, idx_b2 = 2, 3
+                    elif currentBranch == 'master':
+                        idx_b1, idx_b2 = 4, 5
+                    measureFumen['branchInfo'][idx_b1] = int(total_notes_branch * measureFumen['branchStart'][1] * 20)
+                    measureFumen['branchInfo'][idx_b2] = int(total_notes_branch * measureFumen['branchStart'][2] * 20)
+                elif measureTJA['branchStart'][0] == 'r':
+                    pass
+                total_notes_branch = 0
+            total_notes_branch += note_counter_branch
 
             # Compute the duration of the measure
             measureSize = measureTJA['time_sig'][0] / measureTJA['time_sig'][1]
@@ -166,6 +189,7 @@ def convertTJAToFumen(tja):
                 measureFumen['barline'] = False
 
             # Create note dictionaries based on TJA measure data (containing 0's plus 1/2/3/4/etc. for notes)
+            note_counter_branch = 0
             note_counter = 0
             for idx_d, data in enumerate(measureTJA['data']):
                 if data['type'] == 'note':
@@ -206,6 +230,11 @@ def convertTJAToFumen(tja):
                         note['drumrollBytes'] = b'\x00\x00\x00\x00\x00\x00\x00\x00'
                         currentDrumroll = note
                         total_notes -= 1
+                    # Count dons, kas, and balloons for the purpose of tracking branching accuracy
+                    if note['type'].lower() in ['don', 'ka']:
+                        note_counter_branch += 1
+                    elif note['type'].lower() in ['balloon', 'kusudama']:
+                        note_counter_branch += 1.5
                     measureFumen[currentBranch][note_counter] = note
                     note_counter += 1
             measureFumen[currentBranch]['length'] = note_counter
