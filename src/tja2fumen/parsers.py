@@ -90,10 +90,7 @@ def getCourseData(lines):
 def parseCourseMeasures(lines):
     # Check if the course has branches or not
     hasBranches = True if [l for l in lines if l['name'] == 'BRANCHSTART'] else False
-    if hasBranches:
-        currentBranch = 'all'
-    else:
-        currentBranch = 'normal'
+    currentBranch = 'all' if hasBranches else 'normal'
     flagLevelhold = False
 
     # Process course lines
@@ -159,10 +156,7 @@ def parseCourseMeasures(lines):
         # 3. Parse commands that don't create an event (e.g. simply changing the current branch)
         else:
             if line["name"] == 'START' or line['name'] == 'END':
-                if hasBranches:
-                    currentBranch = 'all'
-                else:
-                    currentBranch = 'normal'
+                currentBranch = 'all' if hasBranches else 'normal'
                 flagLevelhold = False
             elif line['name'] == 'LEVELHOLD':
                 flagLevelhold = True
