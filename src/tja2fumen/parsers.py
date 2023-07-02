@@ -1,5 +1,6 @@
 import os
 import re
+from copy import deepcopy
 
 from tja2fumen.utils import readStruct, getBool, shortHex
 from tja2fumen.constants import NORMALIZE_COURSE, TJA_NOTE_TYPES, branchNames, noteTypes
@@ -98,71 +99,51 @@ def parseCourseMeasures(lines):
     flagLevelhold = False
 
     # Process course lines
-    branches = {'normal': [], 'advanced': [], 'master': []}
-    measureNotes = ''
-    measureEvents = []
+    idx_m = 0
+    idx_m_branchstart = 0
+    emptyMeasure = {'data': '', 'events': []}
+    branches = {'normal': [deepcopy(emptyMeasure)], 'advanced': [deepcopy(emptyMeasure)], 'master': [deepcopy(emptyMeasure)]}
     for line in lines:
         # 1. Parse measure notes
         if line['name'] == 'NOTES':
             notes = line['value']
-            # If measure has ended, then append the measure and start anew
+            # If measure has ended, then add notes to the current measure, then start a new one by incrementing idx_m
             if notes.endswith(','):
-                measureNotes += notes[0:-1]
-                measureCurrent = {
-                    "data": measureNotes,
-                    "events": measureEvents,
-                }
-                if currentBranch == 'all':
-                    for branch in branches.keys():
-                        branches[branch].append(measureCurrent)
-                else:
-                    branches[currentBranch].append(measureCurrent)
-                measureNotes = ''
-                measureEvents = []
-            # Otherwise, keep tracking measureNotes
+                for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
+                    branches[branch][idx_m]['data'] += notes[0:-1]
+                    branches[branch].append(deepcopy(emptyMeasure))
+                idx_m += 1
+            # Otherwise, keep adding notes to the current measure ('idx_m')
             else:
-                measureNotes += notes
+                for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
+                    branches[branch][idx_m]['data'] += notes
 
-        # 2. Parse commands
-        else:
-            # Measure commands
+        # 2. Parse measure commands that produce an "event"
+        elif line['name'] in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
+                              'SCROLL', 'BPMCHANGE', 'MEASURE', 'BRANCHSTART']:
+            # Get position of the event
+            for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
+                pos = len(branches[branch][idx_m]['data'])
+
+            # Parse event type
             if line['name'] == 'GOGOSTART':
-                measureEvents.append({"name": 'gogo', "position": len(measureNotes), "value": '1'})
+                currentEvent = {"name": 'gogo', "position": pos, "value": '1'}
             elif line['name'] == 'GOGOEND':
-                measureEvents.append({"name": 'gogo', "position": len(measureNotes), "value": '0'})
+                currentEvent = {"name": 'gogo', "position": pos, "value": '0'}
             elif line['name'] == 'BARLINEON':
-                measureEvents.append({"name": 'barline', "position": len(measureNotes), "value": '1'})
+                currentEvent = {"name": 'barline', "position": pos, "value": '1'}
             elif line['name'] == 'BARLINEOFF':
-                measureEvents.append({"name": 'barline', "position": len(measureNotes), "value": '0'})
+                currentEvent = {"name": 'barline', "position": pos, "value": '0'}
             elif line['name'] == 'SCROLL':
-                measureEvents.append({"name": 'scroll', "position": len(measureNotes), "value": float(line['value'])})
+                currentEvent = {"name": 'scroll', "position": pos, "value": float(line['value'])}
             elif line['name'] == 'BPMCHANGE':
-                measureEvents.append({"name": 'bpm', "position": len(measureNotes), "value": float(line['value'])})
+                currentEvent = {"name": 'bpm', "position": pos, "value": float(line['value'])}
             elif line['name'] == 'MEASURE':
-                measureEvents.append({"name": 'measure', "position": len(measureNotes), "value": line['value']})
-
-            # Branch commands
-            elif line["name"] == 'START' or line['name'] == 'END':
-                if hasBranches:
-                    currentBranch = 'all'
-                    targetBranch = 'all'
-                else:
-                    currentBranch = 'normal'
-                    targetBranch = 'normal'
-                flagLevelhold = False
-            elif line['name'] == 'LEVELHOLD':
-                flagLevelhold = True
-            elif line["name"] == 'N':
-                currentBranch = 'normal'
-            elif line["name"] == 'E':
-                currentBranch = 'advanced'
-            elif line["name"] == 'M':
-                currentBranch = 'master'
-            elif line["name"] == 'BRANCHEND':
-                currentBranch = targetBranch
+                currentEvent = {"name": 'measure', "position": pos, "value": line['value']}
             elif line["name"] == 'BRANCHSTART':
                 if flagLevelhold:
                     continue
+                currentBranch = 'all'  # Ensure that the #BRANCHSTART command is present for all branches
                 values = line['value'].split(',')
                 if values[0] == 'r':
                     values[1] = int(values[1])  # # of drumrolls
@@ -182,7 +163,36 @@ def parseCourseMeasures(lines):
                         targetBranch = 'advanced'
                     else:
                         targetBranch = 'normal'
-                measureEvents.append({"name": 'branchStart', "position": len(measureNotes), "value": values})
+                currentEvent = {"name": 'branchStart', "position": pos, "value": values}
+                idx_m_branchstart = idx_m  # Preserve the index of the BRANCHSTART command to re-use for each branch
+
+            # Append event to the current measure's events
+            for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
+                branches[branch][idx_m]['events'].append(currentEvent)
+
+        # 3. Parse commands that don't create an event (e.g. simply changing the current branch)
+        else:
+            if line["name"] == 'START' or line['name'] == 'END':
+                if hasBranches:
+                    currentBranch = 'all'
+                    targetBranch = 'all'
+                else:
+                    currentBranch = 'normal'
+                    targetBranch = 'normal'
+                flagLevelhold = False
+            elif line['name'] == 'LEVELHOLD':
+                flagLevelhold = True
+            elif line["name"] == 'N':
+                currentBranch = 'normal'
+                idx_m = idx_m_branchstart
+            elif line["name"] == 'E':
+                currentBranch = 'advanced'
+                idx_m = idx_m_branchstart
+            elif line["name"] == 'M':
+                currentBranch = 'master'
+                idx_m = idx_m_branchstart
+            elif line["name"] == 'BRANCHEND':
+                currentBranch = targetBranch
 
             # Ignored commands
             elif line['name'] == 'LYRIC':
@@ -198,17 +208,10 @@ def parseCourseMeasures(lines):
             else:
                 raise NotImplementedError
 
-    # If there is measure data (i.e. the file doesn't end on a "measure end" symbol ','), append whatever is left
-    if measureNotes:
-        branches[currentBranch].append({
-            "data": measureNotes,
-            "events": measureEvents,
-        })
-    # Otherwise, if the file ends on a measure event (e.g. #GOGOEND), append any remaining events
-    elif measureEvents:
-        for event in measureEvents:
-            event['position'] = len(branches[len(branches) - 1]['data'])
-            branches[currentBranch][len(branches[currentBranch]) - 1]['events'].append(event)
+    # Delete the last measure in the branch if no notes or events were added to it (due to preallocating empty measures)
+    for branch in branches.values():
+        if not branch[-1]['data'] and not branch[-1]['events']:
+            del branch[-1]
 
     # Merge measure data and measure events in chronological order
     for branchName, branch in branches.items():

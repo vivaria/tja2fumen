@@ -137,19 +137,17 @@ def convertTJAToFumen(tja):
 
             # Check to see if the measure contains a branching condition
             if measureTJA['branchStart']:
-                measureFumen['branchStart'] = measureTJA['branchStart']
-            if measureFumen['branchStart']:
-                if measureFumen['branchStart'][0] == 'p':
+                if measureTJA['branchStart'][0] == 'p':
                     if currentBranch == 'normal':
                         idx_b1, idx_b2 = 0, 1
                     elif currentBranch == 'advanced':
                         idx_b1, idx_b2 = 2, 3
                     elif currentBranch == 'master':
                         idx_b1, idx_b2 = 4, 5
-                    measureFumen['branchInfo'][idx_b1] = int(total_notes_branch * measureFumen['branchStart'][1] * 20)
-                    measureFumen['branchInfo'][idx_b2] = int(total_notes_branch * measureFumen['branchStart'][2] * 20)
-                elif measureFumen['branchStart'][0] == 'r':
-                    measureFumen['branchInfo'] = measureFumen['branchStart'][1:] * 3
+                    measureFumen['branchInfo'][idx_b1] = int(total_notes_branch * measureTJA['branchStart'][1] * 20)
+                    measureFumen['branchInfo'][idx_b2] = int(total_notes_branch * measureTJA['branchStart'][2] * 20)
+                elif measureTJA['branchStart'][0] == 'r':
+                    measureFumen['branchInfo'] = measureTJA['branchStart'][1:] * 3
                 total_notes_branch = 0
             total_notes_branch += note_counter_branch
 
