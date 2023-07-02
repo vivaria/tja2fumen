@@ -92,10 +92,8 @@ def parseCourseMeasures(lines):
     hasBranches = True if [l for l in lines if l['name'] == 'BRANCHSTART'] else False
     if hasBranches:
         currentBranch = 'all'
-        targetBranch = 'all'
     else:
         currentBranch = 'normal'
-        targetBranch = 'normal'
     flagLevelhold = False
 
     # Process course lines
@@ -148,21 +146,9 @@ def parseCourseMeasures(lines):
                 if values[0] == 'r':
                     values[1] = int(values[1])  # # of drumrolls
                     values[2] = int(values[2])  # # of drumrolls
-                    if len(values) >= 3:
-                        targetBranch = 'master'
-                    elif len(values) == 2:
-                        targetBranch = 'advanced'
-                    else:
-                        targetBranch = 'normal'
                 elif values[0] == 'p':  # p = percentage
                     values[1] = float(values[1]) / 100  # %
                     values[2] = float(values[2]) / 100  # %
-                    if len(values) >= 3 and float(values[2]) <= 100:
-                        targetBranch = 'master'
-                    elif len(values) >= 2 and float(values[1]) <= 100:
-                        targetBranch = 'advanced'
-                    else:
-                        targetBranch = 'normal'
                 currentEvent = {"name": 'branchStart', "position": pos, "value": values}
                 idx_m_branchstart = idx_m  # Preserve the index of the BRANCHSTART command to re-use for each branch
 
@@ -175,10 +161,8 @@ def parseCourseMeasures(lines):
             if line["name"] == 'START' or line['name'] == 'END':
                 if hasBranches:
                     currentBranch = 'all'
-                    targetBranch = 'all'
                 else:
                     currentBranch = 'normal'
-                    targetBranch = 'normal'
                 flagLevelhold = False
             elif line['name'] == 'LEVELHOLD':
                 flagLevelhold = True
@@ -192,7 +176,7 @@ def parseCourseMeasures(lines):
                 currentBranch = 'master'
                 idx_m = idx_m_branchstart
             elif line["name"] == 'BRANCHEND':
-                currentBranch = targetBranch
+                currentBranch = 'all'
 
             # Ignored commands
             elif line['name'] == 'LYRIC':
