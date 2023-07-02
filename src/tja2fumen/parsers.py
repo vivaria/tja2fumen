@@ -202,7 +202,7 @@ def parseCourseMeasures(lines):
 
             # Not implemented commands
             elif line['name'] == 'SECTION':
-                pass  # TODO: Implement
+                pass  # This seems to be inconsequential, but I'm not 100% sure. Need to test more branching fumens.
             elif line['name'] == 'DELAY':
                 raise NotImplementedError
             else:
