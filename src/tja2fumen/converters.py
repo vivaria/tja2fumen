@@ -148,8 +148,8 @@ def convertTJAToFumen(tja):
                         idx_b1, idx_b2 = 4, 5
                     measureFumen['branchInfo'][idx_b1] = int(total_notes_branch * measureFumen['branchStart'][1] * 20)
                     measureFumen['branchInfo'][idx_b2] = int(total_notes_branch * measureFumen['branchStart'][2] * 20)
-                elif measureTJA['branchStart'][0] == 'r':
-                    pass
+                elif measureFumen['branchStart'][0] == 'r':
+                    measureFumen['branchInfo'] = measureFumen['branchStart'][1:] * 3
                 total_notes_branch = 0
             total_notes_branch += note_counter_branch
 
