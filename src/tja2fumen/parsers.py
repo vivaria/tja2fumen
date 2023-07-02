@@ -140,10 +140,10 @@ def parseCourseMeasures(lines):
                     continue
                 currentBranch = 'all'  # Ensure that the #BRANCHSTART command is present for all branches
                 values = line['value'].split(',')
-                if values[0] == 'r':
+                if values[0] == 'r':  # r = drumRoll
                     values[1] = int(values[1])  # # of drumrolls
                     values[2] = int(values[2])  # # of drumrolls
-                elif values[0] == 'p':  # p = percentage
+                elif values[0] == 'p':  # p = Percentage
                     values[1] = float(values[1]) / 100  # %
                     values[2] = float(values[2]) / 100  # %
                 currentEvent = {"name": 'branchStart', "position": pos, "value": values}
