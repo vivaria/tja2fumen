@@ -33,12 +33,17 @@ def main(argv=None):
 
     # Generate output filenames
     baseName = os.path.splitext(fnameTJA)[0]
-    outputFilenames = [baseName + f"_{COURSE_IDS[course]}.bin" if len(parsedSongsTJA) > 1
-                       else baseName + ".bin"
-                       for course in parsedSongsFumen.keys()]
-
-    # Write fumen data to files
-    for fumenData, outputName in zip(parsedSongsFumen.values(), outputFilenames):
+    outputFilenames = []
+    for courseName, fumenData in parsedSongsFumen.items():
+        if len(parsedSongsTJA) == 1:
+            outputName = f"{baseName}.bin"
+        else:
+            splitName = courseName.split("P")  # e.g. 'OniP2' -> ['Oni', '2'], 'Oni' -> ['Oni']
+            outputName = f"{baseName}_{COURSE_IDS[splitName[0]]}"
+            if len(splitName) == 2:
+                outputName += f"_{splitName[1]}"  # Add "_1" or "_2" if P1/P2 chart
+            outputName += ".bin"
+        outputFilenames.append(outputName)
         writeFumen(outputName, fumenData)
 
     if return_vars:
