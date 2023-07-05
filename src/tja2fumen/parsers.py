@@ -28,6 +28,7 @@ def parseTJA(fnameTJA):
 def getCourseData(lines):
     courses = {}
     currentCourse = ''
+    currentCourseCached = ''
     songBPM = 0
     songOffset = 0
 
@@ -47,6 +48,7 @@ def getCourseData(lines):
             # Course-specific header fields
             elif nameUpper == 'COURSE':
                 currentCourse = NORMALIZE_COURSE[value]
+                currentCourseCached = currentCourse
                 if currentCourse not in courses.keys():
                     courses[currentCourse] = {
                         'metadata': {'course': currentCourse, 'bpm': songBPM, 'offset': songOffset, 'level': 0,
@@ -63,12 +65,10 @@ def getCourseData(lines):
                 if value:
                     balloons = [int(v) for v in value.split(",") if v]
                     courses[currentCourse]['metadata']['balloon'] = balloons
-            # STYLE is a P1/P2 command, which we don't support yet, so normally this would be a
-            # NotImplemetedError. However, TakoTako outputs `STYLE:SINGLE` when converting Ura
-            # charts, so throwing an error here would prevent Ura charts from being converted.
-            # See: https://github.com/vivaria/tja2fumen/issues/15#issuecomment-1575341088
             elif nameUpper == 'STYLE':
-                pass
+                # Reset the course name to remove "P1/P2" that may have been added by a previous STYLE:DOUBLE chart
+                if value == 'Single':
+                    currentCourse = currentCourseCached
             else:
                 pass  # Ignore other header fields such as 'TITLE', 'SUBTITLE', 'WAVE', etc.
 
@@ -79,10 +79,24 @@ def getCourseData(lines):
             if match_command:
                 nameUpper = match_command.group(1).upper()
                 value = match_command.group(2).strip() if match_command.group(2) else ''
+                # For STYLE:Double, #START P1/P2 indicates the start of a new chart
+                # But, we want multiplayer charts to inherit the metadata from the course as a whole, so we deepcopy
+                if nameUpper == "START" and value in ["P1", "P2"]:                   
+                    currentCourse = currentCourseCached + value
+                    courses[currentCourse] = deepcopy(courses[currentCourseCached])
+                    courses[currentCourse]['data'] = list()  # Keep the metadata, but reset the note data
+                    value = ''  # Once we've made the new course, we can reset this to a normal #START command
             elif match_notes:
                 nameUpper = 'NOTES'
                 value = match_notes.group(1)
             courses[currentCourse]['data'].append({"name": nameUpper, "value": value})
+            
+    # If a course has no song data, then this is likely because the course has "STYLE: Double" but no "STYLE: Single".
+    # To fix this, we copy over the P1 chart from "STYLE: Double" to fill the "STYLE: Single" role.
+    for courseName, course in courses.items():
+        if not course['data']:
+            if courseName+"P1" in courses.keys():
+                courses[courseName] = deepcopy(courses[courseName+"P1"])
 
     return courses
 
