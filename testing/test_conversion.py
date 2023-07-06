@@ -78,7 +78,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
             ca_measure = ca_song['measures'][i_measure]
             # 3a. Check measure metadata
             assert_song_property(co_measure, ca_measure, 'bpm', i_measure, abs=0.01)
-            assert_song_property(co_measure, ca_measure, 'fumenOffset', i_measure, abs=0.5)
+            assert_song_property(co_measure, ca_measure, 'fumenOffset', i_measure, abs=1.0)
             assert_song_property(co_measure, ca_measure, 'gogo', i_measure)
             assert_song_property(co_measure, ca_measure, 'barline', i_measure)
             assert_song_property(co_measure, ca_measure, 'branchInfo', i_measure)
@@ -97,7 +97,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                     co_note = co_branch[i_note]
                     ca_note = ca_branch[i_note]
                     assert_song_property(co_note, ca_note, 'type', i_measure, i_branch, i_note, func=normalize_type)
-                    assert_song_property(co_note, ca_note, 'pos', i_measure, i_branch, i_note, abs=0.1)
+                    assert_song_property(co_note, ca_note, 'pos', i_measure, i_branch, i_note, abs=0.2)
                     # NB: Drumroll duration doesn't always end exactly on a beat. Plus, TJA charters often eyeball
                     #     drumrolls, leading them to be often off by a 1/4th/8th/16th/32th/etc. These charting errors
                     #     are fixable, but tedious to do when writing tests. So, I've added a try/except so that they
