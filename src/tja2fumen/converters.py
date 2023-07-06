@@ -54,7 +54,7 @@ def processTJACommands(tja):
         for measure in branch:
             # Split measure into submeasure
             measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
-                           'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0,
+                           'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0, 'delay': 0,
                            'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
             for data in measure['combined']:
                 # Handle note data
@@ -62,6 +62,8 @@ def processTJACommands(tja):
                     measure_cur['data'].append(data)
 
                 # Handle commands that can only be placed between measures (i.e. no mid-measure variations)
+                elif data['type'] == 'delay':
+                    measure_cur['delay'] = data['value'] * 1000  # ms -> s
                 elif data['type'] == 'branchStart':
                     measure_cur['branchStart'] = data['value']
                 elif data['type'] == 'barline':
@@ -95,8 +97,8 @@ def processTJACommands(tja):
                         measure_cur['pos_end'] = data['pos']
                         branchesCorrected[branchName].append(measure_cur)
                         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
-                                       'barline': currentBarline,
-                                       'subdivisions': len(measure['data']), 'pos_start': data['pos'], 'pos_end': 0,
+                                       'barline': currentBarline, 'subdivisions': len(measure['data']),
+                                       'pos_start': data['pos'], 'pos_end': 0, 'delay': 0,
                                        'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
 
                 else:
@@ -174,7 +176,7 @@ def convertTJAToFumen(tja):
                     tjaConverted['measures'][idx_m-1]['fumenOffset'] = tjaOffset - measureDurationPrev
                 # Use the previous measure's offset plus the previous duration to compute the current measure's offset
                 measureOffsetPrev = tjaConverted['measures'][idx_m-1]['fumenOffset']
-                measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationPrev
+                measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationPrev + measureTJA['delay']
             measureDurationPrev = measureDuration
 
             # Best guess at what 'barline' status means for each measure:
