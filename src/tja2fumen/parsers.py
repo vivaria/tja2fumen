@@ -128,7 +128,7 @@ def parseCourseMeasures(lines):
                     branches[branch][idx_m]['data'] += notes
 
         # 2. Parse measure commands that produce an "event"
-        elif line['name'] in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
+        elif line['name'] in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF', 'DELAY',
                               'SCROLL', 'BPMCHANGE', 'MEASURE', 'BRANCHSTART']:
             # Get position of the event
             for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
@@ -143,6 +143,8 @@ def parseCourseMeasures(lines):
                 currentEvent = {"name": 'barline', "position": pos, "value": '1'}
             elif line['name'] == 'BARLINEOFF':
                 currentEvent = {"name": 'barline', "position": pos, "value": '0'}
+            elif line['name'] == 'DELAY':
+                currentEvent = {"name": 'delay', "position": pos, "value": float(line['value'])}
             elif line['name'] == 'SCROLL':
                 currentEvent = {"name": 'scroll', "position": pos, "value": float(line['value'])}
             elif line['name'] == 'BPMCHANGE':
@@ -195,8 +197,6 @@ def parseCourseMeasures(lines):
             # Not implemented commands
             elif line['name'] == 'SECTION':
                 pass  # This seems to be inconsequential, but I'm not 100% sure. Need to test more branching fumens.
-            elif line['name'] == 'DELAY':
-                raise NotImplementedError
             else:
                 raise NotImplementedError
 
