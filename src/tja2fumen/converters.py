@@ -159,7 +159,8 @@ def convertTJAToFumen(tja):
             measureRatio = 1.0 if measureTJA['subdivisions'] == 0.0 else (measureLength / measureTJA['subdivisions'])
             # - measureDurationBase: The "base" measure duration, computed using a single BPM value.
             # - measureDuration: The actual measure duration, which may be adjusted if there is a mid-measure BPM change.
-            measureDurationBase = measureDuration = (4 * 60_000 * measureSize * measureRatio / measureTJA['bpm'])
+            measureDurationFullMeasure = 4 * 60_000 / measureTJA['bpm']
+            measureDurationBase = measureDuration = (measureDurationFullMeasure * measureSize * measureRatio)
             # The following adjustment accounts for BPM changes. (!!! Discovered by tana :3 !!!)
             if idx_m != len(branch)-1:
                 measureTJANext = branch[idx_m + 1]
@@ -168,12 +169,9 @@ def convertTJAToFumen(tja):
 
             # Compute the millisecond offset for each measure
             if idx_m == 0:
-                pass  # NB: Pass for now, since we need the 2nd measure's duration to compute the 1st measure's offset
+                tjaOffset = float(tja['metadata']['offset']) * 1000 * -1
+                tjaConverted['measures'][idx_m]['fumenOffset'] = tjaOffset - measureDurationFullMeasure
             else:
-                # Compute the 1st measure's offset by subtracting the 2nd measure's duration from the tjaOffset
-                if idx_m == 1:
-                    tjaOffset = float(tja['metadata']['offset']) * 1000 * -1
-                    tjaConverted['measures'][idx_m-1]['fumenOffset'] = tjaOffset - measureDurationPrev
                 # Use the previous measure's offset plus the previous duration to compute the current measure's offset
                 measureOffsetPrev = tjaConverted['measures'][idx_m-1]['fumenOffset']
                 measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationPrev + measureTJA['delay']
