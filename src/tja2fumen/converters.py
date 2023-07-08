@@ -11,6 +11,7 @@ default_note = {'type': '', 'pos': 0.0, 'item': 0, 'padding': 0.0,
 default_branch = {'length': 0, 'padding': 0, 'speed': 1.0}
 default_measure = {
     'bpm': 0.0,
+    'duration': 0.0,
     'fumenOffset': 0.0,
     'gogo': False,
     'barline': True,
@@ -131,7 +132,6 @@ def convertTJAToFumen(tja):
         total_notes = 0
         total_notes_branch = 0
         note_counter_branch = 0
-        measureDurationPrev = 0
         currentDrumroll = None
         courseBalloons = tja['metadata']['balloon'].copy()
         for idx_m, measureTJA in enumerate(branch):
@@ -166,6 +166,7 @@ def convertTJAToFumen(tja):
                 measureTJANext = branch[idx_m + 1]
                 if measureTJA['bpm'] != measureTJANext['bpm']:
                     measureDuration -= (4 * 60_000 * ((1 / measureTJANext['bpm']) - (1 / measureTJA['bpm'])))
+            measureFumen['duration'] = measureDuration
 
             # Compute the millisecond offset for each measure
             if idx_m == 0:
@@ -173,9 +174,9 @@ def convertTJAToFumen(tja):
                 tjaConverted['measures'][idx_m]['fumenOffset'] = tjaOffset - measureDurationFullMeasure
             else:
                 # Use the previous measure's offset plus the previous duration to compute the current measure's offset
-                measureOffsetPrev = tjaConverted['measures'][idx_m-1]['fumenOffset']
-                measureFumen['fumenOffset'] = measureOffsetPrev + measureDurationPrev + measureTJA['delay']
-            measureDurationPrev = measureDuration
+                measureFumenPrev = tjaConverted['measures'][idx_m-1]
+                measureFumen['fumenOffset'] = (measureFumenPrev['fumenOffset'] + measureFumenPrev['duration']
+                                               + measureTJA['delay'])
 
             # Best guess at what 'barline' status means for each measure:
             # - 'True' means the measure lands on a barline (i.e. most measures), and thus barline should be shown
