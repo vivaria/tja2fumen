@@ -81,11 +81,14 @@ def getCourseData(lines):
                 value = match_command.group(2).strip() if match_command.group(2) else ''
                 # For STYLE:Double, #START P1/P2 indicates the start of a new chart
                 # But, we want multiplayer charts to inherit the metadata from the course as a whole, so we deepcopy
-                if nameUpper == "START" and value in ["P1", "P2"]:                   
-                    currentCourse = currentCourseCached + value
-                    courses[currentCourse] = deepcopy(courses[currentCourseCached])
-                    courses[currentCourse]['data'] = list()  # Keep the metadata, but reset the note data
-                    value = ''  # Once we've made the new course, we can reset this to a normal #START command
+                if nameUpper == "START":
+                    if value in ["P1", "P2"]:
+                        currentCourse = currentCourseCached + value
+                        courses[currentCourse] = deepcopy(courses[currentCourseCached])
+                        courses[currentCourse]['data'] = list()  # Keep the metadata, but reset the note data
+                        value = ''  # Once we've made the new course, we can reset this to a normal #START command
+                    elif value:
+                        raise ValueError(f"Invalid value '{value}' for #START command.")
             elif match_notes:
                 nameUpper = 'NOTES'
                 value = match_notes.group(1)
