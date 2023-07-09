@@ -125,8 +125,11 @@ def processTJACommands(tja):
 def convertTJAToFumen(tja):
     # Preprocess commands
     tja['branches'] = processTJACommands(tja)
-    # Parse TJA measures to create converted TJA -> Fumen file
+
+    # Pre-allocate the measures for the converted TJA
     tjaConverted = {'measures': [deepcopy(default_measure) for _ in range(len(tja['branches']['normal']))]}
+
+    # Iterate through the different branches in the TJA
     for currentBranch, branch in tja['branches'].items():
         if not len(branch):
             continue
@@ -135,24 +138,31 @@ def convertTJAToFumen(tja):
         note_counter_branch = 0
         currentDrumroll = None
         courseBalloons = tja['metadata']['balloon'].copy()
+
+        # Iterate through the measures within the branch
         for idx_m, measureTJA in enumerate(branch):
             # Fetch a pair of measures
             measureFumenPrev = tjaConverted['measures'][idx_m-1] if idx_m != 0 else None
             measureFumen = tjaConverted['measures'][idx_m]
 
-            # Apply basic measure properties (that don't depend on notes or commands)
+            # Copy over basic measure properties from the TJA (that don't depend on notes or commands)
             measureFumen[currentBranch]['speed'] = measureTJA['scroll']
             measureFumen['gogo'] = measureTJA['gogo']
             measureFumen['bpm'] = measureTJA['bpm']
 
             # Compute the duration of the measure
-            measureSize = measureTJA['time_sig'][0] / measureTJA['time_sig'][1]
-            measureLength = measureTJA['pos_end'] - measureTJA['pos_start']
-            measureRatio = 1.0 if measureTJA['subdivisions'] == 0.0 else (measureLength / measureTJA['subdivisions'])
+            # First, we compute the duration for a full 4/4 measure
             measureDurationFullMeasure = 4 * 60_000 / measureTJA['bpm']
-            # Adjust the duration based on both:
-            #   1. Measure size (e.g. #MEASURE 1/8, #MEASURE 5/4, etc.)
-            #   2. Whether this is a "submeasure" (i.e. it contains mid-measure commands, splitting up the measure)
+            # Next, we adjust this duration based on both:
+            #   1. The *actual* measure size (e.g. #MEASURE 1/8, #MEASURE 5/4, etc.)
+            measureSize = measureTJA['time_sig'][0] / measureTJA['time_sig'][1]
+            #   2. Whether this is a "submeasure" (i.e. it contains mid-measure commands, which split up the measure)
+            #      - If this is a submeasure, then `measureLength` will be less than the total number of subdivisions.
+            measureLength = measureTJA['pos_end'] - measureTJA['pos_start']
+            #      - In other words, `measureRatio` will be less than 1.0:
+            measureRatio = (1.0 if measureTJA['subdivisions'] == 0.0  # Avoid division by 0 for empty measures
+                            else (measureLength / measureTJA['subdivisions']))
+            # Apply the 2 adjustments to the measure duration
             measureFumen['duration'] = measureDuration = measureDurationFullMeasure * measureSize * measureRatio
 
             # Compute the millisecond offsets for the start and end of each measure
@@ -162,9 +172,9 @@ def convertTJAToFumen(tja):
                 tjaOffset = float(tja['metadata']['offset']) * 1000 * -1
                 measureFumen['fumenOffsetStart'] = tjaOffset - measureDurationFullMeasure
             else:
-                # Start the measure using the end timing of the previous measure (plus any #DELAY commands)
+                # First, start the measure using the end timing of the previous measure (plus any #DELAY commands)
                 measureFumen['fumenOffsetStart'] = measureFumenPrev['fumenOffsetEnd'] + measureTJA['delay']
-                # Adjust the start of this measure to account for #BPMCHANGE commands (!!! Discovered by tana :3 !!!)
+                # Next, adjust the start timing to account for #BPMCHANGE commands (!!! Discovered by tana :3 !!!)
                 # To understand what's going on here, imagine the following simple example:
                 #   * You have a very slow-moving note (i.e. low BPM), like the big DON in Donkama 2000.
                 #   * All the other notes move fast (i.e. high BPM), moving past the big slow note.
@@ -190,17 +200,23 @@ def convertTJAToFumen(tja):
 
             # Check to see if the measure contains a branching condition
             if measureTJA['branchStart']:
+                # Determine which values to assign based on the type of branching condition
                 if measureTJA['branchStart'][0] == 'p':
-                    if currentBranch == 'normal':
-                        idx_b1, idx_b2 = 0, 1
-                    elif currentBranch == 'advanced':
-                        idx_b1, idx_b2 = 2, 3
-                    elif currentBranch == 'master':
-                        idx_b1, idx_b2 = 4, 5
-                    measureFumen['branchInfo'][idx_b1] = int(total_notes_branch * measureTJA['branchStart'][1] * 20)
-                    measureFumen['branchInfo'][idx_b2] = int(total_notes_branch * measureTJA['branchStart'][2] * 20)
+                    val1 = int(total_notes_branch * measureTJA['branchStart'][1] * 20)
+                    val2 = int(total_notes_branch * measureTJA['branchStart'][2] * 20)
                 elif measureTJA['branchStart'][0] == 'r':
-                    measureFumen['branchInfo'] = measureTJA['branchStart'][1:] * 3
+                    val1, val2 = measureTJA['branchStart'][1:]
+                # Determine which bytes to assign the values to
+                if currentBranch == 'normal':
+                    idx_b1, idx_b2 = 0, 1
+                elif currentBranch == 'advanced':
+                    idx_b1, idx_b2 = 2, 3
+                elif currentBranch == 'master':
+                    idx_b1, idx_b2 = 4, 5
+                # Assign the values to their intended bytes
+                measureFumen['branchInfo'][idx_b1] = val1
+                measureFumen['branchInfo'][idx_b2] = val2
+                # Reset the note counter corresponding to this branch
                 total_notes_branch = 0
             total_notes_branch += note_counter_branch
 
