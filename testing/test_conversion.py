@@ -12,6 +12,7 @@ from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE, simpleHeaders, byt
 
 
 @pytest.mark.parametrize('id_song', [
+    pytest.param('imcanz'),
     pytest.param('clsca'),
     pytest.param('linda'),
     pytest.param('senpac'),

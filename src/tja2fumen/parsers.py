@@ -171,6 +171,10 @@ def parseCourseMeasures(lines):
             # Append event to the current measure's events
             for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
                 branches[branch][idx_m]['events'].append(currentEvent)
+        elif line['name'] == 'SECTION':
+            # Simply repeat the same #BRANCHSTART condition that happened previously
+            # The purpose of #SECTION is to "Reset accuracy values for notes and drumrolls on the next measure."
+            branches[branch][idx_m]['events'].append({"name": 'branchStart', "position": pos, "value": values})
 
         # 3. Parse commands that don't create an event (e.g. simply changing the current branch)
         else:
@@ -198,8 +202,6 @@ def parseCourseMeasures(lines):
                 pass
 
             # Not implemented commands
-            elif line['name'] == 'SECTION':
-                pass  # This seems to be inconsequential, but I'm not 100% sure. Need to test more branching fumens.
             else:
                 raise NotImplementedError
 

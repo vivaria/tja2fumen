@@ -202,10 +202,11 @@ def convertTJAToFumen(tja):
             if measureTJA['branchStart']:
                 # Determine which values to assign based on the type of branching condition
                 if measureTJA['branchStart'][0] == 'p':
-                    val1 = int(total_notes_branch * measureTJA['branchStart'][1] * 20)
-                    val2 = int(total_notes_branch * measureTJA['branchStart'][2] * 20)
+                    vals = [int(total_notes_branch * v * 20) if 0 <= v <= 1  # Ensure value is actually a percentage
+                            else int(v * 100)                                # If it's not, pass the value as-is
+                            for v in measureTJA['branchStart'][1:]]
                 elif measureTJA['branchStart'][0] == 'r':
-                    val1, val2 = measureTJA['branchStart'][1:]
+                    vals = measureTJA['branchStart'][1:]
                 # Determine which bytes to assign the values to
                 if currentBranch == 'normal':
                     idx_b1, idx_b2 = 0, 1
@@ -214,8 +215,8 @@ def convertTJAToFumen(tja):
                 elif currentBranch == 'master':
                     idx_b1, idx_b2 = 4, 5
                 # Assign the values to their intended bytes
-                measureFumen['branchInfo'][idx_b1] = val1
-                measureFumen['branchInfo'][idx_b2] = val2
+                measureFumen['branchInfo'][idx_b1] = vals[0]
+                measureFumen['branchInfo'][idx_b2] = vals[1]
                 # Reset the note counter corresponding to this branch
                 total_notes_branch = 0
             total_notes_branch += note_counter_branch
