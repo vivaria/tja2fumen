@@ -145,22 +145,6 @@ def convertTJAToFumen(tja):
             measureFumen['gogo'] = measureTJA['gogo']
             measureFumen['bpm'] = measureTJA['bpm']
 
-            # Check to see if the measure contains a branching condition
-            if measureTJA['branchStart']:
-                if measureTJA['branchStart'][0] == 'p':
-                    if currentBranch == 'normal':
-                        idx_b1, idx_b2 = 0, 1
-                    elif currentBranch == 'advanced':
-                        idx_b1, idx_b2 = 2, 3
-                    elif currentBranch == 'master':
-                        idx_b1, idx_b2 = 4, 5
-                    measureFumen['branchInfo'][idx_b1] = int(total_notes_branch * measureTJA['branchStart'][1] * 20)
-                    measureFumen['branchInfo'][idx_b2] = int(total_notes_branch * measureTJA['branchStart'][2] * 20)
-                elif measureTJA['branchStart'][0] == 'r':
-                    measureFumen['branchInfo'] = measureTJA['branchStart'][1:] * 3
-                total_notes_branch = 0
-            total_notes_branch += note_counter_branch
-
             # Compute the duration of the measure
             measureSize = measureTJA['time_sig'][0] / measureTJA['time_sig'][1]
             measureLength = measureTJA['pos_end'] - measureTJA['pos_start']
@@ -203,6 +187,22 @@ def convertTJAToFumen(tja):
             #     2. Sub-measures that don't fall on the barline
             if measureTJA['barline'] is False or (measureRatio != 1.0 and measureTJA['pos_start'] != 0):
                 measureFumen['barline'] = False
+
+            # Check to see if the measure contains a branching condition
+            if measureTJA['branchStart']:
+                if measureTJA['branchStart'][0] == 'p':
+                    if currentBranch == 'normal':
+                        idx_b1, idx_b2 = 0, 1
+                    elif currentBranch == 'advanced':
+                        idx_b1, idx_b2 = 2, 3
+                    elif currentBranch == 'master':
+                        idx_b1, idx_b2 = 4, 5
+                    measureFumen['branchInfo'][idx_b1] = int(total_notes_branch * measureTJA['branchStart'][1] * 20)
+                    measureFumen['branchInfo'][idx_b2] = int(total_notes_branch * measureTJA['branchStart'][2] * 20)
+                elif measureTJA['branchStart'][0] == 'r':
+                    measureFumen['branchInfo'] = measureTJA['branchStart'][1:] * 3
+                total_notes_branch = 0
+            total_notes_branch += note_counter_branch
 
             # Create note dictionaries based on TJA measure data (containing 0's plus 1/2/3/4/etc. for notes)
             note_counter_branch = 0
