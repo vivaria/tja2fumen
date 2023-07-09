@@ -140,6 +140,11 @@ def convertTJAToFumen(tja):
             measureFumenPrev = tjaConverted['measures'][idx_m-1] if idx_m != 0 else None
             measureFumen = tjaConverted['measures'][idx_m]
 
+            # Apply basic measure properties (that don't depend on notes or commands)
+            measureFumen[currentBranch]['speed'] = measureTJA['scroll']
+            measureFumen['gogo'] = measureTJA['gogo']
+            measureFumen['bpm'] = measureTJA['bpm']
+
             # Check to see if the measure contains a branching condition
             if measureTJA['branchStart']:
                 if measureTJA['branchStart'][0] == 'p':
@@ -248,10 +253,6 @@ def convertTJAToFumen(tja):
                         note_counter_branch += 1.5
                     measureFumen[currentBranch][note_counter] = note
                     note_counter += 1
-            measureFumen[currentBranch]['length'] = note_counter
-            measureFumen[currentBranch]['speed'] = measureTJA['scroll']
-            measureFumen['gogo'] = measureTJA['gogo']
-            measureFumen['bpm'] = measureTJA['bpm']
 
             # If drumroll hasn't ended by the end of this measure, increase duration by measure timing
             if currentDrumroll:
@@ -261,6 +262,7 @@ def convertTJAToFumen(tja):
                 else:
                     currentDrumroll['duration'] += measureDuration
 
+            measureFumen[currentBranch]['length'] = note_counter
             total_notes += note_counter
 
     # Take a stock header metadata sample and add song-specific metadata
