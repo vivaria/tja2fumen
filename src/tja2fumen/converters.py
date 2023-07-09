@@ -11,8 +11,9 @@ default_note = {'type': '', 'pos': 0.0, 'item': 0, 'padding': 0.0,
 default_branch = {'length': 0, 'padding': 0, 'speed': 1.0}
 default_measure = {
     'bpm': 0.0,
+    'fumenOffsetStart': 0.0,
+    'fumenOffsetEnd': 0.0,
     'duration': 0.0,
-    'fumenOffset': 0.0,
     'gogo': False,
     'barline': True,
     'padding1': 0,
@@ -135,6 +136,8 @@ def convertTJAToFumen(tja):
         currentDrumroll = None
         courseBalloons = tja['metadata']['balloon'].copy()
         for idx_m, measureTJA in enumerate(branch):
+            # Fetch a pair of measures
+            measureFumenPrev = tjaConverted['measures'][idx_m-1] if idx_m != 0 else None
             measureFumen = tjaConverted['measures'][idx_m]
 
             # Check to see if the measure contains a branching condition
@@ -157,26 +160,35 @@ def convertTJAToFumen(tja):
             measureSize = measureTJA['time_sig'][0] / measureTJA['time_sig'][1]
             measureLength = measureTJA['pos_end'] - measureTJA['pos_start']
             measureRatio = 1.0 if measureTJA['subdivisions'] == 0.0 else (measureLength / measureTJA['subdivisions'])
-            # - measureDurationBase: The "base" measure duration, computed using a single BPM value.
-            # - measureDuration: The actual measure duration, which may be adjusted if there is a mid-measure BPM change.
             measureDurationFullMeasure = 4 * 60_000 / measureTJA['bpm']
-            measureDurationBase = measureDuration = (measureDurationFullMeasure * measureSize * measureRatio)
-            # The following adjustment accounts for BPM changes. (!!! Discovered by tana :3 !!!)
-            if idx_m != len(branch)-1:
-                measureTJANext = branch[idx_m + 1]
-                if measureTJA['bpm'] != measureTJANext['bpm']:
-                    measureDuration -= (4 * 60_000 * ((1 / measureTJANext['bpm']) - (1 / measureTJA['bpm'])))
-            measureFumen['duration'] = measureDuration
+            # Adjust the duration based on both:
+            #   1. Measure size (e.g. #MEASURE 1/8, #MEASURE 5/4, etc.)
+            #   2. Whether this is a "submeasure" (i.e. it contains mid-measure commands, splitting up the measure)
+            measureFumen['duration'] = measureDuration = measureDurationFullMeasure * measureSize * measureRatio
 
-            # Compute the millisecond offset for each measure
+            # Compute the millisecond offsets for the start and end of each measure
+            #  - Start: When the notes first appear on screen (to the right)
+            #  - End:   When the notes arrive at the judgment line, and the note gets hit.
             if idx_m == 0:
                 tjaOffset = float(tja['metadata']['offset']) * 1000 * -1
-                tjaConverted['measures'][idx_m]['fumenOffset'] = tjaOffset - measureDurationFullMeasure
+                measureFumen['fumenOffsetStart'] = tjaOffset - measureDurationFullMeasure
             else:
-                # Use the previous measure's offset plus the previous duration to compute the current measure's offset
-                measureFumenPrev = tjaConverted['measures'][idx_m-1]
-                measureFumen['fumenOffset'] = (measureFumenPrev['fumenOffset'] + measureFumenPrev['duration']
-                                               + measureTJA['delay'])
+                # Start the measure using the end timing of the previous measure (plus any #DELAY commands)
+                measureFumen['fumenOffsetStart'] = measureFumenPrev['fumenOffsetEnd'] + measureTJA['delay']
+                # Adjust the start of this measure to account for #BPMCHANGE commands (!!! Discovered by tana :3 !!!)
+                # To understand what's going on here, imagine the following simple example:
+                #   * You have a very slow-moving note (i.e. low BPM), like the big DON in Donkama 2000.
+                #   * All the other notes move fast (i.e. high BPM), moving past the big slow note.
+                #   * To get this overlapping to work, you need the big slow note to START EARLY, but also END LATE:
+                #      - An early start means you need to subtract a LOT of time from the starting fumenOffset.
+                #      - Thankfully, the low BPM of the slow note will create a HUGE `measureOffsetAdjustment`,
+                #        since we are dividing by the BPMs, and dividing by a small number will result in a big number.
+                measureOffsetAdjustment = (4 * 60_000 / measureTJA['bpm']) - (4 * 60_000 / measureFumenPrev['bpm'])
+                #      - When we subtract this adjustment from the fumenOffsetStart, we get the "START EARLY" part:
+                measureFumen['fumenOffsetStart'] -= measureOffsetAdjustment
+                #      - The low BPM of the slow note will also create a HUGE measure duration.
+                #      - When we add this long duration to the EARLY START, we end up with the "END LATE" part:
+            measureFumen['fumenOffsetEnd'] = measureFumen['fumenOffsetStart'] + measureFumen['duration']
 
             # Best guess at what 'barline' status means for each measure:
             # - 'True' means the measure lands on a barline (i.e. most measures), and thus barline should be shown
@@ -194,7 +206,7 @@ def convertTJAToFumen(tja):
                 if data['type'] == 'note':
                     # Note positions must be calculated using the base measure duration (that uses a single BPM value)
                     # (In other words, note positions do not take into account any mid-measure BPM change adjustments.)
-                    note_pos = measureDurationBase * (data['pos'] - measureTJA['pos_start']) / measureLength
+                    note_pos = measureDuration * (data['pos'] - measureTJA['pos_start']) / measureLength
                     # Handle the note that represents the end of a drumroll/balloon
                     if data['value'] == "EndDRB":
                         # If a drumroll spans a single measure, then add the difference between start/end position
@@ -244,10 +256,10 @@ def convertTJAToFumen(tja):
             # If drumroll hasn't ended by the end of this measure, increase duration by measure timing
             if currentDrumroll:
                 if currentDrumroll['duration'] == 0.0:
-                    currentDrumroll['duration'] += (measureDurationBase - currentDrumroll['pos'])
+                    currentDrumroll['duration'] += (measureDuration - currentDrumroll['pos'])
                     currentDrumroll['multimeasure'] = True
                 else:
-                    currentDrumroll['duration'] += measureDurationBase
+                    currentDrumroll['duration'] += measureDuration
 
             total_notes += note_counter
 

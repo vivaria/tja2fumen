@@ -79,7 +79,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
             ca_measure = ca_song['measures'][i_measure]
             # 3a. Check measure metadata
             assert_song_property(co_measure, ca_measure, 'bpm', i_measure, abs=0.01)
-            assert_song_property(co_measure, ca_measure, 'fumenOffset', i_measure, abs=0.15)
+            assert_song_property(co_measure, ca_measure, 'fumenOffsetStart', i_measure, abs=0.15)
             assert_song_property(co_measure, ca_measure, 'gogo', i_measure)
             assert_song_property(co_measure, ca_measure, 'barline', i_measure)
             assert_song_property(co_measure, ca_measure, 'branchInfo', i_measure)

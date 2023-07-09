@@ -303,7 +303,7 @@ def readFumen(fumenFile, exclude_empty_measures=False):
         # Create the measure dictionary using the newly-parsed measure data
         measure = {}
         measure["bpm"] = measureStruct[0]
-        measure["fumenOffset"] = measureStruct[1]
+        measure["fumenOffsetStart"] = measureStruct[1]
         # if measureNumber == 0:
         #     measure["offset"] = measure["fumenOffset"] + 240000 / measure["bpm"]
         # else:
