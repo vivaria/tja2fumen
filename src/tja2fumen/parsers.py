@@ -304,12 +304,6 @@ def readFumen(fumenFile, exclude_empty_measures=False):
         measure = {}
         measure["bpm"] = measureStruct[0]
         measure["fumenOffsetStart"] = measureStruct[1]
-        # if measureNumber == 0:
-        #     measure["offset"] = measure["fumenOffset"] + 240000 / measure["bpm"]
-        # else:
-        #     prev = song['measures'][measureNumber - 1]
-        #     measure["offset"] = ((prev["offset"] + measure["fumenOffset"] + 240000) /
-        #                          (measure["bpm"] - prev["fumenOffset"] - 240000 / prev["bpm"]))
         measure["gogo"] = getBool(measureStruct[2])
         measure["barline"] = getBool(measureStruct[3])
         measure["padding1"] = measureStruct[4]
