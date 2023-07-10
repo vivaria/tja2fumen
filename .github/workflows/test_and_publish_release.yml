@@ -64,9 +64,24 @@ jobs:
     - name: Run tests (installed wheel)
       run: pytest testing --entry-point python-cli
 
+    - name: Add UPX to the PATH
+      uses: crazy-max/ghaction-upx@v2
+      with:
+        install-only: true
+
     - name: Build pyinstaller executable
       run: |
-        pyinstaller src\tja2fumen\__init__.py --name tja2fumen-${{ github.event.inputs.release_version }} --add-data="src\tja2fumen\soulgauge_LUTs\*.csv;tja2fumen\soulgauge_LUTs" --onefile
+        pyinstaller src\tja2fumen\__init__.py `
+                    --name tja2fumen-${{ github.event.inputs.release_version }} `
+                    --add-data="src\tja2fumen\soulgauge_LUTs\*.csv;tja2fumen\soulgauge_LUTs" `
+                    --onefile `
+                    --exclude-module bz2 `
+                    --exclude-module hashlib `
+                    --exclude-module lzma `
+                    --exclude-module socket `
+                    --exclude-module ssl `
+                    --exclude-module unicodedata `
+                    --exclude-module select
 
     - name: Run tests (installed wheel)
       run: pytest testing --entry-point exe
