@@ -21,26 +21,29 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
     fnameTJA = getattr(args, "file.tja")
-
-    # Convert TJA data to fumen data
-    parsedSongsTJA = parseTJA(fnameTJA)
-    parsedSongsFumen = {course: convertTJAToFumen(tjaData)
-                        for course, tjaData in parsedSongsTJA.items()}
-
-    # Generate output filenames
     baseName = os.path.splitext(fnameTJA)[0]
-    outputFilenames = []
-    for courseName, fumenData in parsedSongsFumen.items():
-        if len(parsedSongsTJA) == 1:
-            outputName = f"{baseName}.bin"
-        else:
-            splitName = courseName.split("P")  # e.g. 'OniP2' -> ['Oni', '2'], 'Oni' -> ['Oni']
-            outputName = f"{baseName}_{COURSE_IDS[splitName[0]]}"
-            if len(splitName) == 2:
-                outputName += f"_{splitName[1]}"  # Add "_1" or "_2" if P1/P2 chart
-            outputName += ".bin"
-        outputFilenames.append(outputName)
-        writeFumen(outputName, fumenData)
+
+    # Parse lines in TJA file
+    parsedTJACourses = parseTJA(fnameTJA)
+
+    # Convert parsed TJA courses to Fumen data, and write each course to `.bin` files
+    for parsedCourse in parsedTJACourses.items():
+        convert_and_write(parsedCourse, baseName, singleCourse=(len(parsedTJACourses) == 1))
+
+
+def convert_and_write(parsedCourse, baseName, singleCourse=False):
+    courseName, tjaData = parsedCourse
+    fumenData = convertTJAToFumen(tjaData)
+    # Add course ID (e.g. '_x', '_x_1', '_x_2') to the output file's base name
+    outputName = baseName
+    if singleCourse:
+        pass  # Replicate tja2bin.exe behavior by excluding course ID if there's only one course
+    else:
+        splitName = courseName.split("P")  # e.g. 'OniP2' -> ['Oni', '2'], 'Oni' -> ['Oni']
+        outputName += f"_{COURSE_IDS[splitName[0]]}"
+        if len(splitName) == 2:
+            outputName += f"_{splitName[1]}"  # Add "_1" or "_2" if P1/P2 chart
+    writeFumen(f"{outputName}.bin", fumenData)
 
 
 # NB: This entry point is necessary for the Pyinstaller executable
