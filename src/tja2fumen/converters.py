@@ -123,14 +123,14 @@ def processTJACommands(tja):
 
 def convertTJAToFumen(tja):
     # Preprocess commands
-    tja.branches = processTJACommands(tja)
+    processedTJABranches = processTJACommands(tja)
 
     # Pre-allocate the measures for the converted TJA
-    fumen = {'measures': [deepcopy(default_measure) for _ in range(len(tja.branches['normal']))]}
+    fumen = {'measures': [deepcopy(default_measure) for _ in range(len(processedTJABranches['normal']))]}
 
     # Iterate through the different branches in the TJA
-    for currentBranch, branchMeasuresTJA in tja.branches.items():
-        if not len(branchMeasuresTJA):
+    for currentBranch, branchMeasuresTJAProcessed in processedTJABranches.items():
+        if not len(branchMeasuresTJAProcessed):
             continue
         total_notes = 0
         total_notes_branch = 0
@@ -139,7 +139,7 @@ def convertTJAToFumen(tja):
         courseBalloons = tja.balloon.copy()
 
         # Iterate through the measures within the branch
-        for idx_m, measureTJA in enumerate(branchMeasuresTJA):
+        for idx_m, measureTJA in enumerate(branchMeasuresTJAProcessed):
             # Fetch a pair of measures
             measureFumenPrev = fumen['measures'][idx_m-1] if idx_m != 0 else None
             measureFumen = fumen['measures'][idx_m]
@@ -299,7 +299,7 @@ def convertTJAToFumen(tja):
     fumen['headerPadding'] = simpleHeaders[0]  # Use a basic, known set of header bytes
     fumen['order'] = '<'
     fumen['unknownMetadata'] = 0
-    fumen['branches'] = all([len(b) for b in tja.branches.values()])
+    fumen['branches'] = all([len(b) for b in processedTJABranches.values()])
     fumen['scoreInit'] = tja.scoreInit
     fumen['scoreDiff'] = tja.scoreDiff
 
