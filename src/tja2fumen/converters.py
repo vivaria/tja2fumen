@@ -44,10 +44,10 @@ def processTJACommands(tja):
 
     In the future, this logic should probably be moved into the TJA parser itself.
     """
-    branches = tja['branches']
+    branches = tja.branches
     branchesCorrected = {branchName: [] for branchName in branches.keys()}
     for branchName, branch in branches.items():
-        currentBPM = float(tja['metadata']['bpm'])
+        currentBPM = tja.BPM
         currentScroll = 1.0
         currentGogo = False
         currentBarline = True
@@ -124,20 +124,20 @@ def processTJACommands(tja):
 
 def convertTJAToFumen(tja):
     # Preprocess commands
-    tja['branches'] = processTJACommands(tja)
+    tja.branches = processTJACommands(tja)
 
     # Pre-allocate the measures for the converted TJA
-    tjaConverted = {'measures': [deepcopy(default_measure) for _ in range(len(tja['branches']['normal']))]}
+    tjaConverted = {'measures': [deepcopy(default_measure) for _ in range(len(tja.branches['normal']))]}
 
     # Iterate through the different branches in the TJA
-    for currentBranch, branch in tja['branches'].items():
+    for currentBranch, branch in tja.branches.items():
         if not len(branch):
             continue
         total_notes = 0
         total_notes_branch = 0
         note_counter_branch = 0
         currentDrumroll = None
-        courseBalloons = tja['metadata']['balloon'].copy()
+        courseBalloons = tja.balloon.copy()
 
         # Iterate through the measures within the branch
         for idx_m, measureTJA in enumerate(branch):
@@ -169,8 +169,7 @@ def convertTJAToFumen(tja):
             #  - Start: When the notes first appear on screen (to the right)
             #  - End:   When the notes arrive at the judgment line, and the note gets hit.
             if idx_m == 0:
-                tjaOffset = float(tja['metadata']['offset']) * 1000 * -1
-                measureFumen['fumenOffsetStart'] = tjaOffset - measureDurationFullMeasure
+                measureFumen['fumenOffsetStart'] = (tja.offset * 1000 * -1) - measureDurationFullMeasure
             else:
                 # First, start the measure using the end timing of the previous measure (plus any #DELAY commands)
                 measureFumen['fumenOffsetStart'] = measureFumenPrev['fumenOffsetEnd'] + measureTJA['delay']
@@ -251,8 +250,8 @@ def convertTJAToFumen(tja):
                     note = deepcopy(default_note)
                     note['pos'] = note_pos
                     note['type'] = data['value']
-                    note['scoreInit'] = tja['metadata']['scoreInit']  # Probably not fully accurate
-                    note['scoreDiff'] = tja['metadata']['scoreDiff']  # Probably not fully accurate
+                    note['scoreInit'] = tja.scoreInit
+                    note['scoreDiff'] = tja.scoreDiff
                     # Handle drumroll/balloon-specific metadata
                     if note['type'] in ["Balloon", "Kusudama"]:
                         note['hits'] = courseBalloons.pop(0)
@@ -284,12 +283,12 @@ def convertTJAToFumen(tja):
 
     # Take a stock header metadata sample and add song-specific metadata
     headerMetadata = sampleHeaderMetadata.copy()
-    headerMetadata[8] = DIFFICULTY_BYTES[tja['metadata']['course']][0]
-    headerMetadata[9] = DIFFICULTY_BYTES[tja['metadata']['course']][1]
+    headerMetadata[8] = DIFFICULTY_BYTES[tja.course][0]
+    headerMetadata[9] = DIFFICULTY_BYTES[tja.course][1]
     soulGaugeBytes = computeSoulGaugeBytes(
         n_notes=total_notes,
-        difficulty=tja['metadata']['course'],
-        stars=tja['metadata']['level']
+        difficulty=tja.course,
+        stars=tja.level
     )
     headerMetadata[12] = soulGaugeBytes[0]
     headerMetadata[13] = soulGaugeBytes[1]
@@ -301,8 +300,8 @@ def convertTJAToFumen(tja):
     tjaConverted['headerPadding'] = simpleHeaders[0]  # Use a basic, known set of header bytes
     tjaConverted['order'] = '<'
     tjaConverted['unknownMetadata'] = 0
-    tjaConverted['branches'] = all([len(b) for b in tja['branches'].values()])
-    tjaConverted['scoreInit'] = tja['metadata']['scoreInit']
-    tjaConverted['scoreDiff'] = tja['metadata']['scoreDiff']
+    tjaConverted['branches'] = all([len(b) for b in tja.branches.values()])
+    tjaConverted['scoreInit'] = tja.scoreInit
+    tjaConverted['scoreDiff'] = tja.scoreDiff
 
     return tjaConverted

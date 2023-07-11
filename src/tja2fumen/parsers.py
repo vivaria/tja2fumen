@@ -4,7 +4,7 @@ from copy import deepcopy
 
 from tja2fumen.utils import readStruct, getBool, shortHex
 from tja2fumen.constants import NORMALIZE_COURSE, TJA_NOTE_TYPES, branchNames, noteTypes
-
+from tja2fumen.types import TJASong, TJAData
 
 ########################################################################################################################
 # TJA-parsing functions ( Original source: https://github.com/WHMHammer/tja-tools/blob/master/src/js/parseTJA.js)
@@ -18,15 +18,15 @@ def parseTJA(fnameTJA):
         tja_text = open(fnameTJA, "r", encoding="shift-jis").read()
 
     lines = [line for line in tja_text.splitlines() if line.strip() != '']
-    courses = getCourseData(lines)
-    for courseData in courses.values():
-        courseData['branches'] = parseCourseMeasures(courseData['data'])
+    parsedTJA = getCourseData(lines)
+    for courseData in parsedTJA.courses.values():
+        courseData.branches = parseCourseMeasures(courseData.data)
 
-    return courses
+    return parsedTJA
 
 
 def getCourseData(lines):
-    courses = {}
+    parsedTJA = None
     currentCourse = ''
     currentCourseCached = ''
     songBPM = 0
@@ -40,31 +40,30 @@ def getCourseData(lines):
             value = match_header.group(2).strip()
 
             # Global header fields
-            if nameUpper == 'BPM':
-                songBPM = value
-            elif nameUpper == 'OFFSET':
-                songOffset = value
+            if nameUpper in ['BPM', 'OFFSET']:
+                if nameUpper == 'BPM':
+                    songBPM = value
+                elif nameUpper == 'OFFSET':
+                    songOffset = value
+                if songBPM and songOffset:
+                    parsedTJA = TJASong(songBPM, songOffset)
 
             # Course-specific header fields
             elif nameUpper == 'COURSE':
                 currentCourse = NORMALIZE_COURSE[value]
                 currentCourseCached = currentCourse
-                if currentCourse not in courses.keys():
-                    courses[currentCourse] = {
-                        'metadata': {'course': currentCourse, 'bpm': songBPM, 'offset': songOffset, 'level': 0,
-                                     'balloon': [], 'scoreInit': 0, 'scoreDiff': 0},
-                        'data': [],
-                    }
+                if currentCourse not in parsedTJA.courses.keys():
+                    raise ValueError()
             elif nameUpper == 'LEVEL':
-                courses[currentCourse]['metadata']['level'] = int(value) if value else 0
+                parsedTJA.courses[currentCourse].level = int(value) if value else 0
             elif nameUpper == 'SCOREINIT':
-                courses[currentCourse]['metadata']['scoreInit'] = int(value) if value else 0
+                parsedTJA.courses[currentCourse].scoreInit = int(value) if value else 0
             elif nameUpper == 'SCOREDIFF':
-                courses[currentCourse]['metadata']['scoreDiff'] = int(value) if value else 0
+                parsedTJA.courses[currentCourse].scoreDiff = int(value) if value else 0
             elif nameUpper == 'BALLOON':
                 if value:
                     balloons = [int(v) for v in value.split(",") if v]
-                    courses[currentCourse]['metadata']['balloon'] = balloons
+                    parsedTJA.courses[currentCourse].balloon = balloons
             elif nameUpper == 'STYLE':
                 # Reset the course name to remove "P1/P2" that may have been added by a previous STYLE:DOUBLE chart
                 if value == 'Single':
@@ -84,29 +83,33 @@ def getCourseData(lines):
                 if nameUpper == "START":
                     if value in ["P1", "P2"]:
                         currentCourse = currentCourseCached + value
-                        courses[currentCourse] = deepcopy(courses[currentCourseCached])
-                        courses[currentCourse]['data'] = list()  # Keep the metadata, but reset the note data
+                        parsedTJA.courses[currentCourse] = deepcopy(parsedTJA.courses[currentCourseCached])
+                        parsedTJA.courses[currentCourse].data = list()  # Keep the metadata, but reset the note data
                         value = ''  # Once we've made the new course, we can reset this to a normal #START command
                     elif value:
                         raise ValueError(f"Invalid value '{value}' for #START command.")
             elif match_notes:
                 nameUpper = 'NOTES'
                 value = match_notes.group(1)
-            courses[currentCourse]['data'].append({"name": nameUpper, "value": value})
+            parsedTJA.courses[currentCourse].data.append(TJAData(nameUpper, value))
             
     # If a course has no song data, then this is likely because the course has "STYLE: Double" but no "STYLE: Single".
     # To fix this, we copy over the P1 chart from "STYLE: Double" to fill the "STYLE: Single" role.
-    for courseName, course in courses.items():
-        if not course['data']:
-            if courseName+"P1" in courses.keys():
-                courses[courseName] = deepcopy(courses[courseName+"P1"])
+    for courseName, course in parsedTJA.courses.items():
+        if not course.data:
+            if courseName+"P1" in parsedTJA.courses.keys():
+                parsedTJA.courses[courseName] = deepcopy(parsedTJA.courses[courseName+"P1"])
 
-    return courses
+    # Remove any charts (e.g. P1/P2) not present in the TJA file
+    for course_name in [k for k, v in parsedTJA.courses.items() if not v.data]:
+        del parsedTJA.courses[course_name]
+
+    return parsedTJA
 
 
 def parseCourseMeasures(lines):
     # Check if the course has branches or not
-    hasBranches = True if [l for l in lines if l['name'] == 'BRANCHSTART'] else False
+    hasBranches = True if [l for l in lines if l.name == 'BRANCHSTART'] else False
     currentBranch = 'all' if hasBranches else 'normal'
     flagLevelhold = False
 
@@ -117,8 +120,8 @@ def parseCourseMeasures(lines):
     branches = {'normal': [deepcopy(emptyMeasure)], 'advanced': [deepcopy(emptyMeasure)], 'master': [deepcopy(emptyMeasure)]}
     for line in lines:
         # 1. Parse measure notes
-        if line['name'] == 'NOTES':
-            notes = line['value']
+        if line.name == 'NOTES':
+            notes = line.value
             # If measure has ended, then add notes to the current measure, then start a new one by incrementing idx_m
             if notes.endswith(','):
                 for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
@@ -131,34 +134,34 @@ def parseCourseMeasures(lines):
                     branches[branch][idx_m]['data'] += notes
 
         # 2. Parse measure commands that produce an "event"
-        elif line['name'] in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF', 'DELAY',
-                              'SCROLL', 'BPMCHANGE', 'MEASURE', 'BRANCHSTART']:
+        elif line.name in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF', 'DELAY',
+                           'SCROLL', 'BPMCHANGE', 'MEASURE', 'BRANCHSTART']:
             # Get position of the event
             for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
                 pos = len(branches[branch][idx_m]['data'])
 
             # Parse event type
-            if line['name'] == 'GOGOSTART':
+            if line.name == 'GOGOSTART':
                 currentEvent = {"name": 'gogo', "position": pos, "value": '1'}
-            elif line['name'] == 'GOGOEND':
+            elif line.name == 'GOGOEND':
                 currentEvent = {"name": 'gogo', "position": pos, "value": '0'}
-            elif line['name'] == 'BARLINEON':
+            elif line.name == 'BARLINEON':
                 currentEvent = {"name": 'barline', "position": pos, "value": '1'}
-            elif line['name'] == 'BARLINEOFF':
+            elif line.name == 'BARLINEOFF':
                 currentEvent = {"name": 'barline', "position": pos, "value": '0'}
-            elif line['name'] == 'DELAY':
-                currentEvent = {"name": 'delay', "position": pos, "value": float(line['value'])}
-            elif line['name'] == 'SCROLL':
-                currentEvent = {"name": 'scroll', "position": pos, "value": float(line['value'])}
-            elif line['name'] == 'BPMCHANGE':
-                currentEvent = {"name": 'bpm', "position": pos, "value": float(line['value'])}
-            elif line['name'] == 'MEASURE':
-                currentEvent = {"name": 'measure', "position": pos, "value": line['value']}
-            elif line["name"] == 'BRANCHSTART':
+            elif line.name == 'DELAY':
+                currentEvent = {"name": 'delay', "position": pos, "value": float(line.value)}
+            elif line.name == 'SCROLL':
+                currentEvent = {"name": 'scroll', "position": pos, "value": float(line.value)}
+            elif line.name == 'BPMCHANGE':
+                currentEvent = {"name": 'bpm', "position": pos, "value": float(line.value)}
+            elif line.name == 'MEASURE':
+                currentEvent = {"name": 'measure', "position": pos, "value": line.value}
+            elif line.name == 'BRANCHSTART':
                 if flagLevelhold:
                     continue
                 currentBranch = 'all'  # Ensure that the #BRANCHSTART command is present for all branches
-                values = line['value'].split(',')
+                values = line.value.split(',')
                 if values[0] == 'r':  # r = drumRoll
                     values[1] = int(values[1])  # # of drumrolls
                     values[2] = int(values[2])  # # of drumrolls
@@ -171,34 +174,34 @@ def parseCourseMeasures(lines):
             # Append event to the current measure's events
             for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
                 branches[branch][idx_m]['events'].append(currentEvent)
-        elif line['name'] == 'SECTION':
+        elif line.name == 'SECTION':
             # Simply repeat the same #BRANCHSTART condition that happened previously
             # The purpose of #SECTION is to "Reset accuracy values for notes and drumrolls on the next measure."
             branches[branch][idx_m]['events'].append({"name": 'branchStart', "position": pos, "value": values})
 
         # 3. Parse commands that don't create an event (e.g. simply changing the current branch)
         else:
-            if line["name"] == 'START' or line['name'] == 'END':
+            if line.name == 'START' or line.name == 'END':
                 currentBranch = 'all' if hasBranches else 'normal'
                 flagLevelhold = False
-            elif line['name'] == 'LEVELHOLD':
+            elif line.name == 'LEVELHOLD':
                 flagLevelhold = True
-            elif line["name"] == 'N':
+            elif line.name == 'N':
                 currentBranch = 'normal'
                 idx_m = idx_m_branchstart
-            elif line["name"] == 'E':
+            elif line.name == 'E':
                 currentBranch = 'advanced'
                 idx_m = idx_m_branchstart
-            elif line["name"] == 'M':
+            elif line.name == 'M':
                 currentBranch = 'master'
                 idx_m = idx_m_branchstart
-            elif line["name"] == 'BRANCHEND':
+            elif line.name == 'BRANCHEND':
                 currentBranch = 'all'
 
             # Ignored commands
-            elif line['name'] == 'LYRIC':
+            elif line.name == 'LYRIC':
                 pass
-            elif line['name'] == 'NEXTSONG':
+            elif line.name == 'NEXTSONG':
                 pass
 
             # Not implemented commands
