@@ -44,9 +44,8 @@ def processTJACommands(tja):
 
     In the future, this logic should probably be moved into the TJA parser itself.
     """
-    branches = tja.branches
-    branchesCorrected = {branchName: [] for branchName in branches.keys()}
-    for branchName, branchMeasuresTJA in branches.items():
+    tjaBranchesProcessed = {branchName: [] for branchName in tja.branches.keys()}
+    for branchName, branchMeasuresTJA in tja.branches.items():
         currentBPM = tja.BPM
         currentScroll = 1.0
         currentGogo = False
@@ -97,7 +96,7 @@ def processTJACommands(tja):
                     # - Case 2: Command occurs mid-measure, so start a new sub-measure
                     else:
                         measure_cur['pos_end'] = data.pos
-                        branchesCorrected[branchName].append(measure_cur)
+                        tjaBranchesProcessed[branchName].append(measure_cur)
                         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
                                        'barline': currentBarline, 'subdivisions': len(measure.notes),
                                        'pos_start': data.pos, 'pos_end': 0, 'delay': 0,
@@ -107,19 +106,19 @@ def processTJACommands(tja):
                     print(f"Unexpected event type: {data.name}")
 
             measure_cur['pos_end'] = len(measure.notes)
-            branchesCorrected[branchName].append(measure_cur)
+            tjaBranchesProcessed[branchName].append(measure_cur)
 
-    hasBranches = all(len(b) for b in branchesCorrected.values())
+    hasBranches = all(len(b) for b in tjaBranchesProcessed.values())
     if hasBranches:
-        branch_lens = [len(b) for b in branches.values()]
+        branch_lens = [len(b) for b in tja.branches.values()]
         if not branch_lens.count(branch_lens[0]) == len(branch_lens):
             raise ValueError("Branches do not have the same number of measures.")
         else:
-            branchCorrected_lens = [len(b) for b in branchesCorrected.values()]
+            branchCorrected_lens = [len(b) for b in tjaBranchesProcessed.values()]
             if not branchCorrected_lens.count(branchCorrected_lens[0]) == len(branchCorrected_lens):
                 raise ValueError("Branches do not have matching GOGO/SCROLL/BPM commands.")
 
-    return branchesCorrected
+    return tjaBranchesProcessed
 
 
 def convertTJAToFumen(tja):
