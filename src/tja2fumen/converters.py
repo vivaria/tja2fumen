@@ -127,7 +127,7 @@ def convertTJAToFumen(tja):
     tja.branches = processTJACommands(tja)
 
     # Pre-allocate the measures for the converted TJA
-    tjaConverted = {'measures': [deepcopy(default_measure) for _ in range(len(tja.branches['normal']))]}
+    fumen = {'measures': [deepcopy(default_measure) for _ in range(len(tja.branches['normal']))]}
 
     # Iterate through the different branches in the TJA
     for currentBranch, branch in tja.branches.items():
@@ -142,8 +142,8 @@ def convertTJAToFumen(tja):
         # Iterate through the measures within the branch
         for idx_m, measureTJA in enumerate(branch):
             # Fetch a pair of measures
-            measureFumenPrev = tjaConverted['measures'][idx_m-1] if idx_m != 0 else None
-            measureFumen = tjaConverted['measures'][idx_m]
+            measureFumenPrev = fumen['measures'][idx_m-1] if idx_m != 0 else None
+            measureFumen = fumen['measures'][idx_m]
 
             # Copy over basic measure properties from the TJA (that don't depend on notes or commands)
             measureFumen[currentBranch]['speed'] = measureTJA['scroll']
@@ -296,12 +296,12 @@ def convertTJAToFumen(tja):
     headerMetadata[17] = soulGaugeBytes[3]
     headerMetadata[20] = soulGaugeBytes[4]
     headerMetadata[21] = soulGaugeBytes[5]
-    tjaConverted['headerMetadata'] = b"".join(i.to_bytes(1, 'little') for i in headerMetadata)
-    tjaConverted['headerPadding'] = simpleHeaders[0]  # Use a basic, known set of header bytes
-    tjaConverted['order'] = '<'
-    tjaConverted['unknownMetadata'] = 0
-    tjaConverted['branches'] = all([len(b) for b in tja.branches.values()])
-    tjaConverted['scoreInit'] = tja.scoreInit
-    tjaConverted['scoreDiff'] = tja.scoreDiff
+    fumen['headerMetadata'] = b"".join(i.to_bytes(1, 'little') for i in headerMetadata)
+    fumen['headerPadding'] = simpleHeaders[0]  # Use a basic, known set of header bytes
+    fumen['order'] = '<'
+    fumen['unknownMetadata'] = 0
+    fumen['branches'] = all([len(b) for b in tja.branches.values()])
+    fumen['scoreInit'] = tja.scoreInit
+    fumen['scoreDiff'] = tja.scoreDiff
 
-    return tjaConverted
+    return fumen
