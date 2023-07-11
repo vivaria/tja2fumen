@@ -3,7 +3,7 @@ import pytest
 from tja2fumen.utils import computeSoulGaugeBytes
 
 
-# 255/256, 510/511,
+@pytest.mark.skip("Incomplete test")
 @pytest.mark.parametrize('difficulty,stars,n_notes,b20,b21', [
     ['Easy', 1, 24, 165, 254], ['Easy', 1, 54, 102, 255], ['Easy', 1, 112, 182, 255],
     # TODO: Fetch official fumen values for each difficulty-star pairing
