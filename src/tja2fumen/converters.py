@@ -46,14 +46,14 @@ def processTJACommands(tja):
     """
     branches = tja.branches
     branchesCorrected = {branchName: [] for branchName in branches.keys()}
-    for branchName, branch in branches.items():
+    for branchName, branchMeasuresTJA in branches.items():
         currentBPM = tja.BPM
         currentScroll = 1.0
         currentGogo = False
         currentBarline = True
         currentDividend = 4
         currentDivisor = 4
-        for measure in branch:
+        for measure in branchMeasuresTJA:
             # Split measure into submeasure
             measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
                            'subdivisions': len(measure.notes), 'pos_start': 0, 'pos_end': 0, 'delay': 0,
@@ -130,8 +130,8 @@ def convertTJAToFumen(tja):
     fumen = {'measures': [deepcopy(default_measure) for _ in range(len(tja.branches['normal']))]}
 
     # Iterate through the different branches in the TJA
-    for currentBranch, branch in tja.branches.items():
-        if not len(branch):
+    for currentBranch, branchMeasuresTJA in tja.branches.items():
+        if not len(branchMeasuresTJA):
             continue
         total_notes = 0
         total_notes_branch = 0
@@ -140,7 +140,7 @@ def convertTJAToFumen(tja):
         courseBalloons = tja.balloon.copy()
 
         # Iterate through the measures within the branch
-        for idx_m, measureTJA in enumerate(branch):
+        for idx_m, measureTJA in enumerate(branchMeasuresTJA):
             # Fetch a pair of measures
             measureFumenPrev = fumen['measures'][idx_m-1] if idx_m != 0 else None
             measureFumen = fumen['measures'][idx_m]
