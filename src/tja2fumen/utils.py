@@ -36,15 +36,37 @@ def computeSoulGaugeBytes(n_notes, difficulty, stars):
             key = "Easy-2-3"
         elif stars <= 1:
             key = "Easy-1"
+    # Set default values for soul gauge bytes.
+    # NB: These will only be used if n_notes > 2500 (i.e. the most extreme, impossible case, beyond all official charts)
+    soulGaugeByte12 = 255
+    soulGaugeByte13 = 3
+    soulGaugeByte16 = 255
+    soulGaugeByte17 = 2
+    soulGaugeByte20 = 255
+    soulGaugeByte21 = 253
     pkg_dir = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(pkg_dir, "soulgauge_LUTs", f"{key}.csv"), newline='') as csvfile:
+    with open(os.path.join(pkg_dir, "soulgauge_LUTs", f"byte1213_{key}.csv"), newline='') as csvfile:
+        lut_reader = csv.reader(csvfile, delimiter=',')
+        for row in lut_reader:
+            if int(row[0]) == n_notes:
+                soulGaugeByte12 = int(row[1]) % 255
+                soulGaugeByte13 = int(row[1]) // 255
+                break
+    with open(os.path.join(pkg_dir, "soulgauge_LUTs", f"byte1617_{key}.csv"), newline='') as csvfile:
+        lut_reader = csv.reader(csvfile, delimiter=',')
+        for row in lut_reader:
+            if int(row[0]) == n_notes:
+                soulGaugeByte16 = int(row[1]) % 255
+                soulGaugeByte17 = int(row[1]) // 255
+                break
+    with open(os.path.join(pkg_dir, "soulgauge_LUTs", f"byte2021_{key}.csv"), newline='') as csvfile:
         lut_reader = csv.reader(csvfile, delimiter=',')
         for row in lut_reader:
             if int(row[0]) == n_notes:
                 soulGaugeByte20 = int(row[1]) % 255
                 soulGaugeByte21 = 253 + (int(row[1]) // 255)
-                return soulGaugeByte20, soulGaugeByte21
-        raise ValueError(f"n_notes value '{n_notes}' not in lookup table (1-2500)")
+                break
+    return soulGaugeByte12, soulGaugeByte13, soulGaugeByte16, soulGaugeByte17, soulGaugeByte20, soulGaugeByte21
 
 
 def readStruct(file, order, format_string, seek=None):

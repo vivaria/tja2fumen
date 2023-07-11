@@ -204,27 +204,27 @@ def checkValidHeader(headerBytes, strict=False):
         elif idx == 9:
             assert val in [27, 31, 23], f"Expected 27/31/23 at position '{idx}', got '{val}' instead."
 
-        # 3. Unknown (possibly related to n_notes)
-        elif idx in [12, 13]:
-            pass
-        elif idx in [16, 17]:
-            pass
-
         # 6. Soul gauge bytes
         # Notes:
         #   * These bytes determine how quickly the soul gauge should increase
-        #   * The higher the number of notes, the higher these values will be (i.e. the slower the soul gauge will rise)
-        #   * In practice, most of the time [21, 22, 23] will be 255.
-        #   * So, this means that byte 20 largely determines the soul gauge increase.
         #   * The precise mapping between n_notes and byte values is complex, and depends on difficulty/stars.
         #      - See also: https://github.com/vivaria/tja2fumen/issues/14
-        #   * Re: Byte 21, a very small number of songs (~10) have values 253 or 254 instead of 255.
+        #   * Generally speaking, though, the higher the number of notes, then:
+        #      - The lower that bytes 12/16 will go.
+        #      - The higher that byte 21 will go.
+        #   * Also, most of the time [13, 17] will be 0 and [21, 22, 23] will be 255.
+        #   * However, a very small number of songs (~30) have values different from 0/255.
         #      - This applies to Easy/Normal songs with VERY few notes (<30).
-        #      - For these songs, byte 20 will drop BELOW 1 and wrap around back to <=255, decrementing byte 21 by one.
-        #      - So, you can think of it like this:
-        #         * b21==253: (0*255) + 1-255 = 1-225    (VERY rapid soul gauge increase)
-        #         * b21==254: (1*255) + 1-255 = 256-510  (Rapid soul gauge increase)
-        #         * b21==255: (2*255) + 1-255 = 511-765  (Moderate to slow soul gauge increase, i.e. most songs)
+        #         * Bytes 12/16 will go above 255 and wrap around back to >=0, incrementing bytes 13/17 by one.
+        #         * Byte 20 will go below and wrap around back to <=255, decrementing byte 21 by one.
+        elif idx == 12:
+            assert 1 <= val <= 255
+        elif idx == 13:
+            assert val in [0, 1, 2, 3]
+        elif idx == 16:
+            assert 1 <= val <= 255
+        elif idx == 17:
+            assert val in [0, 1, 2, 3]
         elif idx == 20:
             assert 1 <= val <= 255
         elif idx == 21:
