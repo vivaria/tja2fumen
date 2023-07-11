@@ -52,12 +52,12 @@ def processTJACommands(tja):
         currentBarline = True
         currentDividend = 4
         currentDivisor = 4
-        for measure in branchMeasuresTJA:
+        for measureTJA in branchMeasuresTJA:
             # Split measure into submeasure
             measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
-                           'subdivisions': len(measure.notes), 'pos_start': 0, 'pos_end': 0, 'delay': 0,
+                           'subdivisions': len(measureTJA.notes), 'pos_start': 0, 'pos_end': 0, 'delay': 0,
                            'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
-            for data in measure.combined:
+            for data in measureTJA.combined:
                 # Handle note data
                 if data.name == 'note':
                     measure_cur['data'].append(data)
@@ -98,14 +98,14 @@ def processTJACommands(tja):
                         measure_cur['pos_end'] = data.pos
                         tjaBranchesProcessed[branchName].append(measure_cur)
                         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
-                                       'barline': currentBarline, 'subdivisions': len(measure.notes),
+                                       'barline': currentBarline, 'subdivisions': len(measureTJA.notes),
                                        'pos_start': data.pos, 'pos_end': 0, 'delay': 0,
                                        'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
 
                 else:
                     print(f"Unexpected event type: {data.name}")
 
-            measure_cur['pos_end'] = len(measure.notes)
+            measure_cur['pos_end'] = len(measureTJA.notes)
             tjaBranchesProcessed[branchName].append(measure_cur)
 
     hasBranches = all(len(b) for b in tjaBranchesProcessed.values())
