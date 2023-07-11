@@ -26,14 +26,29 @@ class TJACourse:
         self.offset = offset
         self.course = course
         self.data = []
-        self.branches = None
+        self.branches = {
+            'normal': [TJAMeasure()],
+            'advanced': [TJAMeasure()],
+            'master': [TJAMeasure()]
+        }
 
     def __repr__(self):
         return str(self.__dict__) if self.data else "{'data': []}"
 
 
+class TJAMeasure:
+    def __init__(self, notes=None, events=None):
+        self.notes = [] if notes is None else notes
+        self.events = [] if events is None else events
+        self.combined = []
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+
 class TJAData:
-    def __init__(self, name, value):
+    def __init__(self, name, value, pos=None):
+        self.pos = pos
         self.name = name
         self.value = value
 

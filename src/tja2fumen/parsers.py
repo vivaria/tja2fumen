@@ -4,7 +4,7 @@ from copy import deepcopy
 
 from tja2fumen.utils import readStruct, getBool, shortHex
 from tja2fumen.constants import NORMALIZE_COURSE, TJA_NOTE_TYPES, branchNames, noteTypes
-from tja2fumen.types import TJASong, TJAData
+from tja2fumen.types import TJASong, TJAMeasure, TJAData
 
 ########################################################################################################################
 # TJA-parsing functions ( Original source: https://github.com/WHMHammer/tja-tools/blob/master/src/js/parseTJA.js)
@@ -19,8 +19,8 @@ def parseTJA(fnameTJA):
 
     lines = [line for line in tja_text.splitlines() if line.strip() != '']
     parsedTJA = getCourseData(lines)
-    for courseData in parsedTJA.courses.values():
-        courseData.branches = parseCourseMeasures(courseData.data)
+    for course in parsedTJA.courses.values():
+        parseCourseMeasures(course)
 
     return parsedTJA
 
@@ -107,56 +107,54 @@ def getCourseData(lines):
     return parsedTJA
 
 
-def parseCourseMeasures(lines):
+def parseCourseMeasures(course):
     # Check if the course has branches or not
-    hasBranches = True if [l for l in lines if l.name == 'BRANCHSTART'] else False
+    hasBranches = True if [l for l in course.data if l.name == 'BRANCHSTART'] else False
     currentBranch = 'all' if hasBranches else 'normal'
     flagLevelhold = False
 
     # Process course lines
     idx_m = 0
     idx_m_branchstart = 0
-    emptyMeasure = {'data': '', 'events': []}
-    branches = {'normal': [deepcopy(emptyMeasure)], 'advanced': [deepcopy(emptyMeasure)], 'master': [deepcopy(emptyMeasure)]}
-    for line in lines:
+    for line in course.data:
         # 1. Parse measure notes
         if line.name == 'NOTES':
             notes = line.value
             # If measure has ended, then add notes to the current measure, then start a new one by incrementing idx_m
             if notes.endswith(','):
-                for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
-                    branches[branch][idx_m]['data'] += notes[0:-1]
-                    branches[branch].append(deepcopy(emptyMeasure))
+                for branch in course.branches.keys() if currentBranch == 'all' else [currentBranch]:
+                    course.branches[branch][idx_m].notes += notes[0:-1]
+                    course.branches[branch].append(TJAMeasure())
                 idx_m += 1
             # Otherwise, keep adding notes to the current measure ('idx_m')
             else:
-                for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
-                    branches[branch][idx_m]['data'] += notes
+                for branch in course.branches.keys() if currentBranch == 'all' else [currentBranch]:
+                    course.branches[branch][idx_m].notes += notes
 
         # 2. Parse measure commands that produce an "event"
         elif line.name in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF', 'DELAY',
                            'SCROLL', 'BPMCHANGE', 'MEASURE', 'BRANCHSTART']:
             # Get position of the event
-            for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
-                pos = len(branches[branch][idx_m]['data'])
+            for branch in course.branches.keys() if currentBranch == 'all' else [currentBranch]:
+                pos = len(course.branches[branch][idx_m].notes)
 
             # Parse event type
             if line.name == 'GOGOSTART':
-                currentEvent = {"name": 'gogo', "position": pos, "value": '1'}
+                currentEvent = TJAData('gogo', '1', pos)
             elif line.name == 'GOGOEND':
-                currentEvent = {"name": 'gogo', "position": pos, "value": '0'}
+                currentEvent = TJAData('gogo', '0', pos)
             elif line.name == 'BARLINEON':
-                currentEvent = {"name": 'barline', "position": pos, "value": '1'}
+                currentEvent = TJAData('barline', '1', pos)
             elif line.name == 'BARLINEOFF':
-                currentEvent = {"name": 'barline', "position": pos, "value": '0'}
+                currentEvent = TJAData('barline', '0', pos)
             elif line.name == 'DELAY':
-                currentEvent = {"name": 'delay', "position": pos, "value": float(line.value)}
+                currentEvent = TJAData('delay', float(line.value), pos)
             elif line.name == 'SCROLL':
-                currentEvent = {"name": 'scroll', "position": pos, "value": float(line.value)}
+                currentEvent = TJAData('scroll', float(line.value), pos)
             elif line.name == 'BPMCHANGE':
-                currentEvent = {"name": 'bpm', "position": pos, "value": float(line.value)}
+                currentEvent = TJAData('bpm', float(line.value), pos)
             elif line.name == 'MEASURE':
-                currentEvent = {"name": 'measure', "position": pos, "value": line.value}
+                currentEvent = TJAData('measure', line.value, pos)
             elif line.name == 'BRANCHSTART':
                 if flagLevelhold:
                     continue
@@ -168,16 +166,16 @@ def parseCourseMeasures(lines):
                 elif values[0] == 'p':  # p = Percentage
                     values[1] = float(values[1]) / 100  # %
                     values[2] = float(values[2]) / 100  # %
-                currentEvent = {"name": 'branchStart', "position": pos, "value": values}
+                currentEvent = TJAData('branchStart', values, pos)
                 idx_m_branchstart = idx_m  # Preserve the index of the BRANCHSTART command to re-use for each branch
 
             # Append event to the current measure's events
-            for branch in branches.keys() if currentBranch == 'all' else [currentBranch]:
-                branches[branch][idx_m]['events'].append(currentEvent)
+            for branch in course.branches.keys() if currentBranch == 'all' else [currentBranch]:
+                course.branches[branch][idx_m].events.append(currentEvent)
         elif line.name == 'SECTION':
             # Simply repeat the same #BRANCHSTART condition that happened previously
             # The purpose of #SECTION is to "Reset accuracy values for notes and drumrolls on the next measure."
-            branches[branch][idx_m]['events'].append({"name": 'branchStart', "position": pos, "value": values})
+            course.branches[branch][idx_m].events.append(TJAData('branchStart', values, pos))
 
         # 3. Parse commands that don't create an event (e.g. simply changing the current branch)
         else:
@@ -209,37 +207,32 @@ def parseCourseMeasures(lines):
                 raise NotImplementedError
 
     # Delete the last measure in the branch if no notes or events were added to it (due to preallocating empty measures)
-    for branch in branches.values():
-        if not branch[-1]['data'] and not branch[-1]['events']:
+    for branch in course.branches.values():
+        if not branch[-1].notes and not branch[-1].events:
             del branch[-1]
 
     # Merge measure data and measure events in chronological order
-    for branchName, branch in branches.items():
+    for branchName, branch in course.branches.items():
         for measure in branch:
-            notes = [{'pos': i, 'type': 'note', 'value': TJA_NOTE_TYPES[note]}
-                     for i, note in enumerate(measure['data']) if note != '0']
-            events = [{'pos': e['position'], 'type': e['name'], 'value': e['value']}
-                      for e in measure['events']]
-            combined = []
+            notes = [TJAData('note', TJA_NOTE_TYPES[note], i)
+                     for i, note in enumerate(measure.notes) if note != '0']
+            events = measure.events
             while notes or events:
                 if events and notes:
-                    if notes[0]['pos'] >= events[0]['pos']:
-                        combined.append(events.pop(0))
+                    if notes[0].pos >= events[0].pos:
+                        measure.combined.append(events.pop(0))
                     else:
-                        combined.append(notes.pop(0))
+                        measure.combined.append(notes.pop(0))
                 elif events:
-                    combined.append(events.pop(0))
+                    measure.combined.append(events.pop(0))
                 elif notes:
-                    combined.append(notes.pop(0))
-            measure['combined'] = combined
+                    measure.combined.append(notes.pop(0))
 
     # Ensure all branches have the same number of measures
     if hasBranches:
-        branch_lens = [len(b) for b in branches.values()]
+        branch_lens = [len(b) for b in course.branches.values()]
         if not branch_lens.count(branch_lens[0]) == len(branch_lens):
             raise ValueError("Branches do not have the same number of measures.")
-
-    return branches
 
 
 ########################################################################################################################

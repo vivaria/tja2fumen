@@ -56,23 +56,23 @@ def processTJACommands(tja):
         for measure in branch:
             # Split measure into submeasure
             measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
-                           'subdivisions': len(measure['data']), 'pos_start': 0, 'pos_end': 0, 'delay': 0,
+                           'subdivisions': len(measure.notes), 'pos_start': 0, 'pos_end': 0, 'delay': 0,
                            'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
-            for data in measure['combined']:
+            for data in measure.combined:
                 # Handle note data
-                if data['type'] == 'note':
+                if data.name == 'note':
                     measure_cur['data'].append(data)
 
                 # Handle commands that can only be placed between measures (i.e. no mid-measure variations)
-                elif data['type'] == 'delay':
-                    measure_cur['delay'] = data['value'] * 1000  # ms -> s
-                elif data['type'] == 'branchStart':
-                    measure_cur['branchStart'] = data['value']
-                elif data['type'] == 'barline':
-                    currentBarline = bool(int(data['value']))
+                elif data.name == 'delay':
+                    measure_cur['delay'] = data.value * 1000  # ms -> s
+                elif data.name == 'branchStart':
+                    measure_cur['branchStart'] = data.value
+                elif data.name == 'barline':
+                    currentBarline = bool(int(data.value))
                     measure_cur['barline'] = currentBarline
-                elif data['type'] == 'measure':
-                    matchMeasure = re.match(r"(\d+)/(\d+)", data['value'])
+                elif data.name == 'measure':
+                    matchMeasure = re.match(r"(\d+)/(\d+)", data.value)
                     if not matchMeasure:
                         continue
                     currentDividend = int(matchMeasure.group(1))
@@ -82,31 +82,31 @@ def processTJACommands(tja):
                 # Handle commands that can be placed in the middle of a measure.
                 #    NB: For fumen files, if there is a mid-measure change to BPM/SCROLL/GOGO, then the measure will
                 #    actually be split into two small submeasures. So, we need to start a new measure in those cases.
-                elif data['type'] in ['bpm', 'scroll', 'gogo']:
+                elif data.name in ['bpm', 'scroll', 'gogo']:
                     # Parse the values
-                    if data['type'] == 'bpm':
-                        new_val = currentBPM = float(data['value'])
-                    elif data['type'] == 'scroll':
-                        new_val = currentScroll = data['value']
-                    elif data['type'] == 'gogo':
-                        new_val = currentGogo = bool(int(data['value']))
+                    if data.name == 'bpm':
+                        new_val = currentBPM = float(data.value)
+                    elif data.name == 'scroll':
+                        new_val = currentScroll = data.value
+                    elif data.name == 'gogo':
+                        new_val = currentGogo = bool(int(data.value))
                     # Check for mid-measure commands
                     # - Case 1: Command happens at the start of a measure; just change the value directly
-                    if data['pos'] == 0:
-                        measure_cur[data['type']] = new_val
+                    if data.pos == 0:
+                        measure_cur[data.name] = new_val
                     # - Case 2: Command occurs mid-measure, so start a new sub-measure
                     else:
-                        measure_cur['pos_end'] = data['pos']
+                        measure_cur['pos_end'] = data.pos
                         branchesCorrected[branchName].append(measure_cur)
                         measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
-                                       'barline': currentBarline, 'subdivisions': len(measure['data']),
-                                       'pos_start': data['pos'], 'pos_end': 0, 'delay': 0,
+                                       'barline': currentBarline, 'subdivisions': len(measure.notes),
+                                       'pos_start': data.pos, 'pos_end': 0, 'delay': 0,
                                        'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
 
                 else:
-                    print(f"Unexpected event type: {data['type']}")
+                    print(f"Unexpected event type: {data.name}")
 
-            measure_cur['pos_end'] = len(measure['data'])
+            measure_cur['pos_end'] = len(measure.notes)
             branchesCorrected[branchName].append(measure_cur)
 
     hasBranches = all(len(b) for b in branchesCorrected.values())
@@ -224,12 +224,12 @@ def convertTJAToFumen(tja):
             note_counter_branch = 0
             note_counter = 0
             for idx_d, data in enumerate(measureTJA['data']):
-                if data['type'] == 'note':
+                if data.name == 'note':
                     # Note positions must be calculated using the base measure duration (that uses a single BPM value)
                     # (In other words, note positions do not take into account any mid-measure BPM change adjustments.)
-                    note_pos = measureDuration * (data['pos'] - measureTJA['pos_start']) / measureLength
+                    note_pos = measureDuration * (data.pos - measureTJA['pos_start']) / measureLength
                     # Handle the note that represents the end of a drumroll/balloon
-                    if data['value'] == "EndDRB":
+                    if data.value == "EndDRB":
                         # If a drumroll spans a single measure, then add the difference between start/end position
                         if 'multimeasure' not in currentDrumroll.keys():
                             currentDrumroll['duration'] += (note_pos - currentDrumroll['pos'])
@@ -244,12 +244,12 @@ def convertTJAToFumen(tja):
                     # The TJA spec technically allows you to place double-Kusudama notes:
                     #    "Use another 9 to specify when to lower the points for clearing."
                     # But this is unsupported in fumens, so just skip the second Kusudama note.
-                    if data['value'] == "Kusudama" and currentDrumroll:
+                    if data.value == "Kusudama" and currentDrumroll:
                         continue
                     # Handle the remaining non-EndDRB, non-double Kusudama notes
                     note = deepcopy(default_note)
                     note['pos'] = note_pos
-                    note['type'] = data['value']
+                    note['type'] = data.value
                     note['scoreInit'] = tja.scoreInit
                     note['scoreDiff'] = tja.scoreDiff
                     # Handle drumroll/balloon-specific metadata
