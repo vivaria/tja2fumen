@@ -286,11 +286,17 @@ def convertTJAToFumen(tja):
     headerMetadata = sampleHeaderMetadata.copy()
     headerMetadata[8] = DIFFICULTY_BYTES[tja['metadata']['course']][0]
     headerMetadata[9] = DIFFICULTY_BYTES[tja['metadata']['course']][1]
-    headerMetadata[20], headerMetadata[21] = computeSoulGaugeBytes(
+    soulGaugeBytes = computeSoulGaugeBytes(
         n_notes=total_notes,
         difficulty=tja['metadata']['course'],
         stars=tja['metadata']['level']
     )
+    headerMetadata[12] = soulGaugeBytes[0]
+    headerMetadata[13] = soulGaugeBytes[1]
+    headerMetadata[16] = soulGaugeBytes[2]
+    headerMetadata[17] = soulGaugeBytes[3]
+    headerMetadata[20] = soulGaugeBytes[4]
+    headerMetadata[21] = soulGaugeBytes[5]
     tjaConverted['headerMetadata'] = b"".join(i.to_bytes(1, 'little') for i in headerMetadata)
     tjaConverted['headerPadding'] = simpleHeaders[0]  # Use a basic, known set of header bytes
     tjaConverted['order'] = '<'
