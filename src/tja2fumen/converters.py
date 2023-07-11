@@ -54,29 +54,29 @@ def processTJACommands(tja):
         currentDivisor = 4
         for measureTJA in branchMeasuresTJA:
             # Split measure into submeasure
-            measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
-                           'subdivisions': len(measureTJA.notes), 'pos_start': 0, 'pos_end': 0, 'delay': 0,
-                           'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
+            measureTJAProcessed = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo, 'barline': currentBarline,
+                                   'subdivisions': len(measureTJA.notes), 'pos_start': 0, 'pos_end': 0, 'delay': 0,
+                                   'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
             for data in measureTJA.combined:
                 # Handle note data
                 if data.name == 'note':
-                    measure_cur['data'].append(data)
+                    measureTJAProcessed['data'].append(data)
 
                 # Handle commands that can only be placed between measures (i.e. no mid-measure variations)
                 elif data.name == 'delay':
-                    measure_cur['delay'] = data.value * 1000  # ms -> s
+                    measureTJAProcessed['delay'] = data.value * 1000  # ms -> s
                 elif data.name == 'branchStart':
-                    measure_cur['branchStart'] = data.value
+                    measureTJAProcessed['branchStart'] = data.value
                 elif data.name == 'barline':
                     currentBarline = bool(int(data.value))
-                    measure_cur['barline'] = currentBarline
+                    measureTJAProcessed['barline'] = currentBarline
                 elif data.name == 'measure':
                     matchMeasure = re.match(r"(\d+)/(\d+)", data.value)
                     if not matchMeasure:
                         continue
                     currentDividend = int(matchMeasure.group(1))
                     currentDivisor = int(matchMeasure.group(2))
-                    measure_cur['time_sig'] = [currentDividend, currentDivisor]
+                    measureTJAProcessed['time_sig'] = [currentDividend, currentDivisor]
 
                 # Handle commands that can be placed in the middle of a measure.
                 #    NB: For fumen files, if there is a mid-measure change to BPM/SCROLL/GOGO, then the measure will
@@ -92,21 +92,21 @@ def processTJACommands(tja):
                     # Check for mid-measure commands
                     # - Case 1: Command happens at the start of a measure; just change the value directly
                     if data.pos == 0:
-                        measure_cur[data.name] = new_val
+                        measureTJAProcessed[data.name] = new_val
                     # - Case 2: Command occurs mid-measure, so start a new sub-measure
                     else:
-                        measure_cur['pos_end'] = data.pos
-                        tjaBranchesProcessed[branchName].append(measure_cur)
-                        measure_cur = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
-                                       'barline': currentBarline, 'subdivisions': len(measureTJA.notes),
-                                       'pos_start': data.pos, 'pos_end': 0, 'delay': 0,
-                                       'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
+                        measureTJAProcessed['pos_end'] = data.pos
+                        tjaBranchesProcessed[branchName].append(measureTJAProcessed)
+                        measureTJAProcessed = {'bpm': currentBPM, 'scroll': currentScroll, 'gogo': currentGogo,
+                                               'barline': currentBarline, 'subdivisions': len(measureTJA.notes),
+                                               'pos_start': data.pos, 'pos_end': 0, 'delay': 0,
+                                               'branchStart': None, 'time_sig': [currentDividend, currentDivisor], 'data': []}
 
                 else:
                     print(f"Unexpected event type: {data.name}")
 
-            measure_cur['pos_end'] = len(measureTJA.notes)
-            tjaBranchesProcessed[branchName].append(measure_cur)
+            measureTJAProcessed['pos_end'] = len(measureTJA.notes)
+            tjaBranchesProcessed[branchName].append(measureTJAProcessed)
 
     hasBranches = all(len(b) for b in tjaBranchesProcessed.values())
     if hasBranches:
