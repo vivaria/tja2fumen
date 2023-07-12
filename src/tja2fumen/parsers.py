@@ -4,7 +4,7 @@ from copy import deepcopy
 
 from tja2fumen.utils import readStruct, getBool, shortHex
 from tja2fumen.constants import NORMALIZE_COURSE, TJA_NOTE_TYPES, branchNames, noteTypes
-from tja2fumen.types import TJASong, TJAMeasure, TJAData
+from tja2fumen.types import TJASong, TJAMeasure, TJAData, FumenCourse, FumenMeasure, FumenBranch, FumenNote
 
 ########################################################################################################################
 # TJA-parsing functions ( Original source: https://github.com/WHMHammer/tja-tools/blob/master/src/js/parseTJA.js)
@@ -271,18 +271,13 @@ def readFumen(fumenFile, exclude_empty_measures=False):
         totalMeasures = measuresLittle
 
     # Initialize the dict that will contain the chart information
-    song = {'measures': []}
-    song['headerPadding'] = fumenHeader[:432]
-    song['headerMetadata'] = fumenHeader[-80:]
-    song['order'] = order
-
-    # I am unsure what byte this represents
-    unknownMetadata = readStruct(file, order, format_string="I", seek=0x204)[0]
-    song["unknownMetadata"] = unknownMetadata
-
-    # Determine whether the song has branches from byte 0x1b0 (decimal 432)
-    hasBranches = getBool(readStruct(file, order, format_string="B", seek=0x1b0)[0])
-    song["branches"] = hasBranches
+    song = FumenCourse(
+        headerPadding=fumenHeader[:432],
+        headerMetadata=fumenHeader[-80:],
+        order=order,
+        unknownMetadata=readStruct(file, order, format_string="I", seek=0x204)[0],
+        hasBranches=getBool(readStruct(file, order, format_string="B", seek=0x1b0)[0])
+    )
 
     # Start reading measure data from position 0x208 (decimal 520)
     file.seek(0x208)
@@ -299,17 +294,18 @@ def readFumen(fumenFile, exclude_empty_measures=False):
         measureStruct = readStruct(file, order, format_string="ffBBHiiiiiii")
 
         # Create the measure dictionary using the newly-parsed measure data
-        measure = {}
-        measure["bpm"] = measureStruct[0]
-        measure["fumenOffsetStart"] = measureStruct[1]
-        measure["gogo"] = getBool(measureStruct[2])
-        measure["barline"] = getBool(measureStruct[3])
-        measure["padding1"] = measureStruct[4]
-        measure["branchInfo"] = list(measureStruct[5:11])
-        measure["padding2"] = measureStruct[11]
+        measure = FumenMeasure(
+            bpm=measureStruct[0],
+            fumenOffsetStart=measureStruct[1],
+            gogo=getBool(measureStruct[2]),
+            barline=getBool(measureStruct[3]),
+            padding1=measureStruct[4],
+            branchInfo=list(measureStruct[5:11]),
+            padding2=measureStruct[11]
+        )
 
         # Iterate through the three branch types
-        for branchNumber in range(len(branchNames)):
+        for branchName in branchNames:
             # Parse the measure data using the following `format_string`:
             #   "HHf" (3 format characters, 8 bytes per branch)
             #     - 'H': totalNotes (represented by one unsigned short (2 bytes))
@@ -318,11 +314,12 @@ def readFumen(fumenFile, exclude_empty_measures=False):
             branchStruct = readStruct(file, order, format_string="HHf")
 
             # Create the branch dictionary using the newly-parsed branch data
-            branch = {}
             totalNotes = branchStruct[0]
-            branch["length"] = totalNotes
-            branch["padding"] = branchStruct[1]
-            branch["speed"] = branchStruct[2]
+            branch = FumenBranch(
+                length=totalNotes,
+                padding=branchStruct[1],
+                speed=branchStruct[2],
+            )
 
             # Iterate through each note in the measure (per branch)
             for noteNumber in range(totalNotes):
@@ -347,39 +344,41 @@ def readFumen(fumenFile, exclude_empty_measures=False):
                     )
 
                 # Create the note dictionary using the newly-parsed note data
-                note = {}
-                note["type"] = noteTypes[noteType]
-                note["pos"] = noteStruct[1]
-                note["item"] = noteStruct[2]
-                note["padding"] = noteStruct[3]
+                note = FumenNote(
+                    note_type=noteTypes[noteType],
+                    pos=noteStruct[1],
+                    item=noteStruct[2],
+                    padding=noteStruct[3],
+                )
+
                 if noteType == 0xa or noteType == 0xc:
                     # Balloon hits
-                    note["hits"] = noteStruct[4]
-                    note["hitsPadding"] = noteStruct[5]
+                    note.hits = noteStruct[4]
+                    note.hitsPadding = noteStruct[5]
                 else:
-                    note['scoreInit'] = noteStruct[4]
-                    note['scoreDiff'] = noteStruct[5] // 4
-                    if "scoreInit" not in song:
-                        song["scoreInit"] = note['scoreInit']
-                        song["scoreDiff"] = note['scoreDiff']
+                    note.scoreInit = noteStruct[4]
+                    note.scoreDiff = noteStruct[5] // 4
+                    if not song.scoreInit:
+                        song.scoreInit = note.scoreInit
+                        song.scoreDiff = note.scoreDiff
                 if noteType == 0x6 or noteType == 0x9 or noteType == 0xa or noteType == 0xc:
                     # Drumroll and balloon duration in ms
-                    note["duration"] = noteStruct[6]
+                    note.duration = noteStruct[6]
                 else:
-                    note['duration'] = noteStruct[6]
+                    note.duration = noteStruct[6]
 
                 # Seek forward 8 bytes to account for padding bytes at the end of drumrolls
                 if noteType == 0x6 or noteType == 0x9 or noteType == 0x62:
-                    note["drumrollBytes"] = file.read(8)
+                    note.drumrollBytes = file.read(8)
 
                 # Assign the note to the branch
-                branch[noteNumber] = note
+                branch.notes.append(note)
 
             # Assign the branch to the measure
-            measure[branchNames[branchNumber]] = branch
+            measure.branches[branchName] = branch
 
         # Assign the measure to the song
-        song['measures'].append(measure)
+        song.measures.append(measure)
         if file.tell() >= size:
             break
 
@@ -390,7 +389,7 @@ def readFumen(fumenFile, exclude_empty_measures=False):
     #     So, in tests, if we want to only compare the timing of the non-empty measures between an official fumen and
     #     a converted non-official TJA, then it's useful to  exclude the empty measures.
     if exclude_empty_measures:
-        song['measures'] = [m for m in song['measures']
-                            if m['normal']['length'] or m['advanced']['length'] or m['master']['length']]
+        song.measures = [m for m in song.measures
+                         if m.branches['normal'].length or m.branches['advanced'].length or m.branches['master'].length]
 
     return song

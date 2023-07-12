@@ -76,7 +76,7 @@ class FumenCourse:
         if isinstance(measures, int):
             self.measures = [FumenMeasure() for _ in range(measures)]
         else:
-            self.measures = measures
+            self.measures = [] if measures is None else measures
         self.hasBranches = hasBranches
         self.scoreInit = scoreInit
         self.scoreDiff = scoreDiff
