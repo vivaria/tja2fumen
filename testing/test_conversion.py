@@ -65,20 +65,20 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
         co_song = readFumen(path_out, exclude_empty_measures=True)
         ca_song = readFumen(os.path.join(path_bin, os.path.basename(path_out)), exclude_empty_measures=True)
         # 1. Check song headers
-        checkValidHeader(co_song['headerPadding']+co_song['headerMetadata'], strict=True)
-        checkValidHeader(ca_song['headerPadding']+ca_song['headerMetadata'])
+        checkValidHeader(co_song.headerPadding+co_song.headerMetadata, strict=True)
+        checkValidHeader(ca_song.headerPadding+ca_song.headerMetadata)
         # 2. Check song metadata
         assert_song_property(co_song, ca_song, 'order')
-        assert_song_property(co_song, ca_song, 'branches')
+        assert_song_property(co_song, ca_song, 'hasBranches')
         assert_song_property(co_song, ca_song, 'scoreInit')
         assert_song_property(co_song, ca_song, 'scoreDiff')
         # 3. Check measure data
-        for i_measure in range(max([len(co_song['measures']), len(ca_song['measures'])])):
+        for i_measure in range(max([len(co_song.measures), len(ca_song.measures)])):
             # NB: We could assert that len(measures) is the same for both songs, then iterate through zipped measures.
             # But, if there is a mismatched number of measures, we want to know _where_ it occurs. So, we let the
             # comparison go on using the max length of both songs until something else fails.
-            co_measure = co_song['measures'][i_measure]
-            ca_measure = ca_song['measures'][i_measure]
+            co_measure = co_song.measures[i_measure]
+            ca_measure = ca_song.measures[i_measure]
             # 3a. Check measure metadata
             assert_song_property(co_measure, ca_measure, 'bpm', i_measure, abs=0.01)
             assert_song_property(co_measure, ca_measure, 'fumenOffsetStart', i_measure, abs=0.15)
@@ -87,19 +87,19 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
             assert_song_property(co_measure, ca_measure, 'branchInfo', i_measure)
             # 3b. Check measure notes
             for i_branch in ['normal', 'advanced', 'master']:
-                co_branch = co_measure[i_branch]
-                ca_branch = ca_measure[i_branch]
+                co_branch = co_measure.branches[i_branch]
+                ca_branch = ca_measure.branches[i_branch]
                 # NB: We check for branching before checking speed as fumens store speed changes even for empty branches
-                if co_branch['length'] == 0:
+                if co_branch.length == 0:
                     continue
                 assert_song_property(co_branch, ca_branch, 'speed', i_measure, i_branch)
                 # NB: We could assert that len(notes) is the same for both songs, then iterate through zipped notes.
                 # But, if there is a mismatched number of notes, we want to know _where_ it occurs. So, we let the
                 # comparison go on using the max length of both branches until something else fails.
-                for i_note in range(max([co_branch['length'], ca_branch['length']])):
-                    co_note = co_branch[i_note]
-                    ca_note = ca_branch[i_note]
-                    assert_song_property(co_note, ca_note, 'type', i_measure, i_branch, i_note, func=normalize_type)
+                for i_note in range(max([co_branch.length, ca_branch.length])):
+                    co_note = co_branch.notes[i_note]
+                    ca_note = ca_branch.notes[i_note]
+                    assert_song_property(co_note, ca_note, 'note_type', i_measure, i_branch, i_note, func=normalize_type)
                     assert_song_property(co_note, ca_note, 'pos', i_measure, i_branch, i_note, abs=0.1)
                     # NB: Drumroll duration doesn't always end exactly on a beat. Plus, TJA charters often eyeball
                     #     drumrolls, leading them to be often off by a 1/4th/8th/16th/32th/etc. These charting errors
@@ -110,7 +110,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                         assert_song_property(co_note, ca_note, 'duration', i_measure, i_branch, i_note, abs=25.0)
                     except AssertionError:
                         pass
-                    if ca_note['type'] not in ["Balloon", "Kusudama"]:
+                    if ca_note.note_type not in ["Balloon", "Kusudama"]:
                         assert_song_property(co_note, ca_note, 'scoreInit', i_measure, i_branch, i_note)
                         assert_song_property(co_note, ca_note, 'scoreDiff', i_measure, i_branch, i_note)
                     # NB: 'item' still needs to be implemented: https://github.com/vivaria/tja2fumen/issues/17
@@ -124,12 +124,14 @@ def assert_song_property(converted_obj, cached_obj, prop, measure=None, branch=N
     msg_failure += f": measure '{measure+1}'" if measure is not None else ""
     msg_failure += f", branch '{branch}'" if branch is not None else ""
     msg_failure += f", note '{note+1}'" if note is not None else ""
+    converted_val = converted_obj.__getattribute__(prop)
+    cached_val = cached_obj.__getattribute__(prop)
     if func:
-        assert func(converted_obj[prop]) == func(cached_obj[prop]), msg_failure
+        assert func(converted_val) == func(cached_val), msg_failure
     elif abs:
-        assert converted_obj[prop] == pytest.approx(cached_obj[prop], abs=abs), msg_failure
+        assert converted_val == pytest.approx(cached_val, abs=abs), msg_failure
     else:
-        assert converted_obj[prop] == cached_obj[prop], msg_failure
+        assert converted_val == cached_val, msg_failure
 
 
 def normalize_type(note_type):

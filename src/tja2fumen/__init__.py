@@ -24,11 +24,11 @@ def main(argv=None):
     baseName = os.path.splitext(fnameTJA)[0]
 
     # Parse lines in TJA file
-    parsedTJACourses = parseTJA(fnameTJA)
+    parsedTJA = parseTJA(fnameTJA)
 
     # Convert parsed TJA courses to Fumen data, and write each course to `.bin` files
-    for parsedCourse in parsedTJACourses.items():
-        convert_and_write(parsedCourse, baseName, singleCourse=(len(parsedTJACourses) == 1))
+    for course in parsedTJA.courses.items():
+        convert_and_write(course, baseName, singleCourse=(len(parsedTJA.courses) == 1))
 
 
 def convert_and_write(parsedCourse, baseName, singleCourse=False):
