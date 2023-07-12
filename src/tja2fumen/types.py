@@ -1,19 +1,11 @@
-from tja2fumen.constants import sampleHeaderMetadata, simpleHeaders
-
-
-# TJA parsing
-
-courseNames = []
-for difficulty in ['Ura', 'Oni', 'Hard', 'Normal', 'Easy']:
-    for player in ['', 'P1', 'P2']:
-        courseNames.append(difficulty+player)
+from tja2fumen.constants import sampleHeaderMetadata, simpleHeaders, TJA_COURSE_NAMES
 
 
 class TJASong:
     def __init__(self, BPM=None, offset=None):
         self.BPM = float(BPM)
         self.offset = float(offset)
-        self.courses = {course: TJACourse(self.BPM, self.offset, course) for course in courseNames}
+        self.courses = {course: TJACourse(self.BPM, self.offset, course) for course in TJA_COURSE_NAMES}
 
     def __repr__(self):
         return f"{{'BPM': {self.BPM}, 'offset': {self.offset}, 'courses': {list(self.courses.keys())}}}"

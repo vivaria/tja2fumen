@@ -92,6 +92,11 @@ sampleHeaderMetadata[77] = 97
 sampleHeaderMetadata[78] = 188
 # Certain other bytes (8+9, 20) will need to be filled in on a song-by-song basis
 
+TJA_COURSE_NAMES = []
+for difficulty in ['Ura', 'Oni', 'Hard', 'Normal', 'Easy']:
+    for player in ['', 'P1', 'P2']:
+        TJA_COURSE_NAMES.append(difficulty+player)
+
 NORMALIZE_COURSE = {
     '0': 'Easy',
     'Easy': 'Easy',
