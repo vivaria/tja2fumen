@@ -8,6 +8,7 @@ This project attempts to replace/complement the existing closed-source [tja2bin.
 
 - Act as a drop-in replacement for `tja2bin.exe` in TakoTako.
 - Fix https://github.com/Fluto/TakoTako/issues/16. (The original `tjabin.exe` doesn't properly handle `#BPMCHANGE` commands.)
+- Better handle commands that `tjabin.exe` fails for (`#SECTION`, `#NEXTSONG`, `#LYRIC`, etc.)
 - Provide open source code to act as a reference for parsing and writing both the TJA and Fumen file formats.
 - Stick to the Python stdlib, i.e. no external dependencies if possible.
 
