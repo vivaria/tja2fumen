@@ -1,29 +1,8 @@
-from copy import deepcopy
 import re
 
 from tja2fumen.utils import computeSoulGaugeBytes
-from tja2fumen.constants import DIFFICULTY_BYTES, sampleHeaderMetadata, simpleHeaders
-
-# Filler metadata that the `writeFumen` function expects
-# TODO: Determine how to properly set the item byte (https://github.com/vivaria/tja2fumen/issues/17)
-default_note = {'type': '', 'pos': 0.0, 'item': 0, 'padding': 0.0,
-                'scoreInit': 0, 'scoreDiff': 0, 'duration': 0.0}
-default_branch = {'length': 0, 'padding': 0, 'speed': 1.0}
-default_measure = {
-    'bpm': 0.0,
-    'fumenOffsetStart': 0.0,
-    'fumenOffsetEnd': 0.0,
-    'duration': 0.0,
-    'gogo': False,
-    'barline': True,
-    'padding1': 0,
-    'branchStart': None,
-    'branchInfo': [-1, -1, -1, -1, -1, -1],
-    'padding2': 0,
-    'normal': deepcopy(default_branch),
-    'advanced': deepcopy(default_branch),
-    'master': deepcopy(default_branch)
-}
+from tja2fumen.constants import DIFFICULTY_BYTES
+from tja2fumen.types import FumenCourse, FumenNote
 
 
 def processTJACommands(tja):
@@ -126,7 +105,12 @@ def convertTJAToFumen(tja):
     processedTJABranches = processTJACommands(tja)
 
     # Pre-allocate the measures for the converted TJA
-    fumen = {'measures': [deepcopy(default_measure) for _ in range(len(processedTJABranches['normal']))]}
+    fumen = FumenCourse(
+        measures=len(processedTJABranches['normal']),
+        hasBranches=all([len(b) for b in processedTJABranches.values()]),
+        scoreInit=tja.scoreInit,
+        scoreDiff=tja.scoreDiff,
+    )
 
     # Iterate through the different branches in the TJA
     for currentBranch, branchMeasuresTJAProcessed in processedTJABranches.items():
@@ -141,13 +125,13 @@ def convertTJAToFumen(tja):
         # Iterate through the measures within the branch
         for idx_m, measureTJAProcessed in enumerate(branchMeasuresTJAProcessed):
             # Fetch a pair of measures
-            measureFumenPrev = fumen['measures'][idx_m-1] if idx_m != 0 else None
-            measureFumen = fumen['measures'][idx_m]
+            measureFumenPrev = fumen.measures[idx_m-1] if idx_m != 0 else None
+            measureFumen = fumen.measures[idx_m]
 
             # Copy over basic measure properties from the TJA (that don't depend on notes or commands)
-            measureFumen[currentBranch]['speed'] = measureTJAProcessed['scroll']
-            measureFumen['gogo'] = measureTJAProcessed['gogo']
-            measureFumen['bpm'] = measureTJAProcessed['bpm']
+            measureFumen.branches[currentBranch].speed = measureTJAProcessed['scroll']
+            measureFumen.gogo = measureTJAProcessed['gogo']
+            measureFumen.bpm = measureTJAProcessed['bpm']
 
             # Compute the duration of the measure
             # First, we compute the duration for a full 4/4 measure
@@ -162,16 +146,16 @@ def convertTJAToFumen(tja):
             measureRatio = (1.0 if measureTJAProcessed['subdivisions'] == 0.0  # Avoid division by 0 for empty measures
                             else (measureLength / measureTJAProcessed['subdivisions']))
             # Apply the 2 adjustments to the measure duration
-            measureFumen['duration'] = measureDuration = measureDurationFullMeasure * measureSize * measureRatio
+            measureFumen.duration = measureDuration = measureDurationFullMeasure * measureSize * measureRatio
 
             # Compute the millisecond offsets for the start and end of each measure
             #  - Start: When the notes first appear on screen (to the right)
             #  - End:   When the notes arrive at the judgment line, and the note gets hit.
             if idx_m == 0:
-                measureFumen['fumenOffsetStart'] = (tja.offset * 1000 * -1) - measureDurationFullMeasure
+                measureFumen.fumenOffsetStart = (tja.offset * 1000 * -1) - measureDurationFullMeasure
             else:
                 # First, start the measure using the end timing of the previous measure (plus any #DELAY commands)
-                measureFumen['fumenOffsetStart'] = measureFumenPrev['fumenOffsetEnd'] + measureTJAProcessed['delay']
+                measureFumen.fumenOffsetStart = measureFumenPrev.fumenOffsetEnd + measureTJAProcessed['delay']
                 # Next, adjust the start timing to account for #BPMCHANGE commands (!!! Discovered by tana :3 !!!)
                 # To understand what's going on here, imagine the following simple example:
                 #   * You have a very slow-moving note (i.e. low BPM), like the big DON in Donkama 2000.
@@ -180,12 +164,12 @@ def convertTJAToFumen(tja):
                 #      - An early start means you need to subtract a LOT of time from the starting fumenOffset.
                 #      - Thankfully, the low BPM of the slow note will create a HUGE `measureOffsetAdjustment`,
                 #        since we are dividing by the BPMs, and dividing by a small number will result in a big number.
-                measureOffsetAdjustment = (4 * 60_000 / measureTJAProcessed['bpm']) - (4 * 60_000 / measureFumenPrev['bpm'])
+                measureOffsetAdjustment = (4 * 60_000 / measureFumen.bpm) - (4 * 60_000 / measureFumenPrev.bpm)
                 #      - When we subtract this adjustment from the fumenOffsetStart, we get the "START EARLY" part:
-                measureFumen['fumenOffsetStart'] -= measureOffsetAdjustment
+                measureFumen.fumenOffsetStart -= measureOffsetAdjustment
                 #      - The low BPM of the slow note will also create a HUGE measure duration.
                 #      - When we add this long duration to the EARLY START, we end up with the "END LATE" part:
-            measureFumen['fumenOffsetEnd'] = measureFumen['fumenOffsetStart'] + measureFumen['duration']
+            measureFumen.fumenOffsetEnd = measureFumen.fumenOffsetStart + measureFumen.duration
 
             # Best guess at what 'barline' status means for each measure:
             # - 'True' means the measure lands on a barline (i.e. most measures), and thus barline should be shown
@@ -194,7 +178,7 @@ def convertTJAToFumen(tja):
             #     1. Measures where #BARLINEOFF has been set
             #     2. Sub-measures that don't fall on the barline
             if measureTJAProcessed['barline'] is False or (measureRatio != 1.0 and measureTJAProcessed['pos_start'] != 0):
-                measureFumen['barline'] = False
+                measureFumen.barline = False
 
             # Check to see if the measure contains a branching condition
             if measureTJAProcessed['branchStart']:
@@ -213,31 +197,32 @@ def convertTJAToFumen(tja):
                 elif currentBranch == 'master':
                     idx_b1, idx_b2 = 4, 5
                 # Assign the values to their intended bytes
-                measureFumen['branchInfo'][idx_b1] = vals[0]
-                measureFumen['branchInfo'][idx_b2] = vals[1]
+                measureFumen.branchInfo[idx_b1] = vals[0]
+                measureFumen.branchInfo[idx_b2] = vals[1]
                 # Reset the note counter corresponding to this branch
                 total_notes_branch = 0
             total_notes_branch += note_counter_branch
 
-            # Create note dictionaries based on TJA measure data (containing 0's plus 1/2/3/4/etc. for notes)
+            # Create notes based on TJA measure data
             note_counter_branch = 0
             note_counter = 0
             for idx_d, data in enumerate(measureTJAProcessed['data']):
                 if data.name == 'note':
+                    note = FumenNote()
                     # Note positions must be calculated using the base measure duration (that uses a single BPM value)
                     # (In other words, note positions do not take into account any mid-measure BPM change adjustments.)
-                    note_pos = measureDuration * (data.pos - measureTJAProcessed['pos_start']) / measureLength
+                    note.pos = measureDuration * (data.pos - measureTJAProcessed['pos_start']) / measureLength
                     # Handle the note that represents the end of a drumroll/balloon
                     if data.value == "EndDRB":
                         # If a drumroll spans a single measure, then add the difference between start/end position
-                        if 'multimeasure' not in currentDrumroll.keys():
-                            currentDrumroll['duration'] += (note_pos - currentDrumroll['pos'])
+                        if not currentDrumroll.multimeasure:
+                            currentDrumroll.duration += (note.pos - currentDrumroll.pos)
                         # Otherwise, if a drumroll spans multiple measures, then we want to add the duration between
                         # the start of the measure (i.e. pos=0.0) and the drumroll's end position.
                         else:
-                            currentDrumroll['duration'] += (note_pos - 0.0)
+                            currentDrumroll.duration += (note.pos - 0.0)
                         # 1182, 1385, 1588, 2469, 1568, 752, 1568
-                        currentDrumroll['duration'] = float(int(currentDrumroll['duration']))
+                        currentDrumroll.duration = float(int(currentDrumroll.duration))
                         currentDrumroll = None
                         continue
                     # The TJA spec technically allows you to place double-Kusudama notes:
@@ -246,61 +231,50 @@ def convertTJAToFumen(tja):
                     if data.value == "Kusudama" and currentDrumroll:
                         continue
                     # Handle the remaining non-EndDRB, non-double Kusudama notes
-                    note = deepcopy(default_note)
-                    note['pos'] = note_pos
-                    note['type'] = data.value
-                    note['scoreInit'] = tja.scoreInit
-                    note['scoreDiff'] = tja.scoreDiff
+                    note.type = data.value
+                    note.scoreInit = tja.scoreInit
+                    note.scoreDiff = tja.scoreDiff
                     # Handle drumroll/balloon-specific metadata
-                    if note['type'] in ["Balloon", "Kusudama"]:
-                        note['hits'] = courseBalloons.pop(0)
-                        note['hitsPadding'] = 0
+                    if note.type in ["Balloon", "Kusudama"]:
+                        note.hits = courseBalloons.pop(0)
                         currentDrumroll = note
                         total_notes -= 1
-                    if note['type'] in ["Drumroll", "DRUMROLL"]:
-                        note['drumrollBytes'] = b'\x00\x00\x00\x00\x00\x00\x00\x00'
+                    if note.type in ["Drumroll", "DRUMROLL"]:
                         currentDrumroll = note
                         total_notes -= 1
                     # Count dons, kas, and balloons for the purpose of tracking branching accuracy
-                    if note['type'].lower() in ['don', 'ka']:
+                    if note.type.lower() in ['don', 'ka']:
                         note_counter_branch += 1
-                    elif note['type'].lower() in ['balloon', 'kusudama']:
+                    elif note.type.lower() in ['balloon', 'kusudama']:
                         note_counter_branch += 1.5
-                    measureFumen[currentBranch][note_counter] = note
+                    measureFumen.branches[currentBranch].notes.append(note)
                     note_counter += 1
 
             # If drumroll hasn't ended by the end of this measure, increase duration by measure timing
             if currentDrumroll:
-                if currentDrumroll['duration'] == 0.0:
-                    currentDrumroll['duration'] += (measureDuration - currentDrumroll['pos'])
-                    currentDrumroll['multimeasure'] = True
+                if currentDrumroll.duration == 0.0:
+                    currentDrumroll.duration += (measureDuration - currentDrumroll.pos)
+                    currentDrumroll.multimeasure = True
                 else:
-                    currentDrumroll['duration'] += measureDuration
+                    currentDrumroll.duration += measureDuration
 
-            measureFumen[currentBranch]['length'] = note_counter
+            measureFumen.branches[currentBranch].length = note_counter
             total_notes += note_counter
 
     # Take a stock header metadata sample and add song-specific metadata
-    headerMetadata = sampleHeaderMetadata.copy()
-    headerMetadata[8] = DIFFICULTY_BYTES[tja.course][0]
-    headerMetadata[9] = DIFFICULTY_BYTES[tja.course][1]
+    fumen.headerMetadata[8] = DIFFICULTY_BYTES[tja.course][0]
+    fumen.headerMetadata[9] = DIFFICULTY_BYTES[tja.course][1]
     soulGaugeBytes = computeSoulGaugeBytes(
         n_notes=total_notes,
         difficulty=tja.course,
         stars=tja.level
     )
-    headerMetadata[12] = soulGaugeBytes[0]
-    headerMetadata[13] = soulGaugeBytes[1]
-    headerMetadata[16] = soulGaugeBytes[2]
-    headerMetadata[17] = soulGaugeBytes[3]
-    headerMetadata[20] = soulGaugeBytes[4]
-    headerMetadata[21] = soulGaugeBytes[5]
-    fumen['headerMetadata'] = b"".join(i.to_bytes(1, 'little') for i in headerMetadata)
-    fumen['headerPadding'] = simpleHeaders[0]  # Use a basic, known set of header bytes
-    fumen['order'] = '<'
-    fumen['unknownMetadata'] = 0
-    fumen['branches'] = all([len(b) for b in processedTJABranches.values()])
-    fumen['scoreInit'] = tja.scoreInit
-    fumen['scoreDiff'] = tja.scoreDiff
+    fumen.headerMetadata[12] = soulGaugeBytes[0]
+    fumen.headerMetadata[13] = soulGaugeBytes[1]
+    fumen.headerMetadata[16] = soulGaugeBytes[2]
+    fumen.headerMetadata[17] = soulGaugeBytes[3]
+    fumen.headerMetadata[20] = soulGaugeBytes[4]
+    fumen.headerMetadata[21] = soulGaugeBytes[5]
+    fumen.headerMetadata = b"".join(i.to_bytes(1, 'little') for i in fumen.headerMetadata)
 
     return fumen
