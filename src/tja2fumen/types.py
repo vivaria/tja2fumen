@@ -49,6 +49,25 @@ class TJAMeasure:
         return str(self.__dict__)
 
 
+class TJAMeasureProcessed:
+    def __init__(self, bpm, scroll, gogo, barline, time_sig, subdivisions,
+                 pos_start=0, pos_end=0, delay=0, branchStart=None, data=None):
+        self.bpm = bpm
+        self.scroll = scroll
+        self.gogo = gogo
+        self.barline = barline
+        self.time_sig = time_sig
+        self.subdivisions = subdivisions
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+        self.delay = delay
+        self.branchStart = branchStart
+        self.data = [] if data is None else data
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+
 class TJAData:
     def __init__(self, name, value, pos=None):
         self.pos = pos
