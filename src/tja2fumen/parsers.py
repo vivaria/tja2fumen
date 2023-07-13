@@ -175,7 +175,7 @@ def parseCourseMeasures(course):
         elif line.name == 'SECTION':
             # Simply repeat the same #BRANCHSTART condition that happened previously
             # The purpose of #SECTION is to "Reset accuracy values for notes and drumrolls on the next measure."
-            course.branches[branch][idx_m].events.append(TJAData('branchStart', branch_condition, pos))
+            course.branches[currentBranch][idx_m].events.append(TJAData('branchStart', branch_condition, pos))
 
         # 3. Parse commands that don't create an event (e.g. simply changing the current branch)
         else:
