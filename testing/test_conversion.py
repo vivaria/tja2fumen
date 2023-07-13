@@ -104,10 +104,9 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
             for i_branch in ['normal', 'advanced', 'master']:
                 co_branch = co_measure.branches[i_branch]
                 ca_branch = ca_measure.branches[i_branch]
-                # NB: We check for branching before checking speed as fumens store speed changes even for empty branches
-                if co_branch.length == 0:
-                    continue
-                assert_song_property(co_branch, ca_branch, 'speed', i_measure, i_branch)
+                # NB: We only check speed for non-empty branches, as fumens store speed changes even for empty branches
+                if co_branch.length != 0:
+                    assert_song_property(co_branch, ca_branch, 'speed', i_measure, i_branch)
                 # NB: We could assert that len(notes) is the same for both songs, then iterate through zipped notes.
                 # But, if there is a mismatched number of notes, we want to know _where_ it occurs. So, we let the
                 # comparison go on using the max length of both branches until something else fails.
