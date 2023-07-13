@@ -194,9 +194,18 @@ def convertTJAToFumen(tja):
             if measureTJAProcessed.branchStart:
                 # Determine which values to assign based on the type of branching condition
                 if measureTJAProcessed.branchStart[0] == 'p':
-                    vals = [int(total_notes_branch * v * 20) if 0 <= v <= 1  # Ensure value is actually a percentage
-                            else int(v * 100)                                # If it's not, pass the value as-is
-                            for v in measureTJAProcessed.branchStart[1:]]
+                    vals = []
+                    for percent in measureTJAProcessed.branchStart[1:]:
+                        # Ensure percentage is actually a percentage value
+                        if 0 <= percent <= 1:
+                            val = total_notes_branch * percent * 20
+                            # If the result is very close, then round to account for lack of precision in percentage
+                            if abs(val - round(val)) < 0.1:
+                                val = round(val)
+                            vals.append(int(val))
+                        # If it isn't a percentage value, then pass it back as-is
+                        else:
+                            vals.append(int(percent * 100))
                 elif measureTJAProcessed.branchStart[0] == 'r':
                     vals = measureTJAProcessed.branchStart[1:]
                 # Determine which bytes to assign the values to
