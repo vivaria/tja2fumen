@@ -111,6 +111,7 @@ def parseCourseMeasures(course):
     # Check if the course has branches or not
     hasBranches = True if [l for l in course.data if l.name == 'BRANCHSTART'] else False
     currentBranch = 'all' if hasBranches else 'normal'
+    branch_condition = None
     flagLevelhold = False
 
     # Process course lines
@@ -133,7 +134,7 @@ def parseCourseMeasures(course):
 
         # 2. Parse measure commands that produce an "event"
         elif line.name in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF', 'DELAY',
-                           'SCROLL', 'BPMCHANGE', 'MEASURE', 'BRANCHSTART']:
+                           'SCROLL', 'BPMCHANGE', 'MEASURE', 'SECTION', 'BRANCHSTART']:
             # Get position of the event
             for branch in course.branches.keys() if currentBranch == 'all' else [currentBranch]:
                 pos = len(course.branches[branch][idx_m].notes)
@@ -155,6 +156,14 @@ def parseCourseMeasures(course):
                 currentEvent = TJAData('bpm', float(line.value), pos)
             elif line.name == 'MEASURE':
                 currentEvent = TJAData('measure', line.value, pos)
+            elif line.name == 'SECTION':
+                # If #SECTION occurs before the first #BRANCHSTART condition, then we have no percentage/drumroll values
+                # to use for the branchInfo bytes when writing to the fumen. So, we just use default values (-1, -1).
+                if branch_condition is None:
+                    branch_condition = ['#SECTION', -1, -1]
+                # Otherwise, if #SECTION occurs after a #BRANCHSTART condition, then we just repeat the previous
+                # condition (to set the correct branchInfo bytes for this measure.)
+                currentEvent = TJAData('branchStart', branch_condition, pos)
             elif line.name == 'BRANCHSTART':
                 if flagLevelhold:
                     continue
@@ -172,10 +181,6 @@ def parseCourseMeasures(course):
             # Append event to the current measure's events
             for branch in course.branches.keys() if currentBranch == 'all' else [currentBranch]:
                 course.branches[branch][idx_m].events.append(currentEvent)
-        elif line.name == 'SECTION':
-            # Simply repeat the same #BRANCHSTART condition that happened previously
-            # The purpose of #SECTION is to "Reset accuracy values for notes and drumrolls on the next measure."
-            course.branches[currentBranch][idx_m].events.append(TJAData('branchStart', branch_condition, pos))
 
         # 3. Parse commands that don't create an event (e.g. simply changing the current branch)
         else:

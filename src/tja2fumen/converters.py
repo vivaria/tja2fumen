@@ -51,6 +51,12 @@ def processTJACommands(tja):
                     measureTJAProcessed.delay = data.value * 1000  # ms -> s
                 elif data.name == 'branchStart':
                     measureTJAProcessed.branchStart = data.value
+                    # If the measure immediately preceding a #BRANCHSTART has a #SECTION command, then remove it.
+                    # From TJA spec: "Placing [a #SECTION command] near #BRANCHSTART or a measure before does not reset
+                    #                 the accuracy for that branch. The value is calculated before it and a measure
+                    #                 has not started yet at that point."
+                    if tjaBranchesProcessed[branchName][-1].branchStart == ["#SECTION", -1, -1]:
+                        tjaBranchesProcessed[branchName][-1].branchStart = None
                 elif data.name == 'barline':
                     currentBarline = bool(int(data.value))
                     measureTJAProcessed.barline = currentBarline
@@ -208,6 +214,10 @@ def convertTJAToFumen(tja):
                             vals.append(int(percent * 100))
                 elif measureTJAProcessed.branchStart[0] == 'r':
                     vals = measureTJAProcessed.branchStart[1:]
+                # If it's a #SECTION command, use the branch condition values as-is AND reset the accuracy
+                elif measureTJAProcessed.branchStart[0] == '#SECTION':
+                    vals = measureTJAProcessed.branchStart[1:]
+                    note_counter_branch = 0
                 # Determine which bytes to assign the values to
                 if currentBranch == 'normal':
                     idx_b1, idx_b2 = 0, 1
