@@ -159,14 +159,14 @@ def parseCourseMeasures(course):
                 if flagLevelhold:
                     continue
                 currentBranch = 'all'  # Ensure that the #BRANCHSTART command is present for all branches
-                values = line.value.split(',')
-                if values[0] == 'r':  # r = drumRoll
-                    values[1] = int(values[1])  # # of drumrolls
-                    values[2] = int(values[2])  # # of drumrolls
-                elif values[0] == 'p':  # p = Percentage
-                    values[1] = float(values[1]) / 100  # %
-                    values[2] = float(values[2]) / 100  # %
-                currentEvent = TJAData('branchStart', values, pos)
+                branch_condition = line.value.split(',')
+                if branch_condition[0] == 'r':  # r = drumRoll
+                    branch_condition[1] = int(branch_condition[1])  # # of drumrolls
+                    branch_condition[2] = int(branch_condition[2])  # # of drumrolls
+                elif branch_condition[0] == 'p':  # p = Percentage
+                    branch_condition[1] = float(branch_condition[1]) / 100  # %
+                    branch_condition[2] = float(branch_condition[2]) / 100  # %
+                currentEvent = TJAData('branchStart', branch_condition, pos)
                 idx_m_branchstart = idx_m  # Preserve the index of the BRANCHSTART command to re-use for each branch
 
             # Append event to the current measure's events
@@ -175,7 +175,7 @@ def parseCourseMeasures(course):
         elif line.name == 'SECTION':
             # Simply repeat the same #BRANCHSTART condition that happened previously
             # The purpose of #SECTION is to "Reset accuracy values for notes and drumrolls on the next measure."
-            course.branches[branch][idx_m].events.append(TJAData('branchStart', values, pos))
+            course.branches[branch][idx_m].events.append(TJAData('branchStart', branch_condition, pos))
 
         # 3. Parse commands that don't create an event (e.g. simply changing the current branch)
         else:
