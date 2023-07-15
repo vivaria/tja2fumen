@@ -12,6 +12,7 @@ from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE, simpleHeaders, byt
 
 
 @pytest.mark.parametrize('id_song', [
+    pytest.param('genpe'),
     pytest.param('gimcho'),
     pytest.param('imcanz'),
     pytest.param('clsca'),
@@ -84,15 +85,28 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
             assert_song_property(co_measure, ca_measure, 'fumenOffsetStart', i_measure, abs=0.15)
             assert_song_property(co_measure, ca_measure, 'gogo', i_measure)
             assert_song_property(co_measure, ca_measure, 'barline', i_measure)
-            assert_song_property(co_measure, ca_measure, 'branchInfo', i_measure)
+
+            # NB: KAGEKIYO's fumen has some strange details that can't be replicated using the TJA charting format.
+            # So, for now, we use a special case to skip checking A) notes for certain measures and B) branchInfo
+            if id_song == 'genpe':
+                # A) The 2/4 measures in the Ura of KAGEKIYO's official Ura fumen don't match the wikiwiki.jp/TJA
+                # charts. In the official fumen, the note ms offsets of branches 5/12/17/etc. go _past_ the duration of
+                # the measure. This behavior is impossible to represent using the TJA format, so we skip checking notes
+                # for these measures, since the rest of the measures have perfect note ms offsets anyway.
+                if i_difficult_id == "x" and i_measure in [5, 6, 12, 13, 17, 18, 26, 27, 46, 47, 51, 52, 56, 57]:
+                    continue
+                # B) The branching condition for KAGEKIYO is very strange (accuracy for the 7 big notes in the song)
+                # So, we only test the branchInfo bytes for non-KAGEKIYO songs:
+            else:
+                assert_song_property(co_measure, ca_measure, 'branchInfo', i_measure)
+
             # 3b. Check measure notes
             for i_branch in ['normal', 'advanced', 'master']:
                 co_branch = co_measure.branches[i_branch]
                 ca_branch = ca_measure.branches[i_branch]
-                # NB: We check for branching before checking speed as fumens store speed changes even for empty branches
-                if co_branch.length == 0:
-                    continue
-                assert_song_property(co_branch, ca_branch, 'speed', i_measure, i_branch)
+                # NB: We only check speed for non-empty branches, as fumens store speed changes even for empty branches
+                if co_branch.length != 0:
+                    assert_song_property(co_branch, ca_branch, 'speed', i_measure, i_branch)
                 # NB: We could assert that len(notes) is the same for both songs, then iterate through zipped notes.
                 # But, if there is a mismatched number of notes, we want to know _where_ it occurs. So, we let the
                 # comparison go on using the max length of both branches until something else fails.

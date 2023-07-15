@@ -51,6 +51,12 @@ def processTJACommands(tja):
                     measureTJAProcessed.delay = data.value * 1000  # ms -> s
                 elif data.name == 'branchStart':
                     measureTJAProcessed.branchStart = data.value
+                    # If the measure immediately preceding a #BRANCHSTART has a #SECTION command, then remove it.
+                    # From TJA spec: "Placing [a #SECTION command] near #BRANCHSTART or a measure before does not reset
+                    #                 the accuracy for that branch. The value is calculated before it and a measure
+                    #                 has not started yet at that point."
+                    if tjaBranchesProcessed[branchName][-1].branchStart == ["#SECTION", -1, -1]:
+                        tjaBranchesProcessed[branchName][-1].branchStart = None
                 elif data.name == 'barline':
                     currentBarline = bool(int(data.value))
                     measureTJAProcessed.barline = currentBarline
@@ -194,11 +200,25 @@ def convertTJAToFumen(tja):
             if measureTJAProcessed.branchStart:
                 # Determine which values to assign based on the type of branching condition
                 if measureTJAProcessed.branchStart[0] == 'p':
-                    vals = [int(total_notes_branch * v * 20) if 0 <= v <= 1  # Ensure value is actually a percentage
-                            else int(v * 100)                                # If it's not, pass the value as-is
-                            for v in measureTJAProcessed.branchStart[1:]]
+                    vals = []
+                    for percent in measureTJAProcessed.branchStart[1:]:
+                        # Ensure percentage is actually a percentage value
+                        if 0 <= percent <= 1:
+                            val = total_notes_branch * percent * 20
+                            # If the result is very close, then round to account for lack of precision in percentage
+                            if abs(val - round(val)) < 0.1:
+                                val = round(val)
+                            vals.append(int(val))
+                        # If it isn't a percentage value, then pass it back as-is
+                        else:
+                            vals.append(int(percent * 100))
+                # If it's a drumroll then use the branch condition values as-is
                 elif measureTJAProcessed.branchStart[0] == 'r':
                     vals = measureTJAProcessed.branchStart[1:]
+                # If it's a #SECTION command, use the branch condition values as-is AND reset the accuracy
+                elif measureTJAProcessed.branchStart[0] == '#SECTION':
+                    vals = measureTJAProcessed.branchStart[1:]
+                    note_counter_branch = 0
                 # Determine which bytes to assign the values to
                 if currentBranch == 'normal':
                     idx_b1, idx_b2 = 0, 1
@@ -209,8 +229,14 @@ def convertTJAToFumen(tja):
                 # Assign the values to their intended bytes
                 measureFumen.branchInfo[idx_b1] = vals[0]
                 measureFumen.branchInfo[idx_b2] = vals[1]
-                # Reset the note counter corresponding to this branch
+                # Reset the note counter corresponding to this branch (i.e. reset the accuracy)
                 total_notes_branch = 0
+
+            # NB: We update the branch condition note counter *after* we check the current measure's branch condition.
+            # This is because the TJA spec says:
+            #    "The requirement is calculated one measure before #BRANCHSTART, changing the branch visually when it
+            #     is calculated and changing the notes after #BRANCHSTART."
+            # So, by delaying the summation by one measure, we perform the calculation with notes "one measure before".
             total_notes_branch += note_counter_branch
 
             # Create notes based on TJA measure data
