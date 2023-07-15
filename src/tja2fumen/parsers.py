@@ -56,10 +56,11 @@ def getCourseData(lines):
                     raise ValueError()
             elif nameUpper == 'LEVEL':
                 parsedTJA.courses[currentCourse].level = int(value) if value else 0
+            # NB: If there are multiple SCOREINIT/SCOREDIFF values, use the last one (shinuti)
             elif nameUpper == 'SCOREINIT':
-                parsedTJA.courses[currentCourse].scoreInit = int(value) if value else 0
+                parsedTJA.courses[currentCourse].scoreInit = int(value.split(",")[-1]) if value else 0
             elif nameUpper == 'SCOREDIFF':
-                parsedTJA.courses[currentCourse].scoreDiff = int(value) if value else 0
+                parsedTJA.courses[currentCourse].scoreDiff = int(value.split(",")[-1]) if value else 0
             elif nameUpper == 'BALLOON':
                 if value:
                     balloons = [int(v) for v in value.split(",") if v]
