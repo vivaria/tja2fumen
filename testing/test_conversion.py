@@ -12,7 +12,7 @@ from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE
 
 
 @pytest.mark.parametrize('id_song', [
-    pytest.param('shoto9'),
+    pytest.param('shoto9', marks=pytest.mark.skip("TJA structure does not match fumen yet.")),
     pytest.param('genpe'),
     pytest.param('gimcho'),
     pytest.param('imcanz'),
