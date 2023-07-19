@@ -205,15 +205,8 @@ def parseCourseMeasures(course):
             elif line.name == 'BRANCHEND':
                 currentBranch = 'all'
 
-            # Ignored commands
-            elif line.name == 'LYRIC':
-                pass
-            elif line.name == 'NEXTSONG':
-                pass
-
-            # Not implemented commands
             else:
-                raise NotImplementedError
+                print(f"Ignoring unsupported command '{line.name}'")
 
     # Delete the last measure in the branch if no notes or events were added to it (due to preallocating empty measures)
     for branch in course.branches.values():
