@@ -222,16 +222,13 @@ def convertTJAToFumen(tja):
                 elif branchCondition[0] == '#SECTION':
                     vals = branchCondition[1:]
                     note_counter_branch = 0
-                # Determine which bytes to assign the values to
+                # Assign values to their respective bytes
                 if currentBranch == 'normal':
-                    idx_b1, idx_b2 = 0, 1
+                    measureFumen.branchInfo[0:2] = vals
                 elif currentBranch == 'advanced':
-                    idx_b1, idx_b2 = 2, 3
+                    measureFumen.branchInfo[2:4] = vals
                 elif currentBranch == 'master':
-                    idx_b1, idx_b2 = 4, 5
-                # Assign the values to their intended bytes
-                measureFumen.branchInfo[idx_b1] = vals[0]
-                measureFumen.branchInfo[idx_b2] = vals[1]
+                    measureFumen.branchInfo[4:6] = vals
                 # Reset the note counter corresponding to this branch (i.e. reset the accuracy)
                 total_notes_branch = 0
                 # Cache the branch condition for comparison in case of repeated
