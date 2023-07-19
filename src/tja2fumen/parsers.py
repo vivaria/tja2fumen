@@ -343,16 +343,11 @@ def readFumen(fumenFile, exclude_empty_measures=False):
                     note.hits = noteStruct[4]
                     note.hitsPadding = noteStruct[5]
                 else:
-                    note.scoreInit = noteStruct[4]
-                    note.scoreDiff = noteStruct[5] // 4
-                    if not song.scoreInit:
-                        song.scoreInit = note.scoreInit
-                        song.scoreDiff = note.scoreDiff
-                if noteType == 0x6 or noteType == 0x9 or noteType == 0xa or noteType == 0xc:
-                    # Drumroll and balloon duration in ms
-                    note.duration = noteStruct[6]
-                else:
-                    note.duration = noteStruct[6]
+                    song.scoreInit = note.scoreInit = noteStruct[4]
+                    song.scoreDiff = note.scoreDiff = noteStruct[5] // 4
+
+                # Drumroll/balloon duration
+                note.duration = noteStruct[6]
 
                 # Seek forward 8 bytes to account for padding bytes at the end of drumrolls
                 if noteType == 0x6 or noteType == 0x9 or noteType == 0x62:
