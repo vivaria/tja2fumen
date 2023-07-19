@@ -1,18 +1,16 @@
-from tja2fumen.utils import writeStruct, putBool
+from tja2fumen.utils import writeStruct
 from tja2fumen.constants import branchNames, typeNotes
 
 
 def writeFumen(path_out, song):
     # Fetch the byte order (little/big endian)
-    order = song.order
+    order = song.header.order
 
     # Write the header
     file = open(path_out, "wb")
-    file.write(song.headerPadding)   # Write header padding bytes
-    file.write(song.headerMetadata)  # Write header metadata bytes
+    file.write(song.header.raw_bytes)   # Write header padding bytes
 
     # Preallocate space in the file
-    len_metadata = 8
     len_measures = 0
     for measureNumber in range(len(song.measures)):
         len_measures += 40
@@ -25,12 +23,7 @@ def writeFumen(path_out, song):
                 note = branch.notes[noteNumber]
                 if note.type.lower() == "drumroll":
                     len_measures += 8
-    file.write(b'\x00' * (len_metadata + len_measures))
-
-    # Write metadata
-    writeStruct(file, order, format_string="B", value_list=[putBool(song.hasBranches)], seek=0x1b0)
-    writeStruct(file, order, format_string="I", value_list=[len(song.measures)], seek=0x200)
-    writeStruct(file, order, format_string="I", value_list=[song.unknownMetadata], seek=0x204)
+    file.write(b'\x00' * len_measures)
 
     # Write measure data
     file.seek(0x208)

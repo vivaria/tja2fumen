@@ -1,7 +1,5 @@
 import re
 
-from tja2fumen.utils import computeSoulGaugeBytes
-from tja2fumen.constants import DIFFICULTY_BYTES
 from tja2fumen.types import TJAMeasureProcessed, FumenCourse, FumenNote
 
 
@@ -123,7 +121,6 @@ def convertTJAToFumen(tja):
     # Pre-allocate the measures for the converted TJA
     fumen = FumenCourse(
         measures=len(processedTJABranches['normal']),
-        hasBranches=all([len(b) for b in processedTJABranches.values()]),
         scoreInit=tja.scoreInit,
         scoreDiff=tja.scoreDiff,
     )
@@ -297,20 +294,9 @@ def convertTJAToFumen(tja):
             measureFumen.branches[currentBranch].length = note_counter
             total_notes += note_counter
 
-    # Take a stock header metadata sample and add song-specific metadata
-    fumen.headerMetadata[8] = DIFFICULTY_BYTES[tja.course][0]
-    fumen.headerMetadata[9] = DIFFICULTY_BYTES[tja.course][1]
-    soulGaugeBytes = computeSoulGaugeBytes(
-        n_notes=total_notes,
-        difficulty=tja.course,
-        stars=tja.level
-    )
-    fumen.headerMetadata[12] = soulGaugeBytes[0]
-    fumen.headerMetadata[13] = soulGaugeBytes[1]
-    fumen.headerMetadata[16] = soulGaugeBytes[2]
-    fumen.headerMetadata[17] = soulGaugeBytes[3]
-    fumen.headerMetadata[20] = soulGaugeBytes[4]
-    fumen.headerMetadata[21] = soulGaugeBytes[5]
-    fumen.headerMetadata = b"".join(i.to_bytes(1, 'little') for i in fumen.headerMetadata)
+    # Set song-specific metadata
+    fumen.header.b512_b515_number_of_measures = len(fumen.measures)
+    fumen.header.b432_b435_has_branches = int(all([len(b) for b in processedTJABranches.values()]))
+    fumen.header.set_hp_bytes(total_notes, tja.course, tja.level)
 
     return fumen

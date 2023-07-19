@@ -2,9 +2,10 @@ import os
 import re
 from copy import deepcopy
 
-from tja2fumen.utils import readStruct, getBool, shortHex
+from tja2fumen.utils import readStruct, shortHex
 from tja2fumen.constants import NORMALIZE_COURSE, TJA_NOTE_TYPES, branchNames, noteTypes
-from tja2fumen.types import TJASong, TJAMeasure, TJAData, FumenCourse, FumenMeasure, FumenBranch, FumenNote
+from tja2fumen.types import (TJASong, TJAMeasure, TJAData,
+                             FumenCourse, FumenMeasure, FumenBranch, FumenNote, FumenHeader)
 
 ########################################################################################################################
 # TJA-parsing functions ( Original source: https://github.com/WHMHammer/tja-tools/blob/master/src/js/parseTJA.js)
@@ -261,33 +262,13 @@ def readFumen(fumenFile, exclude_empty_measures=False):
     file = open(fumenFile, "rb")
     size = os.fstat(file.fileno()).st_size
 
-    # Fetch the header bytes
-    fumenHeader = file.read(512)
-
-    # Determine:
-    #   - The byte order (big or little endian)
-    #   - The total number of measures from byte 0x200 (decimal 512)
-    measuresBig = readStruct(file, order="", format_string=">I", seek=0x200)[0]
-    measuresLittle = readStruct(file, order="", format_string="<I", seek=0x200)[0]
-    if measuresBig < measuresLittle:
-        order = ">"
-        totalMeasures = measuresBig
-    else:
-        order = "<"
-        totalMeasures = measuresLittle
-
-    # Initialize the dict that will contain the chart information
     song = FumenCourse(
-        headerPadding=fumenHeader[:432],
-        headerMetadata=fumenHeader[-80:],
-        order=order,
-        unknownMetadata=readStruct(file, order, format_string="I", seek=0x204)[0],
-        hasBranches=getBool(readStruct(file, order, format_string="B", seek=0x1b0)[0])
+        header=FumenHeader(raw_bytes=file.read(520))
     )
 
     # Start reading measure data from position 0x208 (decimal 520)
     file.seek(0x208)
-    for measureNumber in range(totalMeasures):
+    for measureNumber in range(song.header.b512_b515_number_of_measures):
         # Parse the measure data using the following `format_string`:
         #   "ffBBHiiiiiii" (12 format characters, 40 bytes per measure)
         #     - 'f': BPM              (represented by one float (4 bytes))
@@ -297,14 +278,14 @@ def readFumen(fumenFile, exclude_empty_measures=False):
         #     - 'H': <padding>        (represented by one unsigned short (2 bytes))
         #     - 'iiiiii': branchInfo  (represented by six integers (24 bytes))
         #     - 'i': <padding>        (represented by one integer (4 bytes)
-        measureStruct = readStruct(file, order, format_string="ffBBHiiiiiii")
+        measureStruct = readStruct(file, song.header.order, format_string="ffBBHiiiiiii")
 
         # Create the measure dictionary using the newly-parsed measure data
         measure = FumenMeasure(
             bpm=measureStruct[0],
             fumenOffsetStart=measureStruct[1],
-            gogo=getBool(measureStruct[2]),
-            barline=getBool(measureStruct[3]),
+            gogo=measureStruct[2],
+            barline=measureStruct[3],
             padding1=measureStruct[4],
             branchInfo=list(measureStruct[5:11]),
             padding2=measureStruct[11]
@@ -317,7 +298,7 @@ def readFumen(fumenFile, exclude_empty_measures=False):
             #     - 'H': totalNotes (represented by one unsigned short (2 bytes))
             #     - 'H': <padding>  (represented by one unsigned short (2 bytes))
             #     - 'f': speed      (represented by one float (4 bytes)
-            branchStruct = readStruct(file, order, format_string="HHf")
+            branchStruct = readStruct(file, song.header.order, format_string="HHf")
 
             # Create the branch dictionary using the newly-parsed branch data
             totalNotes = branchStruct[0]
@@ -339,7 +320,7 @@ def readFumen(fumenFile, exclude_empty_measures=False):
                 #     - 'H': scoreDiff
                 #     - 'f': duration
                 # NB: 'item' doesn't seem to be used at all in this function.
-                noteStruct = readStruct(file, order, format_string="ififHHf")
+                noteStruct = readStruct(file, song.header.order, format_string="ififHHf")
 
                 # Validate the note type
                 noteType = noteStruct[0]
