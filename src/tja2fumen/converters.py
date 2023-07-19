@@ -199,16 +199,19 @@ def convertTJAToFumen(tja):
                 if measureTJAProcessed.branchStart[0] == 'p':
                     vals = []
                     for percent in measureTJAProcessed.branchStart[1:]:
-                        # Ensure percentage is actually a percentage value
+                        # Ensure percentage is between 0% and 100%
                         if 0 <= percent <= 1:
                             val = total_notes_branch * percent * 20
                             # If the result is very close, then round to account for lack of precision in percentage
                             if abs(val - round(val)) < 0.1:
                                 val = round(val)
                             vals.append(int(val))
-                        # If it isn't a percentage value, then pass it back as-is
+                        # If it is above 100%, then it means a guaranteed "level down". Fumens use 999 for this.
+                        elif percent > 1:
+                            vals.append(999)
+                        # If it is below 0%, it is a guaranteed "level up". Fumens use 0 for this.
                         else:
-                            vals.append(int(percent * 100))
+                            vals.append(0)
                 # If it's a drumroll then use the branch condition values as-is
                 elif measureTJAProcessed.branchStart[0] == 'r':
                     vals = measureTJAProcessed.branchStart[1:]
