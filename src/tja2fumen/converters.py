@@ -133,6 +133,8 @@ def convertTJAToFumen(tja):
         total_notes_branch = 0
         note_counter_branch = 0
         currentDrumroll = None
+        branchCondition = None
+        branchConditionPrev = None
         courseBalloons = tja.balloon.copy()
 
         # Iterate through the measures within the branch
@@ -194,11 +196,12 @@ def convertTJAToFumen(tja):
                 measureFumen.barline = False
 
             # Check to see if the measure contains a branching condition
-            if measureTJAProcessed.branchStart:
+            branchCondition = measureTJAProcessed.branchStart
+            if branchCondition:
                 # Determine which values to assign based on the type of branching condition
-                if measureTJAProcessed.branchStart[0] == 'p':
+                if branchCondition[0] == 'p':
                     vals = []
-                    for percent in measureTJAProcessed.branchStart[1:]:
+                    for percent in branchCondition[1:]:
                         # Ensure percentage is between 0% and 100%
                         if 0 <= percent <= 1:
                             val = total_notes_branch * percent * 20
@@ -213,11 +216,11 @@ def convertTJAToFumen(tja):
                         else:
                             vals.append(0)
                 # If it's a drumroll then use the branch condition values as-is
-                elif measureTJAProcessed.branchStart[0] == 'r':
-                    vals = measureTJAProcessed.branchStart[1:]
+                elif branchCondition[0] == 'r':
+                    vals = branchCondition[1:]
                 # If it's a #SECTION command, use the branch condition values as-is AND reset the accuracy
-                elif measureTJAProcessed.branchStart[0] == '#SECTION':
-                    vals = measureTJAProcessed.branchStart[1:]
+                elif branchCondition[0] == '#SECTION':
+                    vals = branchCondition[1:]
                     note_counter_branch = 0
                 # Determine which bytes to assign the values to
                 if currentBranch == 'normal':
@@ -231,6 +234,8 @@ def convertTJAToFumen(tja):
                 measureFumen.branchInfo[idx_b2] = vals[1]
                 # Reset the note counter corresponding to this branch (i.e. reset the accuracy)
                 total_notes_branch = 0
+                # Cache the branch condition for comparison in case of repeated
+                branchConditionPrev = branchCondition
 
             # NB: We update the branch condition note counter *after* we check the current measure's branch condition.
             # This is because the TJA spec says:
