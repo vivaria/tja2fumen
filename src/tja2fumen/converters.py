@@ -126,10 +126,10 @@ def convertTJAToFumen(tja):
     )
 
     # Iterate through the different branches in the TJA
+    total_notes = {'normal': 0, 'advanced': 0, 'master': 0}
     for currentBranch, branchMeasuresTJAProcessed in processedTJABranches.items():
         if not len(branchMeasuresTJAProcessed):
             continue
-        total_notes = 0
         total_notes_branch = 0
         note_counter_branch = 0
         currentDrumroll = None
@@ -290,10 +290,10 @@ def convertTJAToFumen(tja):
                     if note.type in ["Balloon", "Kusudama"]:
                         note.hits = courseBalloons.pop(0)
                         currentDrumroll = note
-                        total_notes -= 1
+                        total_notes[currentBranch] -= 1
                     if note.type in ["Drumroll", "DRUMROLL"]:
                         currentDrumroll = note
-                        total_notes -= 1
+                        total_notes[currentBranch] -= 1
                     # Count dons, kas, and balloons for the purpose of tracking branching accuracy
                     if note.type.lower() in ['don', 'ka']:
                         note_counter_branch += 1
@@ -311,7 +311,7 @@ def convertTJAToFumen(tja):
                     currentDrumroll.duration += measureDuration
 
             measureFumen.branches[currentBranch].length = note_counter
-            total_notes += note_counter
+            total_notes[currentBranch] += note_counter
 
     # Set song-specific metadata
     fumen.header.b512_b515_number_of_measures = len(fumen.measures)
@@ -326,5 +326,11 @@ def convertTJAToFumen(tja):
         fumen.header.b488_b491_branch_points_ok_BIG = 0
         fumen.header.b496_b499_branch_points_balloon = 0
         fumen.header.b500_b503_branch_points_kusudama = 0
+
+    # Compute the ratio between normal and advanced/master branches (just in case the note counts differ)
+    if total_notes['advanced']:
+        fumen.header.b460_b463_normal_professional_ratio = int(65536 * (total_notes['normal'] / total_notes['advanced']))
+    if total_notes['master']:
+        fumen.header.b464_b467_normal_master_ratio = int(65536 * (total_notes['normal'] / total_notes['master']))
 
     return fumen
