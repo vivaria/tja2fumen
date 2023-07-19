@@ -133,8 +133,7 @@ def convertTJAToFumen(tja):
         total_notes_branch = 0
         note_counter_branch = 0
         currentDrumroll = None
-        branchCondition = None
-        branchConditionPrev = None
+        branchConditions = []
         courseBalloons = tja.balloon.copy()
 
         # Iterate through the measures within the branch
@@ -226,11 +225,11 @@ def convertTJAToFumen(tja):
                 # UNLESS this is not the first branch condition. In that case, use alternate conditions.
                 elif branchCondition[0] == 'r':
                     if currentBranch == 'normal':
-                        measureFumen.branchInfo[0:2] = branchCondition[1:] if not branchConditionPrev else [999, 999]
+                        measureFumen.branchInfo[0:2] = branchCondition[1:] if not branchConditions else [999, 999]
                     elif currentBranch == 'advanced':
                         measureFumen.branchInfo[2:4] = branchCondition[1:]
                     elif currentBranch == 'master':
-                        measureFumen.branchInfo[4:6] = (branchCondition[1:] if not branchConditionPrev
+                        measureFumen.branchInfo[4:6] = (branchCondition[1:] if not branchConditions
                                                         else [branchCondition[2]] * 2)
 
                 # If it's a #SECTION command, use the branch condition values as-is AND reset the accuracy
@@ -245,8 +244,9 @@ def convertTJAToFumen(tja):
 
                 # Reset the note counter corresponding to this branch (i.e. reset the accuracy)
                 total_notes_branch = 0
-                # Cache the branch condition for comparison in case of repeated
-                branchConditionPrev = branchCondition
+                # Cache branch conditions, but skip conditions where the only purpose is to level down to 'normal'
+                if measureFumen.branchInfo != [999, 999, 999, 999, 999, 999]:
+                    branchConditions.append(branchCondition)
 
             # NB: We update the branch condition note counter *after* we check the current measure's branch condition.
             # This is because the TJA spec says:
@@ -317,5 +317,14 @@ def convertTJAToFumen(tja):
     fumen.header.b512_b515_number_of_measures = len(fumen.measures)
     fumen.header.b432_b435_has_branches = int(all([len(b) for b in processedTJABranches.values()]))
     fumen.header.set_hp_bytes(total_notes, tja.course, tja.level)
+
+    # If song has only drumroll branching conditions, then only drumrolls should contribute to branching
+    if all([condition[0] == 'r' for condition in branchConditions]):
+        fumen.header.b468_b471_branch_points_good = 0
+        fumen.header.b484_b487_branch_points_good_BIG = 0
+        fumen.header.b472_b475_branch_points_ok = 0
+        fumen.header.b488_b491_branch_points_ok_BIG = 0
+        fumen.header.b496_b499_branch_points_balloon = 0
+        fumen.header.b500_b503_branch_points_kusudama = 0
 
     return fumen
