@@ -10,21 +10,6 @@ def writeFumen(path_out, song):
     file = open(path_out, "wb")
     file.write(song.header.raw_bytes)   # Write header padding bytes
 
-    # Preallocate space in the file
-    len_measures = 0
-    for measureNumber in range(len(song.measures)):
-        len_measures += 40
-        measure = song.measures[measureNumber]
-        for branchNumber in range(len(branchNames)):
-            len_measures += 8
-            branch = measure.branches[branchNames[branchNumber]]
-            for noteNumber in range(branch.length):
-                len_measures += 24
-                note = branch.notes[noteNumber]
-                if note.type.lower() == "drumroll":
-                    len_measures += 8
-    file.write(b'\x00' * len_measures)
-
     # Write measure data
     file.seek(0x208)
     for measureNumber in range(len(song.measures)):
