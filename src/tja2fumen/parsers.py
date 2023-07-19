@@ -119,7 +119,7 @@ def parseCourseMeasures(course):
     # Process course lines
     idx_m = 0
     idx_m_branchstart = 0
-    for line in course.data:
+    for idx_l, line in enumerate(course.data):
         # 1. Parse measure notes
         if line.name == 'NOTES':
             notes = line.value
@@ -159,13 +159,15 @@ def parseCourseMeasures(course):
             elif line.name == 'MEASURE':
                 currentEvent = TJAData('measure', line.value, pos)
             elif line.name == 'SECTION':
-                # If #SECTION occurs before the first #BRANCHSTART condition, then we have no percentage/drumroll values
-                # to use for the branchInfo bytes when writing to the fumen. So, we just use default values (-1, -1).
                 if branch_condition is None:
-                    branch_condition = ['#SECTION', -1, -1]
-                # Otherwise, if #SECTION occurs after a #BRANCHSTART condition, then we just repeat the previous
-                # condition (to set the correct branchInfo bytes for this measure.)
-                currentEvent = TJAData('branchStart', branch_condition, pos)
+                    currentEvent = TJAData('section', 'not_available', pos)
+                else:
+                    currentEvent = TJAData('section', branch_condition, pos)
+                # If the command immediately after #SECTION is #BRANCHSTART, then we need to make sure that #SECTION
+                # is put on every branch. (We can't do this unconditionally because #SECTION commands can also exist
+                # in isolation in the middle of separate branches.)
+                if course.data[idx_l+1].name == 'BRANCHSTART':
+                    currentBranch = 'all'
             elif line.name == 'BRANCHSTART':
                 if flagLevelhold:
                     continue
