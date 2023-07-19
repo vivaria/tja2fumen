@@ -12,6 +12,7 @@ from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE
 
 
 @pytest.mark.parametrize('id_song', [
+    pytest.param('shoto9'),
     pytest.param('genpe'),
     pytest.param('gimcho'),
     pytest.param('imcanz'),
