@@ -268,8 +268,6 @@ def readFumen(fumenFile, exclude_empty_measures=False):
         header=FumenHeader(raw_bytes=file.read(520))
     )
 
-    # Start reading measure data from position 0x208 (decimal 520)
-    file.seek(0x208)
     for measureNumber in range(song.header.b512_b515_number_of_measures):
         # Parse the measure data using the following `format_string`:
         #   "ffBBHiiiiiii" (12 format characters, 40 bytes per measure)
