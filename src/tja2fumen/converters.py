@@ -49,12 +49,8 @@ def processTJACommands(tja):
                     measureTJAProcessed.delay = data.value * 1000  # ms -> s
                 elif data.name == 'branchStart':
                     measureTJAProcessed.branchStart = data.value
-                    # If the measure immediately preceding a #BRANCHSTART has a #SECTION command, then remove it.
-                    # From TJA spec: "Placing [a #SECTION command] near #BRANCHSTART or a measure before does not reset
-                    #                 the accuracy for that branch. The value is calculated before it and a measure
-                    #                 has not started yet at that point."
-                    if tjaBranchesProcessed[branchName][-1].branchStart == ["#SECTION", -1, -1]:
-                        tjaBranchesProcessed[branchName][-1].branchStart = None
+                elif data.name == 'section':
+                    measureTJAProcessed.section = data.value
                 elif data.name == 'barline':
                     currentBarline = bool(int(data.value))
                     measureTJAProcessed.barline = currentBarline
@@ -126,13 +122,14 @@ def convertTJAToFumen(tja):
     )
 
     # Iterate through the different branches in the TJA
+    total_notes = {'normal': 0, 'advanced': 0, 'master': 0}
     for currentBranch, branchMeasuresTJAProcessed in processedTJABranches.items():
         if not len(branchMeasuresTJAProcessed):
             continue
-        total_notes = 0
         total_notes_branch = 0
         note_counter_branch = 0
         currentDrumroll = None
+        branchConditions = []
         courseBalloons = tja.balloon.copy()
 
         # Iterate through the measures within the branch
@@ -193,41 +190,67 @@ def convertTJAToFumen(tja):
             if measureTJAProcessed.barline is False or (measureRatio != 1.0 and measureTJAProcessed.pos_start != 0):
                 measureFumen.barline = False
 
+            # If a #SECTION command occurs in isolation, and it has a valid condition, then treat it like a branchStart
+            if (measureTJAProcessed.section is not None and measureTJAProcessed.section != 'not_available'
+                    and not measureTJAProcessed.branchStart):
+                branchCondition = measureTJAProcessed.section
+            else:
+                branchCondition = measureTJAProcessed.branchStart
+
             # Check to see if the measure contains a branching condition
-            if measureTJAProcessed.branchStart:
+            if branchCondition:
                 # Determine which values to assign based on the type of branching condition
-                if measureTJAProcessed.branchStart[0] == 'p':
+                if branchCondition[0] == 'p':
                     vals = []
-                    for percent in measureTJAProcessed.branchStart[1:]:
-                        # Ensure percentage is actually a percentage value
+                    for percent in branchCondition[1:]:
+                        # Ensure percentage is between 0% and 100%
                         if 0 <= percent <= 1:
                             val = total_notes_branch * percent * 20
                             # If the result is very close, then round to account for lack of precision in percentage
                             if abs(val - round(val)) < 0.1:
                                 val = round(val)
                             vals.append(int(val))
-                        # If it isn't a percentage value, then pass it back as-is
+                        # If it is above 100%, then it means a guaranteed "level down". Fumens use 999 for this.
+                        elif percent > 1:
+                            vals.append(999)
+                        # If it is below 0%, it is a guaranteed "level up". Fumens use 0 for this.
                         else:
-                            vals.append(int(percent * 100))
-                # If it's a drumroll then use the branch condition values as-is
-                elif measureTJAProcessed.branchStart[0] == 'r':
-                    vals = measureTJAProcessed.branchStart[1:]
-                # If it's a #SECTION command, use the branch condition values as-is AND reset the accuracy
-                elif measureTJAProcessed.branchStart[0] == '#SECTION':
-                    vals = measureTJAProcessed.branchStart[1:]
-                    note_counter_branch = 0
-                # Determine which bytes to assign the values to
-                if currentBranch == 'normal':
-                    idx_b1, idx_b2 = 0, 1
-                elif currentBranch == 'advanced':
-                    idx_b1, idx_b2 = 2, 3
-                elif currentBranch == 'master':
-                    idx_b1, idx_b2 = 4, 5
-                # Assign the values to their intended bytes
-                measureFumen.branchInfo[idx_b1] = vals[0]
-                measureFumen.branchInfo[idx_b2] = vals[1]
+                            vals.append(0)
+                    if currentBranch == 'normal':
+                        measureFumen.branchInfo[0:2] = vals
+                    elif currentBranch == 'advanced':
+                        measureFumen.branchInfo[2:4] = vals
+                    elif currentBranch == 'master':
+                        measureFumen.branchInfo[4:6] = vals
+
+                # If it's a drumroll, then the values to use depends on whether there is a #SECTION in the same measure
+                #   - If there is a #SECTION, then accuracy is reset, so repeat the same condition for all 3 branches
+                #   - If there isn't a #SECTION, but it's the first branch condition, repeat for all 3 branches as well
+                #   - If there isn't a #SECTION, and there are previous branch conditions, the outcomes now matter:
+                #        * If the player failed to go from Normal -> Advanced/Master, then they must stay in Normal,
+                #          hence the 999 values (which force them to stay in Normal)
+                #        * If the player made it to Advanced, then both condition values still apply (for either
+                #          staying in Advanced or leveling up to Master)
+                #        * If the player made it to Master, then only use the "master condition" value (2), otherwise
+                #          they fall back to Normal.
+                #   - The "no-#SECTION" behavior can be seen in songs like "Shoutoku Taiko no 「Hi Izuru Made Asuka」"
+                elif branchCondition[0] == 'r':
+                    if currentBranch == 'normal':
+                        measureFumen.branchInfo[0:2] = (branchCondition[1:] if measureTJAProcessed.section or
+                                                        not measureTJAProcessed.section and not branchConditions
+                                                        else [999, 999])
+                    elif currentBranch == 'advanced':
+                        measureFumen.branchInfo[2:4] = branchCondition[1:]
+                    elif currentBranch == 'master':
+                        measureFumen.branchInfo[4:6] = (branchCondition[1:] if measureTJAProcessed.section or
+                                                        not measureTJAProcessed.section and not branchConditions
+                                                        else [branchCondition[2]] * 2)
+
                 # Reset the note counter corresponding to this branch (i.e. reset the accuracy)
                 total_notes_branch = 0
+                # Cache branch conditions, but skip conditions where the only purpose is to level down to 'normal'
+                if measureFumen.branchInfo != [999, 999, 999, 999, 999, 999]:
+                    branchConditions.append(branchCondition)
 
             # NB: We update the branch condition note counter *after* we check the current measure's branch condition.
             # This is because the TJA spec says:
@@ -271,10 +294,10 @@ def convertTJAToFumen(tja):
                     if note.type in ["Balloon", "Kusudama"]:
                         note.hits = courseBalloons.pop(0)
                         currentDrumroll = note
-                        total_notes -= 1
+                        total_notes[currentBranch] -= 1
                     if note.type in ["Drumroll", "DRUMROLL"]:
                         currentDrumroll = note
-                        total_notes -= 1
+                        total_notes[currentBranch] -= 1
                     # Count dons, kas, and balloons for the purpose of tracking branching accuracy
                     if note.type.lower() in ['don', 'ka']:
                         note_counter_branch += 1
@@ -292,11 +315,26 @@ def convertTJAToFumen(tja):
                     currentDrumroll.duration += measureDuration
 
             measureFumen.branches[currentBranch].length = note_counter
-            total_notes += note_counter
+            total_notes[currentBranch] += note_counter
 
     # Set song-specific metadata
     fumen.header.b512_b515_number_of_measures = len(fumen.measures)
     fumen.header.b432_b435_has_branches = int(all([len(b) for b in processedTJABranches.values()]))
     fumen.header.set_hp_bytes(total_notes, tja.course, tja.level)
+
+    # If song has only drumroll branching conditions, then only drumrolls should contribute to branching
+    if all([condition[0] == 'r' for condition in branchConditions]):
+        fumen.header.b468_b471_branch_points_good = 0
+        fumen.header.b484_b487_branch_points_good_BIG = 0
+        fumen.header.b472_b475_branch_points_ok = 0
+        fumen.header.b488_b491_branch_points_ok_BIG = 0
+        fumen.header.b496_b499_branch_points_balloon = 0
+        fumen.header.b500_b503_branch_points_kusudama = 0
+
+    # Compute the ratio between normal and advanced/master branches (just in case the note counts differ)
+    if total_notes['advanced']:
+        fumen.header.b460_b463_normal_professional_ratio = int(65536 * (total_notes['normal'] / total_notes['advanced']))
+    if total_notes['master']:
+        fumen.header.b464_b467_normal_master_ratio = int(65536 * (total_notes['normal'] / total_notes['master']))
 
     return fumen
