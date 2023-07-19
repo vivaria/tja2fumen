@@ -215,20 +215,34 @@ def convertTJAToFumen(tja):
                         # If it is below 0%, it is a guaranteed "level up". Fumens use 0 for this.
                         else:
                             vals.append(0)
-                # If it's a drumroll then use the branch condition values as-is
+                    if currentBranch == 'normal':
+                        measureFumen.branchInfo[0:2] = vals
+                    elif currentBranch == 'advanced':
+                        measureFumen.branchInfo[2:4] = vals
+                    elif currentBranch == 'master':
+                        measureFumen.branchInfo[4:6] = vals
+
+                # If it's a drumroll then use the branch condition values as-is...
+                # UNLESS this is not the first branch condition. In that case, use alternate conditions.
                 elif branchCondition[0] == 'r':
-                    vals = branchCondition[1:]
+                    if currentBranch == 'normal':
+                        measureFumen.branchInfo[0:2] = branchCondition[1:] if not branchConditionPrev else [999, 999]
+                    elif currentBranch == 'advanced':
+                        measureFumen.branchInfo[2:4] = branchCondition[1:]
+                    elif currentBranch == 'master':
+                        measureFumen.branchInfo[4:6] = (branchCondition[1:] if not branchConditionPrev
+                                                        else [branchCondition[2]] * 2)
+
                 # If it's a #SECTION command, use the branch condition values as-is AND reset the accuracy
                 elif branchCondition[0] == '#SECTION':
-                    vals = branchCondition[1:]
                     note_counter_branch = 0
-                # Assign values to their respective bytes
-                if currentBranch == 'normal':
-                    measureFumen.branchInfo[0:2] = vals
-                elif currentBranch == 'advanced':
-                    measureFumen.branchInfo[2:4] = vals
-                elif currentBranch == 'master':
-                    measureFumen.branchInfo[4:6] = vals
+                    if currentBranch == 'normal':
+                        measureFumen.branchInfo[0:2] = branchCondition[1:]
+                    elif currentBranch == 'advanced':
+                        measureFumen.branchInfo[2:4] = branchCondition[1:]
+                    elif currentBranch == 'master':
+                        measureFumen.branchInfo[4:6] = branchCondition[1:]
+
                 # Reset the note counter corresponding to this branch (i.e. reset the accuracy)
                 total_notes_branch = 0
                 # Cache the branch condition for comparison in case of repeated
