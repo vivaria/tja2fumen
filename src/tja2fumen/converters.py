@@ -320,7 +320,7 @@ def convert_tja_to_fumen(tja):
     # Set song-specific metadata
     fumen.header.b512_b515_number_of_measures = len(fumen.measures)
     fumen.header.b432_b435_has_branches = int(all([len(b) for b in processed_tja_branches.values()]))
-    fumen.header.set_hp_bytes(total_notes, tja.course, tja.level)
+    fumen.header.set_hp_bytes(total_notes['normal'], tja.course, tja.level)
 
     # If song has only drumroll branching conditions, then only drumrolls should contribute to branching
     if all([condition[0] == 'r' for condition in branch_conditions]):
