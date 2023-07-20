@@ -210,12 +210,7 @@ class FumenHeader:
     def set_hp_bytes(self, n_notes, difficulty, stars):
         difficulty = 'Oni' if difficulty in ['Ura', 'Edit'] else difficulty
         self._get_hp_from_LUTs(n_notes, difficulty, stars)
-        if difficulty == 'Easy':
-            self.b440_b443_hp_clear = 6000
-        elif difficulty in ['Normal', 'Hard']:
-            self.b440_b443_hp_clear = 7000
-        elif difficulty in ['Oni', 'Ura', 'Edit']:
-            self.b440_b443_hp_clear = 8000
+        self.b440_b443_hp_clear = {'Easy': 6000, 'Normal': 7000, 'Hard': 7000, 'Oni': 8000}[difficulty]
 
     def _get_hp_from_LUTs(self, n_notes, difficulty, stars):
         if n_notes > 2500:
