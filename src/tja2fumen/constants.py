@@ -14,7 +14,7 @@ TJA_NOTE_TYPES = {
 }
 
 # Note types for fumen files
-noteTypes = {
+note_types = {
     0x1: "Don",   # ドン
     0x2: "Don2",  # ド
     0x3: "Don3",  # コ
@@ -43,9 +43,9 @@ noteTypes = {
     0x22: "Unknown13",  # ? (Present in some Wii1 songs)
     0x62: "Drumroll2"   # ?
 }
-typeNotes = {v: k for k, v in noteTypes.items()}
+type_notes = {v: k for k, v in note_types.items()}
 
-branchNames = ("normal", "advanced", "master")
+branch_names = ("normal", "advanced", "master")
 
 TJA_COURSE_NAMES = []
 for difficulty in ['Ura', 'Oni', 'Hard', 'Normal', 'Easy']:

@@ -16,11 +16,11 @@ class TJASong:
 
 
 class TJACourse:
-    def __init__(self, BPM, offset, course, level=0, balloon=None, scoreInit=0, scoreDiff=0):
+    def __init__(self, BPM, offset, course, level=0, balloon=None, score_init=0, score_diff=0):
         self.level = level
         self.balloon = [] if balloon is None else balloon
-        self.scoreInit = scoreInit
-        self.scoreDiff = scoreDiff
+        self.score_init = score_init
+        self.score_diff = score_diff
         self.BPM = BPM
         self.offset = offset
         self.course = course
@@ -47,7 +47,7 @@ class TJAMeasure:
 
 class TJAMeasureProcessed:
     def __init__(self, bpm, scroll, gogo, barline, time_sig, subdivisions,
-                 pos_start=0, pos_end=0, delay=0, section=None, branchStart=None, data=None):
+                 pos_start=0, pos_end=0, delay=0, section=None, branch_start=None, data=None):
         self.bpm = bpm
         self.scroll = scroll
         self.gogo = gogo
@@ -58,7 +58,7 @@ class TJAMeasureProcessed:
         self.pos_end = pos_end
         self.delay = delay
         self.section = section
-        self.branchStart = branchStart
+        self.branch_start = branch_start
         self.data = [] if data is None else data
 
     def __repr__(self):
@@ -76,30 +76,30 @@ class TJAData:
 
 
 class FumenCourse:
-    def __init__(self, measures=None, header=None, scoreInit=0, scoreDiff=0):
+    def __init__(self, measures=None, header=None, score_init=0, score_diff=0):
         if isinstance(measures, int):
             self.measures = [FumenMeasure() for _ in range(measures)]
         else:
             self.measures = [] if measures is None else measures
         self.header = FumenHeader() if header is None else header
-        self.scoreInit = scoreInit
-        self.scoreDiff = scoreDiff
+        self.score_init = score_init
+        self.score_diff = score_diff
 
     def __repr__(self):
         return str(self.__dict__)
 
 
 class FumenMeasure:
-    def __init__(self, bpm=0.0, fumenOffsetStart=0.0, fumenOffsetEnd=0.0, duration=0.0,
-                 gogo=False, barline=True, branchStart=None, branchInfo=None, padding1=0, padding2=0):
+    def __init__(self, bpm=0.0, fumen_offset_start=0.0, fumen_offset_end=0.0, duration=0.0,
+                 gogo=False, barline=True, branch_start=None, branch_info=None, padding1=0, padding2=0):
         self.bpm = bpm
-        self.fumenOffsetStart = fumenOffsetStart
-        self.fumenOffsetEnd = fumenOffsetEnd
+        self.fumen_offset_start = fumen_offset_start
+        self.fumen_offset_end = fumen_offset_end
         self.duration = duration
         self.gogo = gogo
         self.barline = barline
-        self.branchStart = branchStart
-        self.branchInfo = [-1, -1, -1, -1, -1, -1] if branchInfo is None else branchInfo
+        self.branch_start = branch_start
+        self.branch_info = [-1, -1, -1, -1, -1, -1] if branch_info is None else branch_info
         self.branches = {'normal': FumenBranch(), 'advanced': FumenBranch(), 'master': FumenBranch()}
         self.padding1 = padding1
         self.padding2 = padding2
@@ -120,12 +120,12 @@ class FumenBranch:
 
 
 class FumenNote:
-    def __init__(self, note_type='', pos=0.0, scoreInit=0, scoreDiff=0, padding=0, item=0, duration=0.0,
-                 multimeasure=False, hits=0, hitsPadding=0, drumrollBytes=b'\x00\x00\x00\x00\x00\x00\x00\x00'):
+    def __init__(self, note_type='', pos=0.0, score_init=0, score_diff=0, padding=0, item=0, duration=0.0,
+                 multimeasure=False, hits=0, hits_padding=0, drumroll_bytes=b'\x00\x00\x00\x00\x00\x00\x00\x00'):
         self.note_type = note_type
         self.pos = pos
-        self.scoreInit = scoreInit
-        self.scoreDiff = scoreDiff
+        self.score_init = score_init
+        self.score_diff = score_diff
         self.padding = padding
         # TODO: Determine how to properly set the item byte (https://github.com/vivaria/tja2fumen/issues/17)
         self.item = item
@@ -133,8 +133,8 @@ class FumenNote:
         self.duration = duration
         self.multimeasure = multimeasure
         self.hits = hits
-        self.hitsPadding = hitsPadding
-        self.drumrollBytes = drumrollBytes
+        self.hits_padding = hits_padding
+        self.drumroll_bytes = drumroll_bytes
 
     def __repr__(self):
         return str(self.__dict__)
@@ -165,9 +165,9 @@ class FumenHeader:
         self.b472_b475_branch_points_ok           = 10
         self.b476_b479_branch_points_bad          = 0
         self.b480_b483_branch_points_drumroll     = 1
-        self.b484_b487_branch_points_good_BIG     = 20
-        self.b488_b491_branch_points_ok_BIG       = 10
-        self.b492_b495_branch_points_drumroll_BIG = 1
+        self.b484_b487_branch_points_good_big     = 20
+        self.b488_b491_branch_points_ok_big       = 10
+        self.b492_b495_branch_points_drumroll_big = 1
         self.b496_b499_branch_points_balloon      = 30
         self.b500_b503_branch_points_kusudama     = 30
         self.b504_b507_branch_points_unknown      = 20
@@ -190,9 +190,9 @@ class FumenHeader:
         self.b472_b475_branch_points_ok           = struct.unpack(self.order + "i", raw_bytes[472:476])[0]
         self.b476_b479_branch_points_bad          = struct.unpack(self.order + "i", raw_bytes[476:480])[0]
         self.b480_b483_branch_points_drumroll     = struct.unpack(self.order + "i", raw_bytes[480:484])[0]
-        self.b484_b487_branch_points_good_BIG     = struct.unpack(self.order + "i", raw_bytes[484:488])[0]
-        self.b488_b491_branch_points_ok_BIG       = struct.unpack(self.order + "i", raw_bytes[488:492])[0]
-        self.b492_b495_branch_points_drumroll_BIG = struct.unpack(self.order + "i", raw_bytes[492:496])[0]
+        self.b484_b487_branch_points_good_big     = struct.unpack(self.order + "i", raw_bytes[484:488])[0]
+        self.b488_b491_branch_points_ok_big       = struct.unpack(self.order + "i", raw_bytes[488:492])[0]
+        self.b492_b495_branch_points_drumroll_big = struct.unpack(self.order + "i", raw_bytes[492:496])[0]
         self.b496_b499_branch_points_balloon      = struct.unpack(self.order + "i", raw_bytes[496:500])[0]
         self.b500_b503_branch_points_kusudama     = struct.unpack(self.order + "i", raw_bytes[500:504])[0]
         self.b504_b507_branch_points_unknown      = struct.unpack(self.order + "i", raw_bytes[504:508])[0]

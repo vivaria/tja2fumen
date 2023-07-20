@@ -1,7 +1,7 @@
 import struct
 
 
-def readStruct(file, order, format_string, seek=None):
+def read_struct(file, order, format_string, seek=None):
     """
     Interpret bytes as packed binary data.
 
@@ -29,12 +29,12 @@ def readStruct(file, order, format_string, seek=None):
     return interpreted_string
 
 
-def writeStruct(file, order, format_string, value_list, seek=None):
+def write_struct(file, order, format_string, value_list, seek=None):
     if seek:
         file.seek(seek)
     packed_bytes = struct.pack(order + format_string, *value_list)
     file.write(packed_bytes)
 
 
-def shortHex(number):
+def short_hex(number):
     return hex(number)[2:]

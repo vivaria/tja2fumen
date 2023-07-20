@@ -7,7 +7,7 @@ import glob
 import pytest
 
 from tja2fumen import main as convert
-from tja2fumen.parsers import readFumen
+from tja2fumen.parsers import read_fumen
 from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE
 
 
@@ -64,16 +64,16 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
         i_difficult_id = os.path.basename(path_out).split(".")[0].split("_")[1]
         i_difficulty = NORMALIZE_COURSE[{v: k for k, v in COURSE_IDS.items()}[i_difficult_id]]  # noqa
         # 0. Read fumen data (converted vs. cached)
-        co_song = readFumen(path_out, exclude_empty_measures=True)
-        ca_song = readFumen(os.path.join(path_bin, os.path.basename(path_out)), exclude_empty_measures=True)
+        co_song = read_fumen(path_out, exclude_empty_measures=True)
+        ca_song = read_fumen(os.path.join(path_bin, os.path.basename(path_out)), exclude_empty_measures=True)
         # 1. Check song headers
         checkValidHeader(co_song.header)
         checkValidHeader(ca_song.header)
         # 2. Check song metadata
         assert_song_property(co_song.header, ca_song.header, 'order')
         assert_song_property(co_song.header, ca_song.header, 'b432_b435_has_branches')
-        assert_song_property(co_song, ca_song, 'scoreInit')
-        assert_song_property(co_song, ca_song, 'scoreDiff')
+        assert_song_property(co_song, ca_song, 'score_init')
+        assert_song_property(co_song, ca_song, 'score_diff')
         # 3. Check measure data
         for i_measure in range(max([len(co_song.measures), len(ca_song.measures)])):
             # NB: We could assert that len(measures) is the same for both songs, then iterate through zipped measures.
@@ -83,7 +83,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
             ca_measure = ca_song.measures[i_measure]
             # 3a. Check measure metadata
             assert_song_property(co_measure, ca_measure, 'bpm', i_measure, abs=0.01)
-            assert_song_property(co_measure, ca_measure, 'fumenOffsetStart', i_measure, abs=0.15)
+            assert_song_property(co_measure, ca_measure, 'fumen_offset_start', i_measure, abs=0.15)
             assert_song_property(co_measure, ca_measure, 'gogo', i_measure)
             assert_song_property(co_measure, ca_measure, 'barline', i_measure)
 
@@ -99,7 +99,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                 # B) The branching condition for KAGEKIYO is very strange (accuracy for the 7 big notes in the song)
                 # So, we only test the branchInfo bytes for non-KAGEKIYO songs:
             else:
-                assert_song_property(co_measure, ca_measure, 'branchInfo', i_measure)
+                assert_song_property(co_measure, ca_measure, 'branch_info', i_measure)
 
             # 3b. Check measure notes
             for i_branch in ['normal', 'advanced', 'master']:
@@ -126,8 +126,8 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                     except AssertionError:
                         pass
                     if ca_note.note_type not in ["Balloon", "Kusudama"]:
-                        assert_song_property(co_note, ca_note, 'scoreInit', i_measure, i_branch, i_note)
-                        assert_song_property(co_note, ca_note, 'scoreDiff', i_measure, i_branch, i_note)
+                        assert_song_property(co_note, ca_note, 'score_init', i_measure, i_branch, i_note)
+                        assert_song_property(co_note, ca_note, 'score_diff', i_measure, i_branch, i_note)
                     # NB: 'item' still needs to be implemented: https://github.com/vivaria/tja2fumen/issues/17
                     # assert_song_property(co_note, ca_note, 'item', i_measure, i_branch, i_note)
 
@@ -168,9 +168,9 @@ def checkValidHeader(header):
     assert header.b472_b475_branch_points_ok           in [10, 0, 1]
     assert header.b476_b479_branch_points_bad          == 0
     assert header.b480_b483_branch_points_drumroll     in [1, 0]
-    assert header.b484_b487_branch_points_good_BIG     in [20, 0, 1, 2]
-    assert header.b488_b491_branch_points_ok_BIG       in [10, 0, 1]
-    assert header.b492_b495_branch_points_drumroll_BIG in [1, 0]
+    assert header.b484_b487_branch_points_good_big     in [20, 0, 1, 2]
+    assert header.b488_b491_branch_points_ok_big       in [10, 0, 1]
+    assert header.b492_b495_branch_points_drumroll_big in [1, 0]
     assert header.b496_b499_branch_points_balloon      in [30, 0, 1]
     assert header.b500_b503_branch_points_kusudama     in [30, 0]
 

@@ -3,7 +3,7 @@ import re
 from tja2fumen.types import TJAMeasureProcessed, FumenCourse, FumenNote
 
 
-def processTJACommands(tja):
+def process_tja_commands(tja):
     """
     Merge TJA 'data' and 'event' fields into a single measure property, and split
     measures into sub-measures whenever a mid-measure BPM/SCROLL/GOGO change occurs.
@@ -21,46 +21,46 @@ def processTJACommands(tja):
 
     In the future, this logic should probably be moved into the TJA parser itself.
     """
-    tjaBranchesProcessed = {branchName: [] for branchName in tja.branches.keys()}
-    for branchName, branchMeasuresTJA in tja.branches.items():
-        currentBPM = tja.BPM
-        currentScroll = 1.0
-        currentGogo = False
-        currentBarline = True
-        currentDividend = 4
-        currentDivisor = 4
-        for measureTJA in branchMeasuresTJA:
+    tja_branches_processed = {branch_name: [] for branch_name in tja.branches.keys()}
+    for branch_name, branch_measures_tja in tja.branches.items():
+        current_bpm = tja.BPM
+        current_scroll = 1.0
+        current_gogo = False
+        current_barline = True
+        current_dividend = 4
+        current_divisor = 4
+        for measure_tja in branch_measures_tja:
             # Split measure into submeasure
-            measureTJAProcessed = TJAMeasureProcessed(
-                bpm=currentBPM,
-                scroll=currentScroll, 
-                gogo=currentGogo, 
-                barline=currentBarline, 
-                time_sig=[currentDividend, currentDivisor], 
-                subdivisions=len(measureTJA.notes),
+            measure_tja_processed = TJAMeasureProcessed(
+                bpm=current_bpm,
+                scroll=current_scroll, 
+                gogo=current_gogo, 
+                barline=current_barline, 
+                time_sig=[current_dividend, current_divisor], 
+                subdivisions=len(measure_tja.notes),
             )
-            for data in measureTJA.combined:
+            for data in measure_tja.combined:
                 # Handle note data
                 if data.name == 'note':
-                    measureTJAProcessed.data.append(data)
+                    measure_tja_processed.data.append(data)
 
                 # Handle commands that can only be placed between measures (i.e. no mid-measure variations)
                 elif data.name == 'delay':
-                    measureTJAProcessed.delay = data.value * 1000  # ms -> s
-                elif data.name == 'branchStart':
-                    measureTJAProcessed.branchStart = data.value
+                    measure_tja_processed.delay = data.value * 1000  # ms -> s
+                elif data.name == 'branch_start':
+                    measure_tja_processed.branch_start = data.value
                 elif data.name == 'section':
-                    measureTJAProcessed.section = data.value
+                    measure_tja_processed.section = data.value
                 elif data.name == 'barline':
-                    currentBarline = bool(int(data.value))
-                    measureTJAProcessed.barline = currentBarline
+                    current_barline = bool(int(data.value))
+                    measure_tja_processed.barline = current_barline
                 elif data.name == 'measure':
-                    matchMeasure = re.match(r"(\d+)/(\d+)", data.value)
-                    if not matchMeasure:
+                    match_measure = re.match(r"(\d+)/(\d+)", data.value)
+                    if not match_measure:
                         continue
-                    currentDividend = int(matchMeasure.group(1))
-                    currentDivisor = int(matchMeasure.group(2))
-                    measureTJAProcessed.time_sig = [currentDividend, currentDivisor]
+                    current_dividend = int(match_measure.group(1))
+                    current_divisor = int(match_measure.group(2))
+                    measure_tja_processed.time_sig = [current_dividend, current_divisor]
 
                 # Handle commands that can be placed in the middle of a measure.
                 #    NB: For fumen files, if there is a mid-measure change to BPM/SCROLL/GOGO, then the measure will
@@ -68,118 +68,118 @@ def processTJACommands(tja):
                 elif data.name in ['bpm', 'scroll', 'gogo']:
                     # Parse the values
                     if data.name == 'bpm':
-                        new_val = currentBPM = float(data.value)
+                        new_val = current_bpm = float(data.value)
                     elif data.name == 'scroll':
-                        new_val = currentScroll = data.value
+                        new_val = current_scroll = data.value
                     elif data.name == 'gogo':
-                        new_val = currentGogo = bool(int(data.value))
+                        new_val = current_gogo = bool(int(data.value))
                     # Check for mid-measure commands
                     # - Case 1: Command happens at the start of a measure; just change the value directly
                     if data.pos == 0:
-                        measureTJAProcessed.__setattr__(data.name, new_val)
+                        measure_tja_processed.__setattr__(data.name, new_val)
                     # - Case 2: Command occurs mid-measure, so start a new sub-measure
                     else:
-                        measureTJAProcessed.pos_end = data.pos
-                        tjaBranchesProcessed[branchName].append(measureTJAProcessed)
-                        measureTJAProcessed = TJAMeasureProcessed(
-                            bpm=currentBPM,
-                            scroll=currentScroll,
-                            gogo=currentGogo,
-                            barline=currentBarline,
-                            time_sig=[currentDividend, currentDivisor],
-                            subdivisions=len(measureTJA.notes),
+                        measure_tja_processed.pos_end = data.pos
+                        tja_branches_processed[branch_name].append(measure_tja_processed)
+                        measure_tja_processed = TJAMeasureProcessed(
+                            bpm=current_bpm,
+                            scroll=current_scroll,
+                            gogo=current_gogo,
+                            barline=current_barline,
+                            time_sig=[current_dividend, current_divisor],
+                            subdivisions=len(measure_tja.notes),
                             pos_start=data.pos
                         )
 
                 else:
                     print(f"Unexpected event type: {data.name}")
 
-            measureTJAProcessed.pos_end = len(measureTJA.notes)
-            tjaBranchesProcessed[branchName].append(measureTJAProcessed)
+            measure_tja_processed.pos_end = len(measure_tja.notes)
+            tja_branches_processed[branch_name].append(measure_tja_processed)
 
-    hasBranches = all(len(b) for b in tjaBranchesProcessed.values())
-    if hasBranches:
+    has_branches = all(len(b) for b in tja_branches_processed.values())
+    if has_branches:
         branch_lens = [len(b) for b in tja.branches.values()]
         if not branch_lens.count(branch_lens[0]) == len(branch_lens):
             raise ValueError("Branches do not have the same number of measures.")
         else:
-            branchCorrected_lens = [len(b) for b in tjaBranchesProcessed.values()]
-            if not branchCorrected_lens.count(branchCorrected_lens[0]) == len(branchCorrected_lens):
+            branch_corrected_lens = [len(b) for b in tja_branches_processed.values()]
+            if not branch_corrected_lens.count(branch_corrected_lens[0]) == len(branch_corrected_lens):
                 raise ValueError("Branches do not have matching GOGO/SCROLL/BPM commands.")
 
-    return tjaBranchesProcessed
+    return tja_branches_processed
 
 
-def convertTJAToFumen(tja):
+def convert_tja_to_fumen(tja):
     # Preprocess commands
-    processedTJABranches = processTJACommands(tja)
+    processed_tja_branches = process_tja_commands(tja)
 
     # Pre-allocate the measures for the converted TJA
     fumen = FumenCourse(
-        measures=len(processedTJABranches['normal']),
-        scoreInit=tja.scoreInit,
-        scoreDiff=tja.scoreDiff,
+        measures=len(processed_tja_branches['normal']),
+        score_init=tja.score_init,
+        score_diff=tja.score_diff,
     )
 
     # Iterate through the different branches in the TJA
     total_notes = {'normal': 0, 'advanced': 0, 'master': 0}
-    for currentBranch, branchMeasuresTJAProcessed in processedTJABranches.items():
-        if not len(branchMeasuresTJAProcessed):
+    for current_branch, branch_measures_tja_processed in processed_tja_branches.items():
+        if not len(branch_measures_tja_processed):
             continue
         total_notes_branch = 0
         note_counter_branch = 0
-        currentDrumroll = None
-        branchConditions = []
-        courseBalloons = tja.balloon.copy()
+        current_drumroll = None
+        branch_conditions = []
+        course_balloons = tja.balloon.copy()
 
         # Iterate through the measures within the branch
-        for idx_m, measureTJAProcessed in enumerate(branchMeasuresTJAProcessed):
+        for idx_m, measure_tja_processed in enumerate(branch_measures_tja_processed):
             # Fetch a pair of measures
-            measureFumenPrev = fumen.measures[idx_m-1] if idx_m != 0 else None
-            measureFumen = fumen.measures[idx_m]
+            measure_fumen_prev = fumen.measures[idx_m-1] if idx_m != 0 else None
+            measure_fumen = fumen.measures[idx_m]
 
             # Copy over basic measure properties from the TJA (that don't depend on notes or commands)
-            measureFumen.branches[currentBranch].speed = measureTJAProcessed.scroll
-            measureFumen.gogo = measureTJAProcessed.gogo
-            measureFumen.bpm = measureTJAProcessed.bpm
+            measure_fumen.branches[current_branch].speed = measure_tja_processed.scroll
+            measure_fumen.gogo = measure_tja_processed.gogo
+            measure_fumen.bpm = measure_tja_processed.bpm
 
             # Compute the duration of the measure
             # First, we compute the duration for a full 4/4 measure
-            measureDurationFullMeasure = 4 * 60_000 / measureTJAProcessed.bpm
+            measure_duration_full_measure = 4 * 60_000 / measure_tja_processed.bpm
             # Next, we adjust this duration based on both:
             #   1. The *actual* measure size (e.g. #MEASURE 1/8, #MEASURE 5/4, etc.)
-            measureSize = measureTJAProcessed.time_sig[0] / measureTJAProcessed.time_sig[1]
+            measure_size = measure_tja_processed.time_sig[0] / measure_tja_processed.time_sig[1]
             #   2. Whether this is a "submeasure" (i.e. it contains mid-measure commands, which split up the measure)
-            #      - If this is a submeasure, then `measureLength` will be less than the total number of subdivisions.
-            measureLength = measureTJAProcessed.pos_end - measureTJAProcessed.pos_start
-            #      - In other words, `measureRatio` will be less than 1.0:
-            measureRatio = (1.0 if measureTJAProcessed.subdivisions == 0.0  # Avoid division by 0 for empty measures
-                            else (measureLength / measureTJAProcessed.subdivisions))
+            #      - If this is a submeasure, then `measure_length` will be less than the total number of subdivisions.
+            measure_length = measure_tja_processed.pos_end - measure_tja_processed.pos_start
+            #      - In other words, `measure_ratio` will be less than 1.0:
+            measure_ratio = (1.0 if measure_tja_processed.subdivisions == 0.0  # Avoid division by 0 for empty measures
+                            else (measure_length / measure_tja_processed.subdivisions))
             # Apply the 2 adjustments to the measure duration
-            measureFumen.duration = measureDuration = measureDurationFullMeasure * measureSize * measureRatio
+            measure_fumen.duration = measure_duration = measure_duration_full_measure * measure_size * measure_ratio
 
             # Compute the millisecond offsets for the start and end of each measure
             #  - Start: When the notes first appear on screen (to the right)
             #  - End:   When the notes arrive at the judgment line, and the note gets hit.
             if idx_m == 0:
-                measureFumen.fumenOffsetStart = (tja.offset * 1000 * -1) - measureDurationFullMeasure
+                measure_fumen.fumen_offset_start = (tja.offset * 1000 * -1) - measure_duration_full_measure
             else:
                 # First, start the measure using the end timing of the previous measure (plus any #DELAY commands)
-                measureFumen.fumenOffsetStart = measureFumenPrev.fumenOffsetEnd + measureTJAProcessed.delay
+                measure_fumen.fumen_offset_start = measure_fumen_prev.fumen_offset_end + measure_tja_processed.delay
                 # Next, adjust the start timing to account for #BPMCHANGE commands (!!! Discovered by tana :3 !!!)
                 # To understand what's going on here, imagine the following simple example:
                 #   * You have a very slow-moving note (i.e. low BPM), like the big DON in Donkama 2000.
                 #   * All the other notes move fast (i.e. high BPM), moving past the big slow note.
                 #   * To get this overlapping to work, you need the big slow note to START EARLY, but also END LATE:
                 #      - An early start means you need to subtract a LOT of time from the starting fumenOffset.
-                #      - Thankfully, the low BPM of the slow note will create a HUGE `measureOffsetAdjustment`,
+                #      - Thankfully, the low BPM of the slow note will create a HUGE `measure_offset_adjustment`,
                 #        since we are dividing by the BPMs, and dividing by a small number will result in a big number.
-                measureOffsetAdjustment = (4 * 60_000 / measureFumen.bpm) - (4 * 60_000 / measureFumenPrev.bpm)
-                #      - When we subtract this adjustment from the fumenOffsetStart, we get the "START EARLY" part:
-                measureFumen.fumenOffsetStart -= measureOffsetAdjustment
+                measure_offset_adjustment = (4 * 60_000 / measure_fumen.bpm) - (4 * 60_000 / measure_fumen_prev.bpm)
+                #      - When we subtract this adjustment from the fumen_offset_start, we get the "START EARLY" part:
+                measure_fumen.fumen_offset_start -= measure_offset_adjustment
                 #      - The low BPM of the slow note will also create a HUGE measure duration.
                 #      - When we add this long duration to the EARLY START, we end up with the "END LATE" part:
-            measureFumen.fumenOffsetEnd = measureFumen.fumenOffsetStart + measureFumen.duration
+            measure_fumen.fumen_offset_end = measure_fumen.fumen_offset_start + measure_fumen.duration
 
             # Best guess at what 'barline' status means for each measure:
             # - 'True' means the measure lands on a barline (i.e. most measures), and thus barline should be shown
@@ -187,22 +187,22 @@ def convertTJAToFumen(tja):
             #   For example:
             #     1. Measures where #BARLINEOFF has been set
             #     2. Sub-measures that don't fall on the barline
-            if measureTJAProcessed.barline is False or (measureRatio != 1.0 and measureTJAProcessed.pos_start != 0):
-                measureFumen.barline = False
+            if measure_tja_processed.barline is False or (measure_ratio != 1.0 and measure_tja_processed.pos_start != 0):
+                measure_fumen.barline = False
 
-            # If a #SECTION command occurs in isolation, and it has a valid condition, then treat it like a branchStart
-            if (measureTJAProcessed.section is not None and measureTJAProcessed.section != 'not_available'
-                    and not measureTJAProcessed.branchStart):
-                branchCondition = measureTJAProcessed.section
+            # If a #SECTION command occurs in isolation, and it has a valid condition, then treat it like a branch_start
+            if (measure_tja_processed.section is not None and measure_tja_processed.section != 'not_available'
+                    and not measure_tja_processed.branch_start):
+                branch_condition = measure_tja_processed.section
             else:
-                branchCondition = measureTJAProcessed.branchStart
+                branch_condition = measure_tja_processed.branch_start
 
             # Check to see if the measure contains a branching condition
-            if branchCondition:
+            if branch_condition:
                 # Determine which values to assign based on the type of branching condition
-                if branchCondition[0] == 'p':
+                if branch_condition[0] == 'p':
                     vals = []
-                    for percent in branchCondition[1:]:
+                    for percent in branch_condition[1:]:
                         # Ensure percentage is between 0% and 100%
                         if 0 <= percent <= 1:
                             val = total_notes_branch * percent * 20
@@ -216,12 +216,12 @@ def convertTJAToFumen(tja):
                         # If it is below 0%, it is a guaranteed "level up". Fumens use 0 for this.
                         else:
                             vals.append(0)
-                    if currentBranch == 'normal':
-                        measureFumen.branchInfo[0:2] = vals
-                    elif currentBranch == 'advanced':
-                        measureFumen.branchInfo[2:4] = vals
-                    elif currentBranch == 'master':
-                        measureFumen.branchInfo[4:6] = vals
+                    if current_branch == 'normal':
+                        measure_fumen.branch_info[0:2] = vals
+                    elif current_branch == 'advanced':
+                        measure_fumen.branch_info[2:4] = vals
+                    elif current_branch == 'master':
+                        measure_fumen.branch_info[4:6] = vals
 
                 # If it's a drumroll, then the values to use depends on whether there is a #SECTION in the same measure
                 #   - If there is a #SECTION, then accuracy is reset, so repeat the same condition for all 3 branches
@@ -234,23 +234,23 @@ def convertTJAToFumen(tja):
                 #        * If the player made it to Master, then only use the "master condition" value (2), otherwise
                 #          they fall back to Normal.
                 #   - The "no-#SECTION" behavior can be seen in songs like "Shoutoku Taiko no 「Hi Izuru Made Asuka」"
-                elif branchCondition[0] == 'r':
-                    if currentBranch == 'normal':
-                        measureFumen.branchInfo[0:2] = (branchCondition[1:] if measureTJAProcessed.section or
-                                                        not measureTJAProcessed.section and not branchConditions
+                elif branch_condition[0] == 'r':
+                    if current_branch == 'normal':
+                        measure_fumen.branch_info[0:2] = (branch_condition[1:] if measure_tja_processed.section or
+                                                        not measure_tja_processed.section and not branch_conditions
                                                         else [999, 999])
-                    elif currentBranch == 'advanced':
-                        measureFumen.branchInfo[2:4] = branchCondition[1:]
-                    elif currentBranch == 'master':
-                        measureFumen.branchInfo[4:6] = (branchCondition[1:] if measureTJAProcessed.section or
-                                                        not measureTJAProcessed.section and not branchConditions
-                                                        else [branchCondition[2]] * 2)
+                    elif current_branch == 'advanced':
+                        measure_fumen.branch_info[2:4] = branch_condition[1:]
+                    elif current_branch == 'master':
+                        measure_fumen.branch_info[4:6] = (branch_condition[1:] if measure_tja_processed.section or
+                                                        not measure_tja_processed.section and not branch_conditions
+                                                        else [branch_condition[2]] * 2)
 
                 # Reset the note counter corresponding to this branch (i.e. reset the accuracy)
                 total_notes_branch = 0
                 # Cache branch conditions, but skip conditions where the only purpose is to level down to 'normal'
-                if measureFumen.branchInfo != [999, 999, 999, 999, 999, 999]:
-                    branchConditions.append(branchCondition)
+                if measure_fumen.branch_info != [999, 999, 999, 999, 999, 999]:
+                    branch_conditions.append(branch_condition)
 
             # NB: We update the branch condition note counter *after* we check the current measure's branch condition.
             # This is because the TJA spec says:
@@ -262,72 +262,72 @@ def convertTJAToFumen(tja):
             # Create notes based on TJA measure data
             note_counter_branch = 0
             note_counter = 0
-            for idx_d, data in enumerate(measureTJAProcessed.data):
+            for idx_d, data in enumerate(measure_tja_processed.data):
                 if data.name == 'note':
                     note = FumenNote()
                     # Note positions must be calculated using the base measure duration (that uses a single BPM value)
                     # (In other words, note positions do not take into account any mid-measure BPM change adjustments.)
-                    note.pos = measureDuration * (data.pos - measureTJAProcessed.pos_start) / measureLength
+                    note.pos = measure_duration * (data.pos - measure_tja_processed.pos_start) / measure_length
                     # Handle the note that represents the end of a drumroll/balloon
                     if data.value == "EndDRB":
                         # If a drumroll spans a single measure, then add the difference between start/end position
-                        if not currentDrumroll.multimeasure:
-                            currentDrumroll.duration += (note.pos - currentDrumroll.pos)
+                        if not current_drumroll.multimeasure:
+                            current_drumroll.duration += (note.pos - current_drumroll.pos)
                         # Otherwise, if a drumroll spans multiple measures, then we want to add the duration between
                         # the start of the measure (i.e. pos=0.0) and the drumroll's end position.
                         else:
-                            currentDrumroll.duration += (note.pos - 0.0)
+                            current_drumroll.duration += (note.pos - 0.0)
                         # 1182, 1385, 1588, 2469, 1568, 752, 1568
-                        currentDrumroll.duration = float(int(currentDrumroll.duration))
-                        currentDrumroll = None
+                        current_drumroll.duration = float(int(current_drumroll.duration))
+                        current_drumroll = None
                         continue
                     # The TJA spec technically allows you to place double-Kusudama notes:
                     #    "Use another 9 to specify when to lower the points for clearing."
                     # But this is unsupported in fumens, so just skip the second Kusudama note.
-                    if data.value == "Kusudama" and currentDrumroll:
+                    if data.value == "Kusudama" and current_drumroll:
                         continue
                     # Handle the remaining non-EndDRB, non-double Kusudama notes
                     note.type = data.value
-                    note.scoreInit = tja.scoreInit
-                    note.scoreDiff = tja.scoreDiff
+                    note.score_init = tja.score_init
+                    note.score_diff = tja.score_diff
                     # Handle drumroll/balloon-specific metadata
                     if note.type in ["Balloon", "Kusudama"]:
-                        note.hits = courseBalloons.pop(0)
-                        currentDrumroll = note
-                        total_notes[currentBranch] -= 1
+                        note.hits = course_balloons.pop(0)
+                        current_drumroll = note
+                        total_notes[current_branch] -= 1
                     if note.type in ["Drumroll", "DRUMROLL"]:
-                        currentDrumroll = note
-                        total_notes[currentBranch] -= 1
+                        current_drumroll = note
+                        total_notes[current_branch] -= 1
                     # Count dons, kas, and balloons for the purpose of tracking branching accuracy
                     if note.type.lower() in ['don', 'ka']:
                         note_counter_branch += 1
                     elif note.type.lower() in ['balloon', 'kusudama']:
                         note_counter_branch += 1.5
-                    measureFumen.branches[currentBranch].notes.append(note)
+                    measure_fumen.branches[current_branch].notes.append(note)
                     note_counter += 1
 
             # If drumroll hasn't ended by the end of this measure, increase duration by measure timing
-            if currentDrumroll:
-                if currentDrumroll.duration == 0.0:
-                    currentDrumroll.duration += (measureDuration - currentDrumroll.pos)
-                    currentDrumroll.multimeasure = True
+            if current_drumroll:
+                if current_drumroll.duration == 0.0:
+                    current_drumroll.duration += (measure_duration - current_drumroll.pos)
+                    current_drumroll.multimeasure = True
                 else:
-                    currentDrumroll.duration += measureDuration
+                    current_drumroll.duration += measure_duration
 
-            measureFumen.branches[currentBranch].length = note_counter
-            total_notes[currentBranch] += note_counter
+            measure_fumen.branches[current_branch].length = note_counter
+            total_notes[current_branch] += note_counter
 
     # Set song-specific metadata
     fumen.header.b512_b515_number_of_measures = len(fumen.measures)
-    fumen.header.b432_b435_has_branches = int(all([len(b) for b in processedTJABranches.values()]))
+    fumen.header.b432_b435_has_branches = int(all([len(b) for b in processed_tja_branches.values()]))
     fumen.header.set_hp_bytes(total_notes, tja.course, tja.level)
 
     # If song has only drumroll branching conditions, then only drumrolls should contribute to branching
-    if all([condition[0] == 'r' for condition in branchConditions]):
+    if all([condition[0] == 'r' for condition in branch_conditions]):
         fumen.header.b468_b471_branch_points_good = 0
-        fumen.header.b484_b487_branch_points_good_BIG = 0
+        fumen.header.b484_b487_branch_points_good_big = 0
         fumen.header.b472_b475_branch_points_ok = 0
-        fumen.header.b488_b491_branch_points_ok_BIG = 0
+        fumen.header.b488_b491_branch_points_ok_big = 0
         fumen.header.b496_b499_branch_points_balloon = 0
         fumen.header.b500_b503_branch_points_kusudama = 0
 
