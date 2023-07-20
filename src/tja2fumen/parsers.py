@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 
 from tja2fumen.utils import read_struct, short_hex
-from tja2fumen.constants import NORMALIZE_COURSE, TJA_NOTE_TYPES, branch_names, note_types
+from tja2fumen.constants import NORMALIZE_COURSE, TJA_NOTE_TYPES, BRANCH_NAMES, FUMEN_NOTE_TYPES
 from tja2fumen.types import (TJASong, TJAMeasure, TJAData,
                              FumenCourse, FumenMeasure, FumenBranch, FumenNote, FumenHeader)
 
@@ -285,7 +285,7 @@ def read_fumen(fumen_file, exclude_empty_measures=False):
         )
 
         # Iterate through the three branch types
-        for branch_name in branch_names:
+        for branch_name in BRANCH_NAMES:
             # Parse the measure data using the following `format_string`:
             #   "HHf" (3 format characters, 8 bytes per branch)
             #     - 'H': total_notes (represented by one unsigned short (2 bytes))
@@ -317,7 +317,7 @@ def read_fumen(fumen_file, exclude_empty_measures=False):
 
                 # Validate the note type
                 note_type = note_struct[0]
-                if note_type not in note_types:
+                if note_type not in FUMEN_NOTE_TYPES:
                     raise ValueError("Error: Unknown note type '{0}' at offset {1}".format(
                         short_hex(note_type).upper(),
                         hex(file.tell() - 0x18))
@@ -325,7 +325,7 @@ def read_fumen(fumen_file, exclude_empty_measures=False):
 
                 # Create the note dictionary using the newly-parsed note data
                 note = FumenNote(
-                    note_type=note_types[note_type],
+                    note_type=FUMEN_NOTE_TYPES[note_type],
                     pos=note_struct[1],
                     item=note_struct[2],
                     padding=note_struct[3],

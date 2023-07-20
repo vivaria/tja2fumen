@@ -1,5 +1,5 @@
 from tja2fumen.utils import write_struct
-from tja2fumen.constants import branch_names, type_notes
+from tja2fumen.constants import BRANCH_NAMES, FUMEN_TYPE_NOTES
 
 
 def write_fumen(path_out, song):
@@ -12,14 +12,14 @@ def write_fumen(path_out, song):
             measure_struct.extend([measure.padding1] + measure.branch_info + [measure.padding2])
             write_struct(file, song.header.order, format_string="ffBBHiiiiiii", value_list=measure_struct)
 
-            for branch_number in range(len(branch_names)):
-                branch = measure.branches[branch_names[branch_number]]
+            for branch_number in range(len(BRANCH_NAMES)):
+                branch = measure.branches[BRANCH_NAMES[branch_number]]
                 branch_struct = [branch.length, branch.padding, branch.speed]
                 write_struct(file, song.header.order, format_string="HHf", value_list=branch_struct)
 
                 for note_number in range(branch.length):
                     note = branch.notes[note_number]
-                    note_struct = [type_notes[note.type], note.pos, note.item, note.padding]
+                    note_struct = [FUMEN_TYPE_NOTES[note.type], note.pos, note.item, note.padding]
                     if note.hits:
                         note_struct.extend([note.hits, note.hits_padding, note.duration])
                     else:
