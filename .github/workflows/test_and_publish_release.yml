@@ -73,7 +73,7 @@ jobs:
       run: |
         pyinstaller src\tja2fumen\__init__.py `
                     --name tja2fumen-${{ github.event.inputs.release_version }} `
-                    --add-data="src\tja2fumen\soulgauge_LUTs\*.csv;tja2fumen\soulgauge_LUTs" `
+                    --add-data="src\tja2fumen\hp_values.csv;tja2fumen\" `
                     --onefile `
                     --exclude-module bz2 `
                     --exclude-module hashlib `
