@@ -208,6 +208,7 @@ class FumenHeader:
             return "<"
 
     def set_hp_bytes(self, n_notes, difficulty, stars):
+        difficulty = 'Oni' if difficulty in ['Ura', 'Edit'] else difficulty
         self._get_hp_from_LUTs(n_notes, difficulty, stars)
         if difficulty == 'Easy':
             self.b440_b443_hp_clear = 6000
@@ -217,57 +218,21 @@ class FumenHeader:
             self.b440_b443_hp_clear = 8000
 
     def _get_hp_from_LUTs(self, n_notes, difficulty, stars):
-        if difficulty in ['Oni', 'Ura']:
-            if 9 <= stars:
-                key = "Oni-9-10"
-            elif stars == 8:
-                key = "Oni-8"
-            elif stars <= 7:
-                key = "Oni-1-7"
-        elif difficulty == 'Hard':
-            if 5 <= stars:
-                key = "Hard-5-8"
-            elif stars == 4:
-                key = "Hard-4"
-            elif stars == 3:
-                key = "Hard-3"
-            elif stars <= 2:
-                key = "Hard-1-2"
-        elif difficulty == 'Normal':
-            if 5 <= stars:
-                key = "Normal-5-7"
-            elif stars == 4:
-                key = "Normal-4"
-            elif stars == 3:
-                key = "Normal-3"
-            elif stars <= 2:
-                key = "Normal-1-2"
-        elif difficulty == 'Easy':
-            if 4 <= stars:
-                key = "Easy-4-5"
-            elif 2 <= stars <= 3:
-                key = "Easy-2-3"
-            elif stars <= 1:
-                key = "Easy-1"
+        if n_notes > 2500:
+            return
+        star_to_key = {
+            'Oni':    {1: '17', 2: '17', 3: '17', 4: '17', 5: '17', 6: '17', 7: '17', 8: '8', 9: '910', 10: '910'},
+            'Hard':   {1: '12', 2: '12', 3: '3',  4: '4',  5: '58', 6: '58', 7: '58', 8: '58', 9: '58', 10: '58'},
+            'Normal': {1: '12', 2: '12', 3: '3',  4: '4',  5: '57', 6: '57', 7: '57', 8: '57', 9: '57', 10: '57'},
+            'Easy':   {1: '1',  2: '23', 3: '23', 4: '45', 5: '45', 6: '45', 7: '45', 8: '45', 9: '45', 10: '45'},
+        }
+        key = f"{difficulty}-{star_to_key[difficulty][stars]}"
         pkg_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(pkg_dir, "soulgauge_LUTs", f"byte1213_{key}.csv"), newline='') as csvfile:
-            lut_reader = csv.reader(csvfile, delimiter=',')
-            for row in lut_reader:
-                if int(row[0]) == n_notes:
-                    self.b444_b447_hp_gain_good = int(row[1])
-                    break
-        with open(os.path.join(pkg_dir, "soulgauge_LUTs", f"byte1617_{key}.csv"), newline='') as csvfile:
-            lut_reader = csv.reader(csvfile, delimiter=',')
-            for row in lut_reader:
-                if int(row[0]) == n_notes:
-                    self.b448_b451_hp_gain_ok = int(row[1])
-                    break
-        with open(os.path.join(pkg_dir, "soulgauge_LUTs", f"byte2021_{key}.csv"), newline='') as csvfile:
-            lut_reader = csv.reader(csvfile, delimiter=',')
-            for row in lut_reader:
-                if int(row[0]) == n_notes:
-                    self.b452_b455_hp_loss_bad = int(row[1]) - 765
-                    break
+        with open(os.path.join(pkg_dir, "hp_values.csv"), newline='') as csvfile:
+            rows = [row for row in csv.reader(csvfile, delimiter=',')]
+            self.b444_b447_hp_gain_good = int(rows[n_notes][rows[0].index(f"good_{key}")])
+            self.b448_b451_hp_gain_ok = int(rows[n_notes][rows[0].index(f"ok_{key}")])
+            self.b452_b455_hp_loss_bad = int(rows[n_notes][rows[0].index(f"bad_{key}")])
 
     @property
     def raw_bytes(self):
