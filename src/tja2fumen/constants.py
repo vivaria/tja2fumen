@@ -43,7 +43,7 @@ FUMEN_NOTE_TYPES = {
 }
 FUMEN_TYPE_NOTES = {v: k for k, v in FUMEN_NOTE_TYPES.items()}
 
-BRANCH_NAMES = ("normal", "advanced", "master")
+BRANCH_NAMES = ("normal", "professional", "master")
 
 TJA_COURSE_NAMES = []
 for difficulty in ['Ura', 'Oni', 'Hard', 'Normal', 'Easy']:

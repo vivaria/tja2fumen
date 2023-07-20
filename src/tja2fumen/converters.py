@@ -122,7 +122,7 @@ def convert_tja_to_fumen(tja):
     )
 
     # Iterate through the different branches in the TJA
-    total_notes = {'normal': 0, 'advanced': 0, 'master': 0}
+    total_notes = {'normal': 0, 'professional': 0, 'master': 0}
     for current_branch, branch_measures_tja_processed in processed_tja_branches.items():
         if not len(branch_measures_tja_processed):
             continue
@@ -218,7 +218,7 @@ def convert_tja_to_fumen(tja):
                             vals.append(0)
                     if current_branch == 'normal':
                         measure_fumen.branch_info[0:2] = vals
-                    elif current_branch == 'advanced':
+                    elif current_branch == 'professional':
                         measure_fumen.branch_info[2:4] = vals
                     elif current_branch == 'master':
                         measure_fumen.branch_info[4:6] = vals
@@ -239,7 +239,7 @@ def convert_tja_to_fumen(tja):
                         measure_fumen.branch_info[0:2] = (branch_condition[1:] if measure_tja_processed.section or
                                                         not measure_tja_processed.section and not branch_conditions
                                                         else [999, 999])
-                    elif current_branch == 'advanced':
+                    elif current_branch == 'professional':
                         measure_fumen.branch_info[2:4] = branch_condition[1:]
                     elif current_branch == 'master':
                         measure_fumen.branch_info[4:6] = (branch_condition[1:] if measure_tja_processed.section or
@@ -331,9 +331,9 @@ def convert_tja_to_fumen(tja):
         fumen.header.b496_b499_branch_points_balloon = 0
         fumen.header.b500_b503_branch_points_kusudama = 0
 
-    # Compute the ratio between normal and advanced/master branches (just in case the note counts differ)
-    if total_notes['advanced']:
-        fumen.header.b460_b463_normal_professional_ratio = int(65536 * (total_notes['normal'] / total_notes['advanced']))
+    # Compute the ratio between normal and professional/master branches (just in case the note counts differ)
+    if total_notes['professional']:
+        fumen.header.b460_b463_normal_professional_ratio = int(65536 * (total_notes['normal'] / total_notes['professional']))
     if total_notes['master']:
         fumen.header.b464_b467_normal_master_ratio = int(65536 * (total_notes['normal'] / total_notes['master']))
 

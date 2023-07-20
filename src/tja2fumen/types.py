@@ -27,7 +27,7 @@ class TJACourse:
         self.data = []
         self.branches = {
             'normal': [TJAMeasure()],
-            'advanced': [TJAMeasure()],
+            'professional': [TJAMeasure()],
             'master': [TJAMeasure()]
         }
 
@@ -100,7 +100,7 @@ class FumenMeasure:
         self.barline = barline
         self.branch_start = branch_start
         self.branch_info = [-1, -1, -1, -1, -1, -1] if branch_info is None else branch_info
-        self.branches = {'normal': FumenBranch(), 'advanced': FumenBranch(), 'master': FumenBranch()}
+        self.branches = {'normal': FumenBranch(), 'professional': FumenBranch(), 'master': FumenBranch()}
         self.padding1 = padding1
         self.padding2 = padding2
 

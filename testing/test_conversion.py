@@ -120,7 +120,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                 assert_song_property(co_measure, ca_measure, 'branch_info', i_measure)
 
             # 3b. Check measure notes
-            for i_branch in ['normal', 'advanced', 'master']:
+            for i_branch in ['normal', 'professional', 'master']:
                 co_branch = co_measure.branches[i_branch]
                 ca_branch = ca_measure.branches[i_branch]
                 # NB: We only check speed for non-empty branches, as fumens store speed changes even for empty branches

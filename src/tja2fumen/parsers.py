@@ -197,7 +197,7 @@ def parse_course_measures(course):
                 current_branch = 'normal'
                 idx_m = idx_m_branchstart
             elif line.name == 'E':
-                current_branch = 'advanced'
+                current_branch = 'professional'
                 idx_m = idx_m_branchstart
             elif line.name == 'M':
                 current_branch = 'master'
@@ -365,6 +365,6 @@ def read_fumen(fumen_file, exclude_empty_measures=False):
     #     a converted non-official TJA, then it's useful to  exclude the empty measures.
     if exclude_empty_measures:
         song.measures = [m for m in song.measures
-                         if m.branches['normal'].length or m.branches['advanced'].length or m.branches['master'].length]
+                         if m.branches['normal'].length or m.branches['professional'].length or m.branches['master'].length]
 
     return song
