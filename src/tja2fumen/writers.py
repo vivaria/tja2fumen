@@ -1,30 +1,30 @@
-from tja2fumen.utils import writeStruct
-from tja2fumen.constants import branchNames, typeNotes
+from tja2fumen.utils import write_struct
+from tja2fumen.constants import BRANCH_NAMES, FUMEN_TYPE_NOTES
 
 
-def writeFumen(path_out, song):
+def write_fumen(path_out, song):
     with open(path_out, "wb") as file:
         file.write(song.header.raw_bytes)
 
-        for measureNumber in range(len(song.measures)):
-            measure = song.measures[measureNumber]
-            measureStruct = [measure.bpm, measure.fumenOffsetStart, int(measure.gogo), int(measure.barline)]
-            measureStruct.extend([measure.padding1] + measure.branchInfo + [measure.padding2])
-            writeStruct(file, song.header.order, format_string="ffBBHiiiiiii", value_list=measureStruct)
+        for measure_number in range(len(song.measures)):
+            measure = song.measures[measure_number]
+            measure_struct = [measure.bpm, measure.fumen_offset_start, int(measure.gogo), int(measure.barline)]
+            measure_struct.extend([measure.padding1] + measure.branch_info + [measure.padding2])
+            write_struct(file, song.header.order, format_string="ffBBHiiiiiii", value_list=measure_struct)
 
-            for branchNumber in range(len(branchNames)):
-                branch = measure.branches[branchNames[branchNumber]]
-                branchStruct = [branch.length, branch.padding, branch.speed]
-                writeStruct(file, song.header.order, format_string="HHf", value_list=branchStruct)
+            for branch_number in range(len(BRANCH_NAMES)):
+                branch = measure.branches[BRANCH_NAMES[branch_number]]
+                branch_struct = [branch.length, branch.padding, branch.speed]
+                write_struct(file, song.header.order, format_string="HHf", value_list=branch_struct)
 
-                for noteNumber in range(branch.length):
-                    note = branch.notes[noteNumber]
-                    noteStruct = [typeNotes[note.type], note.pos, note.item, note.padding]
+                for note_number in range(branch.length):
+                    note = branch.notes[note_number]
+                    note_struct = [FUMEN_TYPE_NOTES[note.type], note.pos, note.item, note.padding]
                     if note.hits:
-                        noteStruct.extend([note.hits, note.hitsPadding, note.duration])
+                        note_struct.extend([note.hits, note.hits_padding, note.duration])
                     else:
-                        noteStruct.extend([note.scoreInit, note.scoreDiff * 4, note.duration])
-                    writeStruct(file, song.header.order, format_string="ififHHf", value_list=noteStruct)
+                        note_struct.extend([note.score_init, note.score_diff * 4, note.duration])
+                    write_struct(file, song.header.order, format_string="ififHHf", value_list=note_struct)
 
                     if note.type.lower() == "drumroll":
-                        file.write(note.drumrollBytes)
+                        file.write(note.drumroll_bytes)
