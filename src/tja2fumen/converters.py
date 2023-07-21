@@ -337,6 +337,16 @@ def convert_tja_to_fumen(tja):
         fumen.header.b496_b499_branch_points_balloon = 0
         fumen.header.b500_b503_branch_points_kusudama = 0
 
+    # Alternatively, if the song has only percentage-based conditions,
+    # then set the header bytes so that only notes and balloons contribute to branching.
+    percentage_only = branch_conditions != [] and all([
+        (condition[0] != 'r')
+        for condition in branch_conditions
+    ])
+    if percentage_only:
+        fumen.header.b480_b483_branch_points_drumroll = 0
+        fumen.header.b492_b495_branch_points_drumroll_big = 0
+
     # Compute the ratio between normal and professional/master branches (just in case the note counts differ)
     if total_notes['professional']:
         fumen.header.b460_b463_normal_professional_ratio = int(65536 * (total_notes['normal'] / total_notes['professional']))
