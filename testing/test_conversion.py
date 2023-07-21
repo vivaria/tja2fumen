@@ -79,16 +79,18 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
         assert_song_property(co_song.header, ca_song.header, 'b456_b459_normal_normal_ratio')
         assert_song_property(co_song.header, ca_song.header, 'b460_b463_normal_professional_ratio')
         assert_song_property(co_song.header, ca_song.header, 'b464_b467_normal_master_ratio')
-        # Ignore branch points for now to focus on HP bytes
-        # assert_song_property(co_song.header, ca_song.header, 'b468_b471_branch_points_good')
-        # assert_song_property(co_song.header, ca_song.header, 'b472_b475_branch_points_ok')
-        # assert_song_property(co_song.header, ca_song.header, 'b476_b479_branch_points_bad')
-        # assert_song_property(co_song.header, ca_song.header, 'b480_b483_branch_points_drumroll')
-        # assert_song_property(co_song.header, ca_song.header, 'b484_b487_branch_points_good_big')
-        # assert_song_property(co_song.header, ca_song.header, 'b488_b491_branch_points_ok_big')
-        # assert_song_property(co_song.header, ca_song.header, 'b492_b495_branch_points_drumroll_big')
-        # assert_song_property(co_song.header, ca_song.header, 'b496_b499_branch_points_balloon')
-        # assert_song_property(co_song.header, ca_song.header, 'b500_b503_branch_points_kusudama')
+        # NB: KAGEKIYO's branching condition is very unique (BIG only), which cannot be expressed in a TJA file
+        # So, skip checking the `branch_point` header values for KAGEKIYO.
+        if id_song != 'genpe':
+            assert_song_property(co_song.header, ca_song.header, 'b468_b471_branch_points_good')
+            assert_song_property(co_song.header, ca_song.header, 'b472_b475_branch_points_ok')
+            assert_song_property(co_song.header, ca_song.header, 'b476_b479_branch_points_bad')
+            assert_song_property(co_song.header, ca_song.header, 'b480_b483_branch_points_drumroll')
+            assert_song_property(co_song.header, ca_song.header, 'b484_b487_branch_points_good_big')
+            assert_song_property(co_song.header, ca_song.header, 'b488_b491_branch_points_ok_big')
+            assert_song_property(co_song.header, ca_song.header, 'b492_b495_branch_points_drumroll_big')
+            assert_song_property(co_song.header, ca_song.header, 'b496_b499_branch_points_balloon')
+            assert_song_property(co_song.header, ca_song.header, 'b500_b503_branch_points_kusudama')
         # 2. Check song metadata
         assert_song_property(co_song, ca_song, 'score_init')
         assert_song_property(co_song, ca_song, 'score_diff')
