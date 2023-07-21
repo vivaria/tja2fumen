@@ -204,7 +204,10 @@ def convert_tja_to_fumen(tja):
                     vals = []
                     for percent in branch_condition[1:]:
                         # Ensure percentage is between 0% and 100%
-                        if 0 <= percent <= 1:
+                        if 0 < percent <= 1:
+                            # If there is a proper branch condition, make sure that drumrolls do not contribute
+                            fumen.header.b480_b483_branch_points_drumroll = 0
+                            fumen.header.b492_b495_branch_points_drumroll_big = 0
                             val = total_notes_branch * percent * 20
                             # If the result is very close, then round to account for lack of precision in percentage
                             if abs(val - round(val)) < 0.1:
@@ -235,6 +238,13 @@ def convert_tja_to_fumen(tja):
                 #          they fall back to Normal.
                 #   - The "no-#SECTION" behavior can be seen in songs like "Shoutoku Taiko no 「Hi Izuru Made Asuka」"
                 elif branch_condition[0] == 'r':
+                    # Ensure that only drumrolls contribute to the branching accuracy check
+                    fumen.header.b468_b471_branch_points_good = 0
+                    fumen.header.b484_b487_branch_points_good_big = 0
+                    fumen.header.b472_b475_branch_points_ok = 0
+                    fumen.header.b488_b491_branch_points_ok_big = 0
+                    fumen.header.b496_b499_branch_points_balloon = 0
+                    fumen.header.b500_b503_branch_points_kusudama = 0
                     if current_branch == 'normal':
                         measure_fumen.branch_info[0:2] = (branch_condition[1:] if measure_tja_processed.section or
                                                         not measure_tja_processed.section and not branch_conditions
@@ -320,32 +330,6 @@ def convert_tja_to_fumen(tja):
     fumen.header.b512_b515_number_of_measures = len(fumen.measures)
     fumen.header.b432_b435_has_branches = int(all([len(b) for b in processed_tja_branches.values()]))
     fumen.header.set_hp_bytes(total_notes['normal'], tja.course, tja.level)
-
-    # If song has only drumroll branching conditions (plus percentage conditions that force a level up/level down),
-    # then set the header bytes so that only drumrolls contribute to branching.
-    drumroll_only = branch_conditions != [] and all([
-        (condition[0] == 'r') or
-        (condition[0] == 'p' and condition[1] == 0.0 and condition[2] == 0.0) or
-        (condition[0] == 'p' and condition[1] > 1.00 and condition[2] > 1.00)
-        for condition in branch_conditions
-    ])
-    if drumroll_only:
-        fumen.header.b468_b471_branch_points_good = 0
-        fumen.header.b484_b487_branch_points_good_big = 0
-        fumen.header.b472_b475_branch_points_ok = 0
-        fumen.header.b488_b491_branch_points_ok_big = 0
-        fumen.header.b496_b499_branch_points_balloon = 0
-        fumen.header.b500_b503_branch_points_kusudama = 0
-
-    # Alternatively, if the song has only percentage-based conditions,
-    # then set the header bytes so that only notes and balloons contribute to branching.
-    percentage_only = branch_conditions != [] and all([
-        (condition[0] != 'r')
-        for condition in branch_conditions
-    ])
-    if percentage_only:
-        fumen.header.b480_b483_branch_points_drumroll = 0
-        fumen.header.b492_b495_branch_points_drumroll_big = 0
 
     # Compute the ratio between normal and professional/master branches (just in case the note counts differ)
     if total_notes['professional']:
