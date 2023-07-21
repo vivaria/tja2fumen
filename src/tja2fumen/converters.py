@@ -126,8 +126,8 @@ def convert_tja_to_fumen(tja):
     for current_branch, branch_measures_tja_processed in processed_tja_branches.items():
         if not len(branch_measures_tja_processed):
             continue
-        total_notes_branch = 0
-        note_counter_branch = 0
+        branch_points_total = 0
+        branch_points_measure = 0
         current_drumroll = None
         branch_conditions = []
         course_balloons = tja.balloon.copy()
@@ -208,7 +208,7 @@ def convert_tja_to_fumen(tja):
                             # If there is a proper branch condition, make sure that drumrolls do not contribute
                             fumen.header.b480_b483_branch_points_drumroll = 0
                             fumen.header.b492_b495_branch_points_drumroll_big = 0
-                            val = total_notes_branch * percent * 20
+                            val = branch_points_total * percent
                             # If the result is very close, then round to account for lack of precision in percentage
                             if abs(val - round(val)) < 0.1:
                                 val = round(val)
@@ -256,8 +256,8 @@ def convert_tja_to_fumen(tja):
                                                         not measure_tja_processed.section and not branch_conditions
                                                         else [branch_condition[2]] * 2)
 
-                # Reset the note counter corresponding to this branch (i.e. reset the accuracy)
-                total_notes_branch = 0
+                # Reset the points corresponding to this branch (i.e. reset the accuracy)
+                branch_points_total = 0
                 # Keep track of branch conditions (to later determine how to set the header bytes for branches)
                 branch_conditions.append(branch_condition)
 
@@ -266,10 +266,10 @@ def convert_tja_to_fumen(tja):
             #    "The requirement is calculated one measure before #BRANCHSTART, changing the branch visually when it
             #     is calculated and changing the notes after #BRANCHSTART."
             # So, by delaying the summation by one measure, we perform the calculation with notes "one measure before".
-            total_notes_branch += note_counter_branch
+            branch_points_total += branch_points_measure
 
             # Create notes based on TJA measure data
-            note_counter_branch = 0
+            branch_points_measure = 0
             note_counter = 0
             for idx_d, data in enumerate(measure_tja_processed.data):
                 if data.name == 'note':
@@ -307,13 +307,18 @@ def convert_tja_to_fumen(tja):
                     if note.type in ["Drumroll", "DRUMROLL"]:
                         current_drumroll = note
                         total_notes[current_branch] -= 1
-                    # Count dons, kas, and balloons for the purpose of tracking branching accuracy
-                    if note.type.lower() in ['don', 'ka']:
-                        note_counter_branch += 1
-                    elif note.type.lower() in ['balloon', 'kusudama']:
-                        note_counter_branch += 1.5
                     measure_fumen.branches[current_branch].notes.append(note)
                     note_counter += 1
+
+                    # Track branch points for the current measure, to later compute `#BRANCHSTART p` bytes
+                    if note.type in ['Don', 'Ka']:
+                        branch_points_measure += fumen.header.b468_b471_branch_points_good
+                    elif note.type in ['DON', 'KA']:
+                        branch_points_measure += fumen.header.b484_b487_branch_points_good_big
+                    elif note.type == 'Balloon':
+                        branch_points_measure += fumen.header.b496_b499_branch_points_balloon
+                    elif note.type == 'Kusudama':
+                        branch_points_measure += fumen.header.b500_b503_branch_points_kusudama
 
             # If drumroll hasn't ended by the end of this measure, increase duration by measure timing
             if current_drumroll:
