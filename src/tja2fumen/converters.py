@@ -248,9 +248,8 @@ def convert_tja_to_fumen(tja):
 
                 # Reset the note counter corresponding to this branch (i.e. reset the accuracy)
                 total_notes_branch = 0
-                # Cache branch conditions, but skip conditions where the only purpose is to level down to 'normal'
-                if measure_fumen.branch_info != [999, 999, 999, 999, 999, 999]:
-                    branch_conditions.append(branch_condition)
+                # Keep track of branch conditions (to later determine how to set the header bytes for branches)
+                branch_conditions.append(branch_condition)
 
             # NB: We update the branch condition note counter *after* we check the current measure's branch condition.
             # This is because the TJA spec says:
@@ -322,8 +321,15 @@ def convert_tja_to_fumen(tja):
     fumen.header.b432_b435_has_branches = int(all([len(b) for b in processed_tja_branches.values()]))
     fumen.header.set_hp_bytes(total_notes['normal'], tja.course, tja.level)
 
-    # If song has only drumroll branching conditions, then only drumrolls should contribute to branching
-    if all([condition[0] == 'r' for condition in branch_conditions]):
+    # If song has only drumroll branching conditions (plus percentage conditions that force a level up/level down),
+    # then set the header bytes so that only drumrolls contribute to branching.
+    drumroll_only = branch_conditions != [] and all([
+        (condition[0] == 'r') or
+        (condition[0] == 'p' and condition[1] == 0.0 and condition[2] == 0.0) or
+        (condition[0] == 'p' and condition[1] > 1.00 and condition[2] > 1.00)
+        for condition in branch_conditions
+    ])
+    if drumroll_only:
         fumen.header.b468_b471_branch_points_good = 0
         fumen.header.b484_b487_branch_points_good_big = 0
         fumen.header.b472_b475_branch_points_ok = 0
