@@ -275,7 +275,7 @@ def parse_tja_course_data(course):
 #                          Fumen-parsing functions                            #
 ###############################################################################
 
-def read_fumen(fumen_file, exclude_empty_measures=False):
+def parse_fumen(fumen_file, exclude_empty_measures=False):
     """
     Parse bytes of a fumen .bin file into nested measures, branches, and notes.
     """

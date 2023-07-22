@@ -7,7 +7,7 @@ import glob
 import pytest
 
 from tja2fumen import main as convert
-from tja2fumen.parsers import read_fumen
+from tja2fumen.parsers import parse_fumen
 from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE
 
 
@@ -69,8 +69,8 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                                          COURSE_IDS.items()}[i_difficult_id]]  # noqa
         # 0. Read fumen data (converted vs. cached)
         path_out_fumen = os.path.join(path_bin, os.path.basename(path_out))
-        co_song = read_fumen(path_out, exclude_empty_measures=True)
-        ca_song = read_fumen(path_out_fumen, exclude_empty_measures=True)
+        co_song = parse_fumen(path_out, exclude_empty_measures=True)
+        ca_song = parse_fumen(path_out_fumen, exclude_empty_measures=True)
         # 1. Check song headers
         checkValidHeader(co_song.header)
         checkValidHeader(ca_song.header)
