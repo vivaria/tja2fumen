@@ -2,7 +2,7 @@
 <p align="center">
   <img
     width="400"
-    src="https://user-images.githubusercontent.com/76574898/255335031-5578a3c4-2e5b-4a94-85cb-b40693254801.png"
+    src="https://user-images.githubusercontent.com/76574898/255353006-6c4504d0-c9a4-40d1-961f-db4cef7add0d.png"
     alt="tja2fumen – TJA chart converter"
   />
 </p>
