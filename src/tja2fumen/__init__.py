@@ -26,9 +26,10 @@ def main(argv=None):
     # Parse lines in TJA file
     parsed_tja = parse_tja(fname_tja)
 
-    # Convert parsed TJA courses to Fumen data, and write each course to `.bin` files
+    # Convert parsed TJA courses and write each course to `.bin` files
     for course in parsed_tja.courses.items():
-        convert_and_write(course, base_name, single_course=(len(parsed_tja.courses) == 1))
+        convert_and_write(course, base_name,
+                          single_course=(len(parsed_tja.courses) == 1))
 
 
 def convert_and_write(parsed_course, base_name, single_course=False):
@@ -37,12 +38,12 @@ def convert_and_write(parsed_course, base_name, single_course=False):
     # Add course ID (e.g. '_x', '_x_1', '_x_2') to the output file's base name
     output_name = base_name
     if single_course:
-        pass  # Replicate tja2bin.exe behavior by excluding course ID if there's only one course
+        pass  # Replicate tja2bin.exe behavior by excluding course ID
     else:
-        split_name = course_name.split("P")  # e.g. 'OniP2' -> ['Oni', '2'], 'Oni' -> ['Oni']
+        split_name = course_name.split("P")  # e.g. 'OniP2' -> ['Oni', '2']
         output_name += f"_{COURSE_IDS[split_name[0]]}"
         if len(split_name) == 2:
-            output_name += f"_{split_name[1]}"  # Add "_1" or "_2" if P1/P2 chart
+            output_name += f"_{split_name[1]}"  # Add "_1"/"_2" if P1/P2 chart
     write_fumen(f"{output_name}.bin", fumen_data)
 
 

@@ -8,4 +8,3 @@ def pytest_addoption(parser):
 @pytest.fixture
 def entry_point(request):
     return request.config.getoption("--entry-point")
-
