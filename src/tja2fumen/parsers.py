@@ -20,14 +20,14 @@ def parse_tja(fname_tja):
         tja_text = open(fname_tja, "r", encoding="shift-jis").read()
 
     lines = [line for line in tja_text.splitlines() if line.strip() != '']
-    parsed_tja = get_course_data(lines)
+    parsed_tja = split_tja_lines_into_courses(lines)
     for course in parsed_tja.courses.values():
         parse_course_measures(course)
 
     return parsed_tja
 
 
-def get_course_data(lines):
+def split_tja_lines_into_courses(lines):
     parsed_tja = None
     current_course = ''
     current_course_cached = ''
