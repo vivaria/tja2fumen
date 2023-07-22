@@ -19,12 +19,12 @@ def parse_tja(fname_tja):
     except UnicodeDecodeError:
         tja_text = open(fname_tja, "r", encoding="shift-jis").read()
 
-    lines = [line for line in tja_text.splitlines() if line.strip() != '']
-    parsed_tja = split_tja_lines_into_courses(lines)
-    for course in parsed_tja.courses.values():
+    tja_lines = [line for line in tja_text.splitlines() if line.strip() != '']
+    tja = split_tja_lines_into_courses(tja_lines)
+    for course in tja.courses.values():
         parse_tja_course_data(course)
 
-    return parsed_tja
+    return tja
 
 
 def split_tja_lines_into_courses(lines):
