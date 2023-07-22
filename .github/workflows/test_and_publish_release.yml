@@ -1,3 +1,4 @@
+#file: noinspection LongLine
 name: "Test and publish release"
 
 on:
