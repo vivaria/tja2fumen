@@ -22,7 +22,7 @@ def parse_tja(fname_tja):
     lines = [line for line in tja_text.splitlines() if line.strip() != '']
     parsed_tja = split_tja_lines_into_courses(lines)
     for course in parsed_tja.courses.values():
-        parse_course_measures(course)
+        parse_tja_course_data(course)
 
     return parsed_tja
 
@@ -125,7 +125,7 @@ def split_tja_lines_into_courses(lines):
     return parsed_tja
 
 
-def parse_course_measures(course):
+def parse_tja_course_data(course):
     # Check if the course has branches or not
     has_branches = (True if [d for d in course.data if d.name == 'BRANCHSTART']
                     else False)
