@@ -1,4 +1,5 @@
-from tja2fumen.utils import write_struct
+import struct
+
 from tja2fumen.constants import BRANCH_NAMES, FUMEN_TYPE_NOTES
 
 
@@ -38,3 +39,10 @@ def write_fumen(path_out, song):
 
                     if note.type.lower() == "drumroll":
                         file.write(note.drumroll_bytes)
+
+
+def write_struct(file, order, format_string, value_list, seek=None):
+    if seek:
+        file.seek(seek)
+    packed_bytes = struct.pack(order + format_string, *value_list)
+    file.write(packed_bytes)
