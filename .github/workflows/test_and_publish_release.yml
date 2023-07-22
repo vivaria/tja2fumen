@@ -32,6 +32,9 @@ jobs:
       run: |
         pip install -e .[dev]
 
+    - name: Lint project
+      run: pflake8
+
     - name: Run tests (Python API)
       run: |
         pytest testing --entry-point python-api
