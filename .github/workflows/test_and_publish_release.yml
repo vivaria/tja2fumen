@@ -1,3 +1,4 @@
+#file: noinspection LongLine
 name: "Test and publish release"
 
 on:
@@ -31,6 +32,9 @@ jobs:
     - name: Install tja2fumen and its dev dependencies
       run: |
         pip install -e .[dev]
+
+    - name: Lint project
+      run: pflake8
 
     - name: Run tests (Python API)
       run: |

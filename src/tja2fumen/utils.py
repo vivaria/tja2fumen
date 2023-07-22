@@ -8,9 +8,9 @@ def read_struct(file, order, format_string, seek=None):
     Arguments:
         - file: The fumen's file object (presumably in 'rb' mode).
         - order: '<' or '>' (little or big endian).
-        - format_string: String made up of format characters that describes the data layout.
-                         Full list of available format characters:
-                             (https://docs.python.org/3/library/struct.html#format-characters)
+        - format_string: String made up of format characters that describes
+                         the data layout. Full list of available characters:
+          (https://docs.python.org/3/library/struct.html#format-characters)
         - seek: The position of the read pointer to be used within the file.
 
     Return values:
@@ -34,7 +34,3 @@ def write_struct(file, order, format_string, value_list, seek=None):
         file.seek(seek)
     packed_bytes = struct.pack(order + format_string, *value_list)
     file.write(packed_bytes)
-
-
-def short_hex(number):
-    return hex(number)[2:]

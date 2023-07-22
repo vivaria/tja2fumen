@@ -12,14 +12,15 @@ from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE
 
 
 @pytest.mark.parametrize('id_song', [
-    pytest.param('shoto9', marks=pytest.mark.skip("TJA structure does not match fumen yet.")),
+    pytest.param('butou5'),
+    pytest.param('shoto9',
+                 marks=pytest.mark.skip("TJA measures do not match fumen.")),
     pytest.param('genpe'),
     pytest.param('gimcho'),
     pytest.param('imcanz'),
     pytest.param('clsca'),
     pytest.param('linda'),
     pytest.param('senpac'),
-    pytest.param('butou5'),
     pytest.param('hol6po'),
     pytest.param('mikdp'),
     pytest.param('ia6cho'),
@@ -43,14 +44,16 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
     elif entry_point == "python-cli":
         os.system(f"tja2fumen {path_tja_tmp}")
     elif entry_point == "exe":
-        exe_path = glob.glob(os.path.join(os.path.split(path_test)[0], "dist", "*.exe"))[0]
+        exe_path = glob.glob(os.path.join(os.path.split(path_test)[0],
+                                          "dist", "*.exe"))[0]
         os.system(f"{exe_path} {path_tja_tmp}")
 
     # Fetch output fumen paths
     paths_out = glob.glob(os.path.join(path_temp, "*.bin"))
     assert paths_out, f"No bin files generated in {path_temp}"
     order = "xmhne"  # Ura Oni -> Oni -> Hard -> Normal -> Easy
-    paths_out = sorted(paths_out, key=lambda s: [order.index(c) if c in order else len(order) for c in s])
+    paths_out = sorted(paths_out, key=lambda s: [order.index(c) if c in order
+                                                 else len(order) for c in s])
 
     # Extract cached fumen files to working directory
     path_binzip = os.path.join(path_test, "data", f"{id_song}.zip")
@@ -62,99 +65,131 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
     for path_out in paths_out:
         # Difficulty introspection to help with debugging
         i_difficult_id = os.path.basename(path_out).split(".")[0].split("_")[1]
-        i_difficulty = NORMALIZE_COURSE[{v: k for k, v in COURSE_IDS.items()}[i_difficult_id]]  # noqa
+        i_difficulty = NORMALIZE_COURSE[{v: k for k, v in  # noqa F841
+                                         COURSE_IDS.items()}[i_difficult_id]]  # noqa
         # 0. Read fumen data (converted vs. cached)
+        path_out_fumen = os.path.join(path_bin, os.path.basename(path_out))
         co_song = read_fumen(path_out, exclude_empty_measures=True)
-        ca_song = read_fumen(os.path.join(path_bin, os.path.basename(path_out)), exclude_empty_measures=True)
+        ca_song = read_fumen(path_out_fumen, exclude_empty_measures=True)
         # 1. Check song headers
         checkValidHeader(co_song.header)
         checkValidHeader(ca_song.header)
-        assert_song_property(co_song.header, ca_song.header, 'order')
-        assert_song_property(co_song.header, ca_song.header, 'b432_b435_has_branches')
-        assert_song_property(co_song.header, ca_song.header, 'b436_b439_hp_max')
-        assert_song_property(co_song.header, ca_song.header, 'b440_b443_hp_clear')
-        assert_song_property(co_song.header, ca_song.header, 'b444_b447_hp_gain_good', abs=1)
-        assert_song_property(co_song.header, ca_song.header, 'b448_b451_hp_gain_ok', abs=1)
-        assert_song_property(co_song.header, ca_song.header, 'b452_b455_hp_loss_bad', abs=1)
-        assert_song_property(co_song.header, ca_song.header, 'b456_b459_normal_normal_ratio')
-        assert_song_property(co_song.header, ca_song.header, 'b460_b463_normal_professional_ratio')
-        assert_song_property(co_song.header, ca_song.header, 'b464_b467_normal_master_ratio')
-        # NB: KAGEKIYO's branching condition is very unique (BIG only), which cannot be expressed in a TJA file
-        # So, skip checking the `branch_point` header values for KAGEKIYO.
+        for header_property in ['order',
+                                'b432_b435_has_branches',
+                                'b436_b439_hp_max',
+                                'b440_b443_hp_clear',
+                                'b444_b447_hp_gain_good',
+                                'b448_b451_hp_gain_ok',
+                                'b452_b455_hp_loss_bad',
+                                'b456_b459_normal_normal_ratio',
+                                'b460_b463_normal_professional_ratio',
+                                'b464_b467_normal_master_ratio']:
+            check(co_song.header, ca_song.header, header_property, abs=1)
+        # NB: KAGEKIYO's branching condition is very unique (BIG only), which
+        # cannot be expressed in a TJA file. So, we skip checking the
+        # `branch_point` header values for KAGEKIYO.
         if id_song != 'genpe':
-            assert_song_property(co_song.header, ca_song.header, 'b468_b471_branch_points_good')
-            assert_song_property(co_song.header, ca_song.header, 'b472_b475_branch_points_ok')
-            assert_song_property(co_song.header, ca_song.header, 'b476_b479_branch_points_bad')
-            assert_song_property(co_song.header, ca_song.header, 'b480_b483_branch_points_drumroll')
-            assert_song_property(co_song.header, ca_song.header, 'b484_b487_branch_points_good_big')
-            assert_song_property(co_song.header, ca_song.header, 'b488_b491_branch_points_ok_big')
-            assert_song_property(co_song.header, ca_song.header, 'b492_b495_branch_points_drumroll_big')
-            assert_song_property(co_song.header, ca_song.header, 'b496_b499_branch_points_balloon')
-            assert_song_property(co_song.header, ca_song.header, 'b500_b503_branch_points_kusudama')
+            for header_property in ['b468_b471_branch_points_good',
+                                    'b472_b475_branch_points_ok',
+                                    'b476_b479_branch_points_bad',
+                                    'b480_b483_branch_points_drumroll',
+                                    'b484_b487_branch_points_good_big',
+                                    'b488_b491_branch_points_ok_big',
+                                    'b492_b495_branch_points_drumroll_big',
+                                    'b496_b499_branch_points_balloon',
+                                    'b500_b503_branch_points_kusudama']:
+                check(co_song.header, ca_song.header, header_property)
         # 2. Check song metadata
-        assert_song_property(co_song, ca_song, 'score_init')
-        assert_song_property(co_song, ca_song, 'score_diff')
+        check(co_song, ca_song, 'score_init')
+        check(co_song, ca_song, 'score_diff')
         # 3. Check measure data
-        for i_measure in range(max([len(co_song.measures), len(ca_song.measures)])):
-            # NB: We could assert that len(measures) is the same for both songs, then iterate through zipped measures.
-            # But, if there is a mismatched number of measures, we want to know _where_ it occurs. So, we let the
-            # comparison go on using the max length of both songs until something else fails.
+        for i_measure in range(max([len(co_song.measures),
+                                    len(ca_song.measures)])):
+            # NB: We could assert that len(measures) is the same for both
+            # songs, then iterate through zipped measures. But, if there is a
+            # mismatched number of measures, we want to know _where_ it
+            # occurs. So, we let the comparison go on using the max length of
+            # both songs until something else fails.
             co_measure = co_song.measures[i_measure]
             ca_measure = ca_song.measures[i_measure]
             # 3a. Check measure metadata
-            assert_song_property(co_measure, ca_measure, 'bpm', i_measure, abs=0.01)
-            assert_song_property(co_measure, ca_measure, 'fumen_offset_start', i_measure, abs=0.15)
-            assert_song_property(co_measure, ca_measure, 'gogo', i_measure)
-            assert_song_property(co_measure, ca_measure, 'barline', i_measure)
+            check(co_measure, ca_measure, 'bpm', i_measure, abs=0.01)
+            check(co_measure, ca_measure, 'offset_start', i_measure, abs=0.15)
+            check(co_measure, ca_measure, 'gogo', i_measure)
+            check(co_measure, ca_measure, 'barline', i_measure)
 
-            # NB: KAGEKIYO's fumen has some strange details that can't be replicated using the TJA charting format.
-            # So, for now, we use a special case to skip checking A) notes for certain measures and B) branchInfo
+            # NB: KAGEKIYO's fumen has some strange details that can't be
+            # replicated using the TJA charting format. So, for now, we use a
+            # special case to skip checking:
+            #     A) notes for certain measures and
+            #     B) branchInfo
             if id_song == 'genpe':
-                # A) The 2/4 measures in the Ura of KAGEKIYO's official Ura fumen don't match the wikiwiki.jp/TJA
-                # charts. In the official fumen, the note ms offsets of branches 5/12/17/etc. go _past_ the duration of
-                # the measure. This behavior is impossible to represent using the TJA format, so we skip checking notes
-                # for these measures, since the rest of the measures have perfect note ms offsets anyway.
-                if i_difficult_id == "x" and i_measure in [5, 6, 12, 13, 17, 18, 26, 27, 46, 47, 51, 52, 56, 57]:
+                # A) The 2/4 measures in the Ura of KAGEKIYO's official Ura
+                # fumen don't match the wikiwiki.jp/TJA charts. In the official
+                # fumen, the note ms offsets of branches 5/12/17/etc. go _past_
+                # the duration of the measure. This behavior is impossible to
+                # represent using the TJA format, so we skip checking notes
+                # for these measures, since the rest of the measures have
+                # perfect note ms offsets anyway.
+                if (i_difficult_id == "x" and
+                        i_measure in [5, 6, 12, 13, 17, 18, 26, 27,
+                                      46, 47, 51, 52, 56, 57]):
                     continue
-                # B) The branching condition for KAGEKIYO is very strange (accuracy for the 7 big notes in the song)
-                # So, we only test the branchInfo bytes for non-KAGEKIYO songs:
+                # B) The branching condition for KAGEKIYO is very strange
+                # (accuracy for the 7 big notes in the song) So, we only test
+                # the branchInfo bytes for non-KAGEKIYO songs:
             else:
-                assert_song_property(co_measure, ca_measure, 'branch_info', i_measure)
+                check(co_measure, ca_measure, 'branch_info', i_measure)
 
             # 3b. Check measure notes
             for i_branch in ['normal', 'professional', 'master']:
                 co_branch = co_measure.branches[i_branch]
                 ca_branch = ca_measure.branches[i_branch]
-                # NB: We only check speed for non-empty branches, as fumens store speed changes even for empty branches
+                # NB: We only check speed for non-empty branches, as fumens
+                # store speed changes even for empty branches.
                 if co_branch.length != 0:
-                    assert_song_property(co_branch, ca_branch, 'speed', i_measure, i_branch)
-                # NB: We could assert that len(notes) is the same for both songs, then iterate through zipped notes.
-                # But, if there is a mismatched number of notes, we want to know _where_ it occurs. So, we let the
-                # comparison go on using the max length of both branches until something else fails.
+                    check(co_branch, ca_branch, 'speed', i_measure, i_branch)
+                # NB: We could assert that len(notes) is the same for both
+                # songs, then iterate through zipped notes. But, if there is a
+                # mismatched number of notes, we want to know _where_ it
+                # occurs. So, we let the comparison go on using the max length
+                # of both branches until something else fails.
                 for i_note in range(max([co_branch.length, ca_branch.length])):
                     co_note = co_branch.notes[i_note]
                     ca_note = ca_branch.notes[i_note]
-                    assert_song_property(co_note, ca_note, 'note_type', i_measure, i_branch, i_note, func=normalize_type)
-                    assert_song_property(co_note, ca_note, 'pos', i_measure, i_branch, i_note, abs=0.1)
-                    # NB: Drumroll duration doesn't always end exactly on a beat. Plus, TJA charters often eyeball
-                    #     drumrolls, leading them to be often off by a 1/4th/8th/16th/32th/etc. These charting errors
-                    #     are fixable, but tedious to do when writing tests. So, I've added a try/except so that they
-                    #     can be checked locally with a breakpoint when adding new songs, but so that fixing every
-                    #     duration-related chart error isn't 100% mandatory.
+                    check(co_note, ca_note, 'note_type', i_measure,
+                          i_branch, i_note, func=normalize_type)
+                    check(co_note, ca_note, 'pos', i_measure,
+                          i_branch, i_note, abs=0.1)
+                    # NB: Drumroll duration doesn't always end exactly on a
+                    # beat. Plus, TJA charters often eyeball drumrolls,
+                    # leading them to be often off by a 1/4th/8th/16th/etc.
+                    # These charting errors are fixable, but tedious to do
+                    # when writing tests. So, I've added a try/except so that
+                    # they can be checked locally with a breakpoint when
+                    # adding new songs, but so that fixing every
+                    # duration-related chart error isn't 100% mandatory.
                     try:
-                        assert_song_property(co_note, ca_note, 'duration', i_measure, i_branch, i_note, abs=25.0)
+                        check(co_note, ca_note, 'duration', i_measure,
+                              i_branch, i_note, abs=25.0)
                     except AssertionError:
                         pass
                     if ca_note.note_type not in ["Balloon", "Kusudama"]:
-                        assert_song_property(co_note, ca_note, 'score_init', i_measure, i_branch, i_note)
-                        assert_song_property(co_note, ca_note, 'score_diff', i_measure, i_branch, i_note)
-                    # NB: 'item' still needs to be implemented: https://github.com/vivaria/tja2fumen/issues/17
-                    # assert_song_property(co_note, ca_note, 'item', i_measure, i_branch, i_note)
+                        check(co_note, ca_note, 'score_init', i_measure,
+                              i_branch, i_note)
+                        check(co_note, ca_note, 'score_diff', i_measure,
+                              i_branch, i_note)
+                    # NB: 'item' still needs to be implemented:
+                    # https://github.com/vivaria/tja2fumen/issues/17
+                    # check(co_note, ca_note, 'item', i_measure,
+                    #       i_branch, i_note)
 
 
-def assert_song_property(converted_obj, cached_obj, prop, measure=None, branch=None, note=None, func=None, abs=None):
-    # NB: TJA parser/converter uses 0-based indexing, but TJA files use 1-based indexing.
-    #     So, we increment 1 in the error message to more easily identify problematic lines in TJA files.
+def check(converted_obj, cached_obj, prop, measure=None,
+          branch=None, note=None, func=None, abs=None):
+    # NB: TJA parser/converter uses 0-based indexing, but TJA files use
+    # 1-based indexing. So, we increment 1 in the error message to more easily
+    # identify problematic lines in TJA files.
     msg_failure = f"'{prop}' mismatch"
     msg_failure += f": measure '{measure+1}'" if measure is not None else ""
     msg_failure += f", branch '{branch}'" if branch is not None else ""
@@ -193,4 +228,3 @@ def checkValidHeader(header):
     assert header.b492_b495_branch_points_drumroll_big in [1, 0]
     assert header.b496_b499_branch_points_balloon      in [30, 0, 1]
     assert header.b500_b503_branch_points_kusudama     in [30, 0]
-

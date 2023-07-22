@@ -18,7 +18,8 @@ keywords = ["taiko", "tatsujin", "fumen", "TJA"]
 tja2fumen = "tja2fumen:main"
 
 [project.optional-dependencies]
-dev = ["pytest", "build", "pyinstaller", "twine", "toml-cli"]
+dev = ["pytest", "build", "pyinstaller", "twine", "toml-cli",
+       "flake8", "pyproject-flake8"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -26,3 +27,10 @@ where = ["src"]
 [tool.pytest.ini_options]
 addopts = "-vv --tb=short"
 console_output_style = "count"
+
+[tool.flake8]
+exclude = "venv/"
+per-file-ignores = """
+    ./src/tja2fumen/types.py: E221
+    ./testing/test_conversion.py: E221, E272
+"""
