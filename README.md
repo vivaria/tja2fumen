@@ -29,43 +29,46 @@ tja2fumen is included as part of several existing projects. So, you may be using
 
 You can also use tja2fumen directly on a `.tja` file by downloading `tja2fumen.exe` from the [Releases](https://github.com/vivaria/tja2fumen/releases) page and running `tja2fumen.exe file.tja` in a command prompt.
 
-## Supported commands
+## TJA Support
 
-✅ = Fully supported, 🔘 = Ignored, ⚠️ = Incorrect behavior, ❌ = Crashes the converter, ❔ = Unknown
+If there is an unsupported command or metadata field that you would like support for, please make a request by [opening a new issue](https://github.com/vivaria/tja2fumen/issues/new).
 
-| Command                                             | tja2fumen | tja2bin | Notes                                                   |
-| --------------------------------------------------- | ----------- | --------- | --------------------------------------------------- |
-| `BPM:`                                              | ✅ | ✅ | Song's beats per minute.                                           |
-| `OFFSET:`                                           | ✅ | ✅ | Song's offset in seconds.                                          |
-| `TITLE:`, `SUBTITLE:`, `WAVE:`, `DEMOSTART:`, etc.  | 🔘 | 🔘 | Other song metadata fields.                                        |
-| `COURSE:`                                           | ✅ | ✅ | Chart's difficulty category.                                       |
-| `LEVEL:`                                            | ✅ | ✅ | Chart's number of stars (between 1 and 10).                        |
-| `BALLOON:`                                          | ✅ | ✅ | List of hits for each balloon in chart.                            |
-| `SCOREINIT:`                                        | ✅ | ✅ | Sets INIT value for the scoring method.                            |
-| `SCOREDIFF:`                                        | ✅ | ✅ | Sets DIFF value for the scoring method.                            |
-| `STYLE: Single`, `STYLE: Double`                    | ✅ | ❌ | Assign chart to single/multiplayer.                                |
-| `EXAM1:`, `GAUGEINCR:`, `TOTAL:`, etc.              | 🔘 | 🔘 | Other simulator-specific chart metadata fields.                    |
-| `0`, `1`, `2`, `3`, `4` `5`, `6`, `7`, `8`, `9`     | ✅ | ✅ | Main notes.                                                        |
-| `A`, `B`                                            | ❔ | ❔ | Multiplayer note with hands.                                       | 
-| `F`                                                 | ❔ | ❔ | Hidden ADLIB note.                                                 |
-| `9000,`<br>`9008,`                                  | 🔘 | ❔ | Double Kusudama note.                                              |
-| `#START`, `#END`                                    | ✅ | ✅ | Marks the beginning and end of a chart's notation.                 |
-| `#START P1`, `START P2`                             | ✅ | ❔ | Marks the chart as first or second player.                         |
-| `#MEASURE`                                          | ✅ | ✅ | Changes the time signature.                                        |
-| `#BPMCHANGE`                                        | ✅ | ⚠️ | Changes the beats per minute.                                      |
-| `#DELAY`                                            | ✅ | ❌ | Add offset in seconds.                                             |
-| `#SCROLL`                                           | ✅ | ✅ | Multiplies the default scrolling speed by this value.              |
-| `#GOGOSTART`, `#GOGOEND`                              | ✅ | ✅ | Activate or deactivate go-go time.                                 |
-| `#BARLINEOFF`, `#BARLINEON`                         | ✅ | ✅ | Turn off/on visual measure lines.                                  |
-| `#BRANCHSTART`                                      | ✅ | ✅ | Add condition for branching (diverge) paths.                       |
-| `#BRANCHEND`                                        | ✅ | ✅ | Starts normal chart notation without branching.                    |
-| `#N`, `#E`, `#M`                                    | ✅ | ✅ | Starts chart notation for a specific path.                         |
-| `#SECTION`                                          | ✅ | ✅ | Reset accuracy values for notes and drumrolls on the next measure. |
-| `#LYRIC`                                            | 🔘 | ❌ | Shows song lyrics at the bottom of the screen.                     |
-| `#LEVELHOLD`                                        | ❔ | ❔ | The current branch is forced until the end of the song.            |
-| `#BMSCROLL`, `#HBSCROLL`, `#DIRECTION`, etc.        | 🔘 | ❌ | Other simulator-specific chart commands.                           |
+### Supported metadata
 
-If a command is not listed, you can assume that it is unsupported. If you would like support for a missing command, please make a request by [opening a new issue](https://github.com/vivaria/tja2fumen/issues/new).
+> **Legend**: ✅ = Fully supported, 🔘 = Ignored, ⚠️ = Incorrect behavior, ❌ = Crashes the converter, ❔ = Unknown
+
+| Metadata                                                        | tja2fumen | tja2bin | Comments                                                    |
+| --------------------------------------------------------------- | --------- | ------- | ----------------------------------------------------------- |
+| `BPM:`, `OFFSET:`                                               | ✅ | ✅ |                                                                        |
+| `TITLE:`, `SUBTITLE:`, `WAVE:`,<br>`DEMOSTART:`, etc.           | 🔘 | 🔘 | The only global metadata needed are `BPM:` and `OFFSET:`.              |
+| `COURSE:`, `LEVEL:`, `BALLOON:`,<br> `SCOREINIT:`, `SCOREDIFF:` | ✅ | ✅ |                                                                        |
+| `STYLE: Single`, `STYLE: Double`                                | ✅ | ❌ |                                                                        |
+| `EXAM1:`, `GAUGEINCR:`, `TOTAL:`, etc.                          | 🔘 | 🔘 | Other simulator-specific metadata fields are not currently supported.  |
+
+### Supported notes/commands
+
+> **Legend**: ✅ = Fully supported, 🔘 = Ignored, ⚠️ = Incorrect behavior, ❌ = Crashes the converter, ❔ = Unknown
+
+| Note/command                                    | tja2fumen | tja2bin | Comments                                                  |
+| ------------------------------------------------| ----------- | --------- | ----------------------------------------------------- |
+| `0`, `1`, `2`, `3`, `4` `5`, `6`, `7`, `8`, `9` | ✅ | ✅ |                                                                      |
+| `A`, `B`                                        | ❔ | ❔ | Multiplayer note with hands.                                         | 
+| `F`                                             | ❔ | ❔ | Hidden ADLIB note.                                                   |
+| `9000,`<br>`9008,`                              | 🔘 | ❔ | Double Kusudama note to reset accuracy.                              |
+| `#START`, `#END`                                | ✅ | ✅ |                                                                      |
+| `#START P1`, `START P2`                         | ✅ | ❔ |                                                                      |
+| `#MEASURE`                                      | ✅ | ✅ |                                                                      |
+| `#BPMCHANGE`                                    | ✅ | ⚠️ | See https://github.com/Fluto/TakoTako/issues/16                      |
+| `#DELAY`                                        | ✅ | ❌ |                                                                      |
+| `#SCROLL`                                       | ✅ | ✅ |                                                                      |
+| `#GOGOSTART`, `#GOGOEND`                        | ✅ | ✅ |                                                                      |
+| `#BARLINEOFF`, `#BARLINEON`                     | ✅ | ✅ |                                                                      |
+| `#BRANCHSTART`                                  | ✅ | ✅ |                                                                      |
+| `#SECTION`                                      | ✅ | ✅ |                                                                      |
+| `#LEVELHOLD`                                    | ❔ | ❔ |                                                                      |
+| `#N`, `#E`, `#M`                                | ✅ | ✅ |                                                                      |
+| `#BRANCHEND`                                    | ✅ | ✅ |                                                                      |
+| `#BMSCROLL`, `#LYRIC`,<br>`#DIRECTION`, etc.    | 🔘 | ❌ | Other simulator-specific chart commands are not currently supported. |
 
 ## Reporting bugs
 
