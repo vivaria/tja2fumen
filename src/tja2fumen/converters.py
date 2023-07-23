@@ -336,7 +336,11 @@ def convert_tja_to_fumen(tja):
 
                 # Handle drumroll notes
                 if note.type in ["Balloon", "Kusudama"]:
-                    note.hits = course_balloons.pop(0)
+                    try:
+                        note.hits = course_balloons.pop(0)
+                    except IndexError:
+                        raise ValueError(f"Not enough values for 'BALLOON: "
+                                         f"{','.join(course_balloons)}'")
                     current_drumroll = note
                 elif note.type in ["Drumroll", "DRUMROLL"]:
                     current_drumroll = note
