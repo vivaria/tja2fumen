@@ -35,7 +35,7 @@ If there is an unsupported command or metadata field that you would like support
 
 ### Supported metadata
 
-> **Legend**: ✅ = Fully supported, 🔘 = Ignored, ⚠️ = Incorrect behavior, ❌ = Crashes the converter, ❔ = Unknown
+> **Legend**: ✅ = Fully supported, 🔘 = Ignored, ⚠️ = Incorrect behavior, ❌ = Crashes the converter
 
 | Metadata                                                        | tja2fumen | tja2bin | Comments                                                    |
 | --------------------------------------------------------------- | --------- | ------- | ----------------------------------------------------------- |
@@ -47,7 +47,7 @@ If there is an unsupported command or metadata field that you would like support
 
 ### Supported notes/commands
 
-> **Legend**: ✅ = Fully supported, 🔘 = Ignored, ⚠️ = Incorrect behavior, ❌ = Crashes the converter, ❔ = Unknown
+> **Legend**: ✅ = Fully supported, 🔘 = Ignored, ⚠️ = Incorrect behavior, ❌ = Crashes the converter
 
 | Note/command                                    | tja2fumen | tja2bin | Comments                                                  |
 | ------------------------------------------------| ----------- | --------- | ----------------------------------------------------- |
