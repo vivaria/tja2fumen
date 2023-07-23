@@ -6,7 +6,7 @@ import glob
 
 import pytest
 
-from tja2fumen import main as convert
+from conftest import convert
 from tja2fumen.parsers import parse_fumen
 from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE
 
@@ -39,14 +39,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
     shutil.copy(path_tja, path_tja_tmp)
 
     # Convert TJA file to fumen files
-    if entry_point == "python-api":
-        convert(argv=[path_tja_tmp])
-    elif entry_point == "python-cli":
-        os.system(f"tja2fumen {path_tja_tmp}")
-    elif entry_point == "exe":
-        exe_path = glob.glob(os.path.join(os.path.split(path_test)[0],
-                                          "dist", "*.exe"))[0]
-        os.system(f"{exe_path} {path_tja_tmp}")
+    convert(path_test, path_tja_tmp, entry_point)
 
     # Fetch output fumen paths
     paths_out = glob.glob(os.path.join(path_temp, "*.bin"))
