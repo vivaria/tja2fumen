@@ -25,7 +25,7 @@ def convert(path_test, path_tja_tmp, entry_point, err_msg=None):
         if not err_msg:
             api_convert(argv=[path_tja_tmp])
         else:
-            with pytest.raises(ValueError) as e:
+            with pytest.raises(Exception) as e:
                 api_convert(argv=[path_tja_tmp])
             tb = "".join(traceback.format_tb(e.tb))
 
