@@ -25,7 +25,7 @@ tja2fumen is included as part of several existing projects. So, you may be using
 - **XB1/TDMX**: [TakoTako](https://github.com/fluto/takotako) converts both chart and audio files for XB1/TDMX.
 - **Nijiro**: [TaikoSoundEditor](https://github.com/NotImplementedLife/TaikoSoundEditor) converts both chart and audio files for NIjiro.
 
-For older versions of TakoTako (3.2.0 and below), you can add tja2fumen by renaming `tja2fumen.exe` to `tja2bin.exe` and placing it inside TakoTako's plugin folder (`BepInEx/plugins/com.fluto.takotako/`).
+> **Note**: For older versions of TakoTako (3.2.0 and below), you can add tja2fumen by renaming `tja2fumen.exe` to `tja2bin.exe` and placing it inside TakoTako's plugin folder (`BepInEx/plugins/com.fluto.takotako/`).
 
 You can also use tja2fumen directly on a `.tja` file by downloading `tja2fumen.exe` from the [Releases](https://github.com/vivaria/tja2fumen/releases) page and running `tja2fumen.exe file.tja` in a command prompt.
 
