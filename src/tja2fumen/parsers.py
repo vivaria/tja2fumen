@@ -52,13 +52,15 @@ def split_tja_lines_into_courses(lines):
 
             # Course-specific header fields
             elif name_upper == 'COURSE':
+                if value not in NORMALIZE_COURSE.keys():
+                    raise ValueError(f"Invalid COURSE value: '{value}'")
                 current_course = NORMALIZE_COURSE[value]
                 current_course_cached = current_course
-                if current_course not in parsed_tja.courses.keys():
-                    raise ValueError()
             elif name_upper == 'LEVEL':
-                parsed_tja.courses[current_course].level = \
-                    int(value) if value else 0
+                if value not in ['1', '2', '3', '4', '5',
+                                 '6', '7', '8', '9', '10']:
+                    raise ValueError(f"Invalid LEVEL value: '{value}")
+                parsed_tja.courses[current_course].level = int(value)
             elif name_upper == 'SCOREINIT':
                 parsed_tja.courses[current_course].score_init = \
                     int(value.split(",")[-1]) if value else 0

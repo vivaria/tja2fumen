@@ -8,7 +8,10 @@ from conftest import convert
 
 @pytest.mark.parametrize('id_song,err_msg', [
     ['basic_song', None],
-    ['missing_balloon', "Not enough values for 'BALLOON:"]
+    ['missing_score', None],
+    ['missing_balloon', "Not enough values for 'BALLOON:"],
+    ['missing_course', "Invalid COURSE value:"],
+    ['missing_level', "Invalid LEVEL value:"]
 ])
 def test_expected_errors(id_song, err_msg, tmp_path, entry_point):
     # Define the testing directory
