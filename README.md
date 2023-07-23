@@ -6,7 +6,7 @@
     alt="tja2fumen – TJA chart converter"
   />
   <br>
-  tja2fumen is an open-source tool that allows you to convert TJA charts (<code>.tja</code>) to fumen charts (<code>.bin</code>).
+  tja2fumen is an tool that allows you to convert TJA charts (<code>.tja</code>) to fumen charts (<code>.bin</code>).
 </p>
 
 <p align="center">
