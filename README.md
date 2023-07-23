@@ -41,7 +41,7 @@ If there is an unsupported command or metadata field that you would like support
 | --------------------------------------------------------------- | --------- | ------- | ----------------------------------------------------------- |
 | `BPM:`, `OFFSET:`                                               | ✅ | ✅ |                                                                        |
 | `TITLE:`, `SUBTITLE:`, `WAVE:`,<br>`DEMOSTART:`, etc.           | 🔘 | 🔘 | The only global metadata needed are `BPM:` and `OFFSET:`.              |
-| `COURSE:`, `LEVEL:`, `BALLOON:` `SCOREINIT:`, `SCOREDIFF:`      | ✅ | ✅ |                                                                        |
+| `COURSE:`, `LEVEL:`, `BALLOON:`,<br> `SCOREINIT:`, `SCOREDIFF:`      | ✅ | ✅ |                                                                        |
 | `STYLE: Single`, `STYLE: Double`                                | ✅ | ❌ |                                                                        |
 | `EXAM1:`, `GAUGEINCR:`, `TOTAL:`, etc.                          | 🔘 | 🔘 | Other simulator-specific metadata fields are not currently supported.  |
 
