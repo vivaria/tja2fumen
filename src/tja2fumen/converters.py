@@ -330,33 +330,33 @@ def convert_tja_to_fumen(tja):
                 # Handle note metadata
                 note = FumenNote()
                 note.pos = note_pos
-                note.type = data.value
+                note.note_type = data.value
                 note.score_init = tja.score_init
                 note.score_diff = tja.score_diff
 
                 # Handle drumroll notes
-                if note.type in ["Balloon", "Kusudama"]:
+                if note.note_type in ["Balloon", "Kusudama"]:
                     try:
                         note.hits = course_balloons.pop(0)
                     except IndexError:
                         raise ValueError(f"Not enough values for 'BALLOON: "
                                          f"{','.join(course_balloons)}'")
                     current_drumroll = note
-                elif note.type in ["Drumroll", "DRUMROLL"]:
+                elif note.note_type in ["Drumroll", "DRUMROLL"]:
                     current_drumroll = note
 
                 # Track Don/Ka notes (to later compute header values)
-                elif note.type.lower() in ['don', 'ka']:
+                elif note.note_type.lower() in ['don', 'ka']:
                     total_notes[current_branch] += 1
 
                 # Track branch points (to later compute `#BRANCHSTART p` vals)
-                if note.type in ['Don', 'Ka']:
+                if note.note_type in ['Don', 'Ka']:
                     pts_to_add = fumen.header.b468_b471_branch_points_good
-                elif note.type in ['DON', 'KA']:
+                elif note.note_type in ['DON', 'KA']:
                     pts_to_add = fumen.header.b484_b487_branch_points_good_big
-                elif note.type == 'Balloon':
+                elif note.note_type == 'Balloon':
                     pts_to_add = fumen.header.b496_b499_branch_points_balloon
-                elif note.type == 'Kusudama':
+                elif note.note_type == 'Kusudama':
                     pts_to_add = fumen.header.b500_b503_branch_points_kusudama
                 else:
                     pts_to_add = 0  # Drumrolls not relevant for `p` conditions

@@ -26,7 +26,7 @@ def write_fumen(path_out, song):
 
                 for note_number in range(branch.length):
                     note = branch.notes[note_number]
-                    note_struct = [FUMEN_TYPE_NOTES[note.type], note.pos,
+                    note_struct = [FUMEN_TYPE_NOTES[note.note_type], note.pos,
                                    note.item, note.padding]
                     if note.hits:
                         extra_vals = [note.hits, note.hits_padding]
@@ -37,7 +37,7 @@ def write_fumen(path_out, song):
                                  format_string="ififHHf",
                                  value_list=note_struct)
 
-                    if note.type.lower() == "drumroll":
+                    if note.note_type.lower() == "drumroll":
                         file.write(note.drumroll_bytes)
 
 
