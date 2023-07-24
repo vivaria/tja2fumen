@@ -148,8 +148,15 @@ class FumenNote:
 
 class FumenHeader:
     def __init__(self, raw_bytes=None):
-        # Set default header bytes
-        self.order = "<"
+        if raw_bytes is None:
+            self.order = "<"
+            self._assign_default_header_values()
+        else:
+            self.order = self._parse_order(raw_bytes)
+            self._parse_header_values(raw_bytes)
+
+    def _assign_default_header_values(self):
+        # This byte string corresponds to
         timing_windows = self.up(b'43\xc8Ag&\x96B"\xe2\xd8B' * 36, "fff" * 36)
         self.b000_b431_timing_windows             = timing_windows
         self.b432_b435_has_branches               = 0
@@ -174,9 +181,8 @@ class FumenHeader:
         self.b508_b511_dummy_data                 = 12345678
         self.b512_b515_number_of_measures         = 0
         self.b516_b519_unknown_data               = 0
-        if not raw_bytes:
-            return
-        # Parse raw bytes
+
+    def _parse_header_values(self, raw_bytes):
         rb = raw_bytes
         self.b000_b431_timing_windows             = self.up(rb, "f" * 108,
                                                             0, 431)
