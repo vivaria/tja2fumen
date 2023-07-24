@@ -31,7 +31,17 @@ You can also use tja2fumen directly on a `.tja` file by downloading `tja2fumen.e
 
 ## TJA Support
 
-If there is an unsupported command or metadata field that you would like support for, please make a request by [opening a new issue](https://github.com/vivaria/tja2fumen/issues/new).
+If there is an unsupported feature that you would like support for, please make a request by [opening a new issue](https://github.com/vivaria/tja2fumen/issues/new).
+
+### Supported file formats
+
+> **Legend**: `✅` = Fully supported, `❌` = Not supported
+
+| File format         | tja2fumen | tja2bin | Comments |
+|---------------------|-----------|---------|----------|
+| UTF-8 (with BOM)    | `✅`       | `❌`     |          |
+| UTF-8 (without BOM) | `✅️`      | `✅`     |          |
+| Shift-JIS           | `✅`       | `✅`     |          |
 
 ### Supported metadata
 
