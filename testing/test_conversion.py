@@ -8,7 +8,6 @@ import pytest
 
 from conftest import convert
 from tja2fumen.parsers import parse_fumen
-from tja2fumen.constants import COURSE_IDS, NORMALIZE_COURSE
 
 
 @pytest.mark.parametrize('id_song', [
@@ -58,8 +57,6 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
     for path_out in paths_out:
         # Difficulty introspection to help with debugging
         i_difficult_id = os.path.basename(path_out).split(".")[0].split("_")[1]
-        i_difficulty = NORMALIZE_COURSE[{v: k for k, v in  # noqa F841
-                                         COURSE_IDS.items()}[i_difficult_id]]  # noqa
         # 0. Read fumen data (converted vs. cached)
         path_out_fumen = os.path.join(path_bin, os.path.basename(path_out))
         co_song = parse_fumen(path_out, exclude_empty_measures=True)
@@ -77,7 +74,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                                 'b456_b459_normal_normal_ratio',
                                 'b460_b463_normal_professional_ratio',
                                 'b464_b467_normal_master_ratio']:
-            check(co_song.header, ca_song.header, header_property, abs=1)
+            check(co_song.header, ca_song.header, header_property, abv=1)
         # NB: KAGEKIYO's branching condition is very unique (BIG only), which
         # cannot be expressed in a TJA file. So, we skip checking the
         # `branch_point` header values for KAGEKIYO.
@@ -106,8 +103,8 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
             co_measure = co_song.measures[i_measure]
             ca_measure = ca_song.measures[i_measure]
             # 3a. Check measure metadata
-            check(co_measure, ca_measure, 'bpm', i_measure, abs=0.01)
-            check(co_measure, ca_measure, 'offset_start', i_measure, abs=0.15)
+            check(co_measure, ca_measure, 'bpm', i_measure, abv=0.01)
+            check(co_measure, ca_measure, 'offset_start', i_measure, abv=0.15)
             check(co_measure, ca_measure, 'gogo', i_measure)
             check(co_measure, ca_measure, 'barline', i_measure)
 
@@ -153,7 +150,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                     check(co_note, ca_note, 'note_type', i_measure,
                           i_branch, i_note, func=normalize_type)
                     check(co_note, ca_note, 'pos', i_measure,
-                          i_branch, i_note, abs=0.1)
+                          i_branch, i_note, abv=0.1)
                     # NB: Drumroll duration doesn't always end exactly on a
                     # beat. Plus, TJA charters often eyeball drumrolls,
                     # leading them to be often off by a 1/4th/8th/16th/etc.
@@ -164,7 +161,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                     # duration-related chart error isn't 100% mandatory.
                     try:
                         check(co_note, ca_note, 'duration', i_measure,
-                              i_branch, i_note, abs=25.0)
+                              i_branch, i_note, abv=25.0)
                     except AssertionError:
                         pass
                     if ca_note.note_type not in ["Balloon", "Kusudama"]:
@@ -179,7 +176,7 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
 
 
 def check(converted_obj, cached_obj, prop, measure=None,
-          branch=None, note=None, func=None, abs=None):
+          branch=None, note=None, func=None, abv=None):
     # NB: TJA parser/converter uses 0-based indexing, but TJA files use
     # 1-based indexing. So, we increment 1 in the error message to more easily
     # identify problematic lines in TJA files.
@@ -191,8 +188,8 @@ def check(converted_obj, cached_obj, prop, measure=None,
     cached_val = cached_obj.__getattribute__(prop)
     if func:
         assert func(converted_val) == func(cached_val), msg_failure
-    elif abs:
-        assert converted_val == pytest.approx(cached_val, abs=abs), msg_failure
+    elif abv:
+        assert converted_val == pytest.approx(cached_val, abs=abv), msg_failure
     else:
         assert converted_val == cached_val, msg_failure
 
