@@ -52,7 +52,7 @@ def split_tja_lines_into_courses(lines):
 
             # Course-specific header fields
             elif name_upper == 'COURSE':
-                if value not in NORMALIZE_COURSE.keys():
+                if value not in NORMALIZE_COURSE:
                     raise ValueError(f"Invalid COURSE value: '{value}'")
                 current_course = NORMALIZE_COURSE[value]
                 current_course_cached = current_course
