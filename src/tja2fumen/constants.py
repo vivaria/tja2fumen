@@ -1,4 +1,5 @@
 TJA_NOTE_TYPES = {
+    '0': 'Blank',
     '1': 'Don',
     '2': 'Ka',
     '3': 'DON',
@@ -8,8 +9,15 @@ TJA_NOTE_TYPES = {
     '7': 'Balloon',
     '8': 'EndDRB',
     '9': 'Kusudama',
-    'A': 'DON2',  # hands
-    'B': 'KA2',   # hands
+    'A': 'DON2',      # hands
+    'B': 'KA2',       # hands
+    'C': 'Blank',     # bombs
+    'D': 'Drumroll',  # fuse roll
+    'E': 'DON2',      # red + green single hit
+    'F': 'Ka',        # ADLib (hidden note)
+    'G': 'KA2',       # red + green double hit
+    'H': 'DRUMROLL',  # double roll
+    'I': 'Drumroll',  # green roll
 }
 
 FUMEN_NOTE_TYPES = {

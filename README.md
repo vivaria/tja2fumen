@@ -63,7 +63,7 @@ If there is an unsupported feature that you would like support for, please make 
 |-------------------------------------------------|-----------|---------|----------------------------------------------------------------------|
 | `0`, `1`, `2`, `3`, `4` `5`, `6`, `7`, `8`, `9` | `✅`       | `✅`     |                                                                      |
 | `A`, `B`                                        | `✅`       | `❌`     |                                                                      | 
-| `F`                                             | `❔`       | `❔`     | Hidden ADLIB note.                                                   |
+| `C`, `D`, `E`, `F`, `G`, `H`, `I`               | `⚠️`      | `❌`     | Replaced by normal notes/rolls in tja2fumen.                         |
 | `9000,`<br>`9008,`                              | `⚪️`      | `❔`     | Double Kusudama note to reset accuracy.                              |
 | `#START`, `#END`                                | `✅`       | `✅`     |                                                                      |
 | `#START P1`, `START P2`                         | `✅`       | `❔`     |                                                                      |

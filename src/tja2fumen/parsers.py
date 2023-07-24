@@ -249,7 +249,8 @@ def parse_tja_course_data(course):
     for branch_name, branch in course.branches.items():
         for measure in branch:
             notes = [TJAData('note', TJA_NOTE_TYPES[note], i)
-                     for i, note in enumerate(measure.notes) if note != '0']
+                     for i, note in enumerate(measure.notes) if
+                     TJA_NOTE_TYPES[note] != 'Blank']
             events = measure.events
             while notes or events:
                 if events and notes:
