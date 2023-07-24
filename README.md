@@ -53,7 +53,7 @@ If there is an unsupported feature that you would like support for, please make 
 | `TITLE:`, `SUBTITLE:`, `WAVE:`,<br>`DEMOSTART:`, etc.           | `⚪️`      | `⚪️`    | The only global metadata needed are `BPM:` and `OFFSET:`.               |
 | `COURSE:`, `LEVEL:`, `BALLOON:`,<br> `SCOREINIT:`, `SCOREDIFF:` | `✅`       | `✅`     |                                                                         |
 | `STYLE:Single`, `STYLE:Double`                                  | `✅`       | `❌`     |                                                                         |
-| `EXAM1:`, `GAUGEINCR:`, `TOTAL:`, etc.                          | `⚪️`      | `⚪️`    | Other simulator-specific metadata fields are not currently supported.   |
+| `EXAM1:`, `GAUGEINCR:`, `TOTAL:`, etc.                          | `⚪️`      | `⚪️`    | Other simulator-specific metadata fields are currently ignored.         |
 
 ### Supported notes/commands
 
@@ -78,7 +78,7 @@ If there is an unsupported feature that you would like support for, please make 
 | `#LEVELHOLD`                                    | `⚠️`      | `❌`     | See https://github.com/vivaria/tja2fumen/issues/52                                               |
 | `#N`, `#E`, `#M`                                | `✅`       | `✅`     |                                                                                                  |
 | `#BRANCHEND`                                    | `✅`       | `✅`     |                                                                                                  |
-| `#BMSCROLL`, `#LYRIC`,<br>`#DIRECTION`, etc.    | `⚪️`      | `❌`     | Other simulator-specific chart commands are not currently supported.                             |
+| `#BMSCROLL`, `#LYRIC`,<br>`#DIRECTION`, etc.    | `⚪️`      | `❌`     | Other simulator-specific chart commands are currently ignored.                                   |
 
 ## Reporting bugs
 
