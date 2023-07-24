@@ -35,40 +35,40 @@ If there is an unsupported command or metadata field that you would like support
 
 ### Supported metadata
 
-> **Legend**: ✅ = Fully supported, 🔘 = Ignored, ⚠️ = Incorrect behavior, ❌ = Crashes the converter
+> **Legend**: `✅` = Fully supported, `⚪️` = Ignored, `⚠️` = Incorrect behavior, `❌` = Crashes the converter
 
 | Metadata                                                        | tja2fumen | tja2bin | Comments                                                    |
 | --------------------------------------------------------------- | --------- | ------- | ----------------------------------------------------------- |
-| `BPM:`, `OFFSET:`                                               | ✅ | ✅ |                                                                        |
-| `TITLE:`, `SUBTITLE:`, `WAVE:`,<br>`DEMOSTART:`, etc.           | 🔘 | 🔘 | The only global metadata needed are `BPM:` and `OFFSET:`.              |
-| `COURSE:`, `LEVEL:`, `BALLOON:`,<br> `SCOREINIT:`, `SCOREDIFF:`      | ✅ | ✅ |                                                                        |
-| `STYLE: Single`, `STYLE: Double`                                | ✅ | ❌ |                                                                        |
-| `EXAM1:`, `GAUGEINCR:`, `TOTAL:`, etc.                          | 🔘 | 🔘 | Other simulator-specific metadata fields are not currently supported.  |
+| `BPM:`, `OFFSET:`                                               | `✅` | `✅` |                                                                        |
+| `TITLE:`, `SUBTITLE:`, `WAVE:`,<br>`DEMOSTART:`, etc.           | `⚪️` | `⚪️` | The only global metadata needed are `BPM:` and `OFFSET:`.              |
+| `COURSE:`, `LEVEL:`, `BALLOON:`,<br> `SCOREINIT:`, `SCOREDIFF:`      | `✅` | `✅` |                                                                        |
+| `STYLE: Single`, `STYLE: Double`                                | `✅` | `❌` |                                                                        |
+| `EXAM1:`, `GAUGEINCR:`, `TOTAL:`, etc.                          | `⚪️` | `⚪️` | Other simulator-specific metadata fields are not currently supported.  |
 
 ### Supported notes/commands
 
-> **Legend**: ✅ = Fully supported, 🔘 = Ignored, ⚠️ = Incorrect behavior, ❌ = Crashes the converter
+> **Legend**: `✅` = Fully supported, `⚪️` = Ignored, `⚠️` = Incorrect behavior, `❌` = Crashes the converter
 
 | Note/command                                    | tja2fumen | tja2bin | Comments                                                  |
 | ------------------------------------------------| ----------- | --------- | ----------------------------------------------------- |
-| `0`, `1`, `2`, `3`, `4` `5`, `6`, `7`, `8`, `9` | ✅ | ✅ |                                                                      |
-| `A`, `B`                                        | ❔ | ❔ | Multiplayer note with hands.                                         | 
-| `F`                                             | ❔ | ❔ | Hidden ADLIB note.                                                   |
-| `9000,`<br>`9008,`                              | 🔘 | ❔ | Double Kusudama note to reset accuracy.                              |
-| `#START`, `#END`                                | ✅ | ✅ |                                                                      |
-| `#START P1`, `START P2`                         | ✅ | ❔ |                                                                      |
-| `#MEASURE`                                      | ✅ | ✅ |                                                                      |
-| `#BPMCHANGE`                                    | ✅ | ⚠️ | See https://github.com/Fluto/TakoTako/issues/16                      |
-| `#DELAY`                                        | ✅ | ❌ |                                                                      |
-| `#SCROLL`                                       | ✅ | ✅ |                                                                      |
-| `#GOGOSTART`, `#GOGOEND`                        | ✅ | ✅ |                                                                      |
-| `#BARLINEOFF`, `#BARLINEON`                     | ✅ | ✅ |                                                                      |
-| `#BRANCHSTART`                                  | ✅ | ✅ |                                                                      |
-| `#SECTION`                                      | ✅ | ✅ |                                                                      |
-| `#LEVELHOLD`                                    | ❔ | ❔ |                                                                      |
-| `#N`, `#E`, `#M`                                | ✅ | ✅ |                                                                      |
-| `#BRANCHEND`                                    | ✅ | ✅ |                                                                      |
-| `#BMSCROLL`, `#LYRIC`,<br>`#DIRECTION`, etc.    | 🔘 | ❌ | Other simulator-specific chart commands are not currently supported. |
+| `0`, `1`, `2`, `3`, `4` `5`, `6`, `7`, `8`, `9` | `✅` | `✅` |                                                                      |
+| `A`, `B`                                        | `❔` | `❔` | Multiplayer note with hands.                                         | 
+| `F`                                             | `❔` | `❔` | Hidden ADLIB note.                                                   |
+| `9000,`<br>`9008,`                              | `⚪️` | `❔` | Double Kusudama note to reset accuracy.                              |
+| `#START`, `#END`                                | `✅` | `✅` |                                                                      |
+| `#START P1`, `START P2`                         | `✅` | `❔` |                                                                      |
+| `#MEASURE`                                      | `✅` | `✅` |                                                                      |
+| `#BPMCHANGE`                                    | `✅` | `⚠️` | See https://github.com/Fluto/TakoTako/issues/16                      |
+| `#DELAY`                                        | `✅` | `❌` |                                                                      |
+| `#SCROLL`                                       | `✅` | `✅` |                                                                      |
+| `#GOGOSTART`, `#GOGOEND`                        | `✅` | `✅` |                                                                      |
+| `#BARLINEOFF`, `#BARLINEON`                     | `✅` | `✅` |                                                                      |
+| `#BRANCHSTART`                                  | `✅` | `✅` |                                                                      |
+| `#SECTION`                                      | `✅` | `✅` |                                                                      |
+| `#LEVELHOLD`                                    | `❔` | `❔` |                                                                      |
+| `#N`, `#E`, `#M`                                | `✅` | `✅` |                                                                      |
+| `#BRANCHEND`                                    | `✅` | `✅` |                                                                      |
+| `#BMSCROLL`, `#LYRIC`,<br>`#DIRECTION`, etc.    | `⚪️` | `❌` | Other simulator-specific chart commands are not currently supported. |
 
 ## Reporting bugs
 
