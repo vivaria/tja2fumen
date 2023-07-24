@@ -246,7 +246,7 @@ def parse_tja_course_data(course):
             del branch[-1]
 
     # Merge measure data and measure events in chronological order
-    for branch_name, branch in course.branches.items():
+    for branch in course.branches.values():
         for measure in branch:
             notes = [TJAData('note', TJA_NOTE_TYPES[note], i)
                      for i, note in enumerate(measure.notes) if note != '0']
@@ -288,7 +288,7 @@ def parse_fumen(fumen_file, exclude_empty_measures=False):
         header=FumenHeader(raw_bytes=file.read(520))
     )
 
-    for measure_number in range(song.header.b512_b515_number_of_measures):
+    for _ in range(song.header.b512_b515_number_of_measures):
         # Parse the measure data using the following `format_string`:
         #   "ffBBHiiiiiii" (12 format characters, 40 bytes per measure)
         #     - 'f': BPM               (one float (4 bytes))
@@ -331,7 +331,7 @@ def parse_fumen(fumen_file, exclude_empty_measures=False):
             )
 
             # Iterate through each note in the measure (per branch)
-            for note_number in range(total_notes):
+            for _ in range(total_notes):
                 # Parse the note data using the following `format_string`:
                 #   "ififHHf" (7 format characters, 24 bytes per note cluster)
                 #     - 'i': note type

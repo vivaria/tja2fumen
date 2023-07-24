@@ -297,7 +297,7 @@ def convert_tja_to_fumen(tja):
 
             # Create notes based on TJA measure data
             branch_points_measure = 0
-            for idx_d, data in enumerate(measure_tja.data):
+            for data in measure_tja.data:
                 # Compute the ms position of the note
                 pos_ratio = ((data.pos - measure_tja.pos_start)
                              / measure_length)
@@ -338,9 +338,9 @@ def convert_tja_to_fumen(tja):
                 if note.type in ["Balloon", "Kusudama"]:
                     try:
                         note.hits = course_balloons.pop(0)
-                    except IndexError:
+                    except IndexError as e:
                         raise ValueError(f"Not enough values for 'BALLOON: "
-                                         f"{','.join(course_balloons)}'")
+                                         f"{','.join(course_balloons)}'") from e
                     current_drumroll = note
                 elif note.type in ["Drumroll", "DRUMROLL"]:
                     current_drumroll = note

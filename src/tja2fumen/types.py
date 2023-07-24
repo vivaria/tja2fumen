@@ -134,8 +134,6 @@ class FumenNote:
         self.score_init = score_init
         self.score_diff = score_diff
         self.padding = padding
-        # TODO: Determine how to properly set the item byte
-        #       (https://github.com/vivaria/tja2fumen/issues/17)
         self.item = item
         # These attributes are only used for drumrolls/balloons
         self.duration = duration
@@ -150,15 +148,8 @@ class FumenNote:
 
 class FumenHeader:
     def __init__(self, raw_bytes=None):
-        if raw_bytes is None:
-            self.order = "<"
-            self._assign_default_header_values()
-        else:
-            self.order = self._parse_order(raw_bytes)
-            self._parse_header_values(raw_bytes)
-
-    def _assign_default_header_values(self):
-        # This byte string corresponds to
+        # Set default header bytes
+        self.order = "<"
         timing_windows = self.up(b'43\xc8Ag&\x96B"\xe2\xd8B' * 36, "fff" * 36)
         self.b000_b431_timing_windows             = timing_windows
         self.b432_b435_has_branches               = 0
@@ -183,8 +174,9 @@ class FumenHeader:
         self.b508_b511_dummy_data                 = 12345678
         self.b512_b515_number_of_measures         = 0
         self.b516_b519_unknown_data               = 0
-
-    def _parse_header_values(self, raw_bytes):
+        if not raw_bytes:
+            return
+        # Parse raw bytes 
         rb = raw_bytes
         self.b000_b431_timing_windows             = self.up(rb, "f" * 108,
                                                             0, 431)
@@ -246,7 +238,8 @@ class FumenHeader:
         }
         key = f"{difficulty}-{star_to_key[difficulty][stars]}"
         pkg_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(pkg_dir, "hp_values.csv"), newline='') as fp:
+        with open(os.path.join(pkg_dir, "hp_values.csv"),
+                  newline='', encoding="utf-8") as fp:
             # Parse row data
             rows = [row for row in csv.reader(fp, delimiter=',')]
             # Get column numbers by indexing header row
