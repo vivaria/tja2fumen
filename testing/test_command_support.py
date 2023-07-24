@@ -8,6 +8,7 @@ from conftest import convert
 
 @pytest.mark.parametrize('id_song,err_msg', [
     ['basic_song', None],
+    ['notes_hands', None],
     ['missing_score', None],
     ['missing_balloon', "Not enough values for 'BALLOON:"],
     ['missing_course', "Invalid COURSE value:"],

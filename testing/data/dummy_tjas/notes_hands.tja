@@ -1,0 +1,13 @@
+// This song contains only basic notes.
+BPM:120
+OFFSET:-1.00
+
+COURSE:Oni
+LEVEL:10
+BALLOON:8,8
+SCOREINIT:400
+SCOREDIFF:100
+
+#START
+A0B0,
+#END

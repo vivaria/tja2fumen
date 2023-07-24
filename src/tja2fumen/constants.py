@@ -8,8 +8,8 @@ TJA_NOTE_TYPES = {
     '7': 'Balloon',
     '8': 'EndDRB',
     '9': 'Kusudama',
-    'A': 'DON',  # hands
-    'B': 'KA',   # hands
+    'A': 'DON2',  # hands
+    'B': 'KA2',   # hands
 }
 
 FUMEN_NOTE_TYPES = {

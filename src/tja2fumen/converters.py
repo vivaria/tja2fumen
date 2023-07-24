@@ -346,7 +346,8 @@ def convert_tja_to_fumen(tja):
                     current_drumroll = note
 
                 # Track Don/Ka notes (to later compute header values)
-                elif note.note_type.lower() in ['don', 'ka']:
+                elif (note.note_type.lower().startswith('don')
+                        or note.note_type.lower().startswith('ka')):
                     total_notes[current_branch] += 1
 
                 # Track branch points (to later compute `#BRANCHSTART p` vals)
