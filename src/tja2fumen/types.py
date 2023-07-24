@@ -6,25 +6,25 @@ from tja2fumen.constants import TJA_COURSE_NAMES, BRANCH_NAMES
 
 
 class TJASong:
-    def __init__(self, BPM=None, offset=None):
-        self.BPM = float(BPM)
+    def __init__(self, bpm=None, offset=None):
+        self.bpm = float(bpm)
         self.offset = float(offset)
-        self.courses = {course: TJACourse(self.BPM, self.offset, course)
+        self.courses = {course: TJACourse(self.bpm, self.offset, course)
                         for course in TJA_COURSE_NAMES}
 
     def __repr__(self):
-        return (f"{{'BPM': {self.BPM}, 'offset': {self.offset}, "
+        return (f"{{'BPM': {self.bpm}, 'offset': {self.offset}, "
                 f"'courses': {list(self.courses.keys())}}}")
 
 
 class TJACourse:
-    def __init__(self, BPM, offset, course, level=0, balloon=None,
+    def __init__(self, bpm, offset, course, level=0, balloon=None,
                  score_init=0, score_diff=0):
         self.level = level
         self.balloon = [] if balloon is None else balloon
         self.score_init = score_init
         self.score_diff = score_diff
-        self.BPM = BPM
+        self.bpm = bpm
         self.offset = offset
         self.course = course
         self.data = []
@@ -176,7 +176,7 @@ class FumenHeader:
         self.b516_b519_unknown_data               = 0
         if not raw_bytes:
             return
-        # Parse raw bytes 
+        # Parse raw bytes
         rb = raw_bytes
         self.b000_b431_timing_windows             = self.up(rb, "f" * 108,
                                                             0, 431)

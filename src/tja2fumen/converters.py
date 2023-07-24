@@ -30,7 +30,7 @@ def process_tja_commands(tja):
     tja_branches_processed = {branch_name: []
                               for branch_name in tja.branches.keys()}
     for branch_name, branch_measures_tja in tja.branches.items():
-        current_bpm = tja.BPM
+        current_bpm = tja.bpm
         current_scroll = 1.0
         current_gogo = False
         current_barline = True
@@ -88,7 +88,7 @@ def process_tja_commands(tja):
                     # - Case 1: Command happens at the start of a measure;
                     #           just change the value directly
                     if data.pos == 0:
-                        measure_tja_processed.__setattr__(data.name, new_val)
+                        setattr(measure_tja_processed, data.name, new_val)
                     # - Case 2: Command happens in the middle of a measure;
                     #           start a new sub-measure
                     else:
@@ -153,7 +153,7 @@ def convert_tja_to_fumen(tja):
     # Iterate through the different branches in the TJA
     total_notes = {'normal': 0, 'professional': 0, 'master': 0}
     for current_branch, branch_tja in tja_branches_processed.items():
-        if not len(branch_tja):
+        if not branch_tja:
             continue
         branch_points_total = 0
         branch_points_measure = 0
@@ -181,9 +181,9 @@ def convert_tja_to_fumen(tja):
             #      - If this is a submeasure, then `measure_length` will be
             #        less than the total number of subdivisions.
             #      - In other words, `measure_ratio` will be less than 1.0.
-            measure_duration_full_measure = (240000 / measure_fumen.bpm)
-            measure_size = (measure_tja.time_sig[0] / measure_tja.time_sig[1])
-            measure_length = (measure_tja.pos_end - measure_tja.pos_start)
+            measure_duration_full_measure = 240000 / measure_fumen.bpm
+            measure_size = measure_tja.time_sig[0] / measure_tja.time_sig[1]
+            measure_length = measure_tja.pos_end - measure_tja.pos_start
             measure_ratio = (
                 1.0 if measure_tja.subdivisions == 0.0  # Avoid "/0"
                 else (measure_length / measure_tja.subdivisions)
@@ -203,8 +203,8 @@ def convert_tja_to_fumen(tja):
             else:
                 measure_fumen.offset_start = measure_fumen_prev.offset_end
                 measure_fumen.offset_start += measure_tja.delay
-                measure_fumen.offset_start += (240000 / measure_fumen_prev.bpm)
-                measure_fumen.offset_start -= (240000 / measure_fumen.bpm)
+                measure_fumen.offset_start += 240000 / measure_fumen_prev.bpm
+                measure_fumen.offset_start -= 240000 / measure_fumen.bpm
 
             # Compute the millisecond offset for the end of each measure
             measure_fumen.offset_end = (measure_fumen.offset_start +
@@ -301,7 +301,7 @@ def convert_tja_to_fumen(tja):
                 # Compute the ms position of the note
                 pos_ratio = ((data.pos - measure_tja.pos_start)
                              / measure_length)
-                note_pos = (measure_fumen.duration * pos_ratio)
+                note_pos = measure_fumen.duration * pos_ratio
 
                 # Handle '8' notes (end of a drumroll/balloon)
                 if data.value == "EndDRB":
@@ -338,9 +338,9 @@ def convert_tja_to_fumen(tja):
                 if note.type in ["Balloon", "Kusudama"]:
                     try:
                         note.hits = course_balloons.pop(0)
-                    except IndexError as e:
+                    except IndexError as exc:
                         raise ValueError(f"Not enough values for 'BALLOON: "
-                                         f"{','.join(course_balloons)}'") from e
+                                         f"{','.join(tja.balloon)}'") from exc
                     current_drumroll = note
                 elif note.type in ["Drumroll", "DRUMROLL"]:
                     current_drumroll = note
@@ -383,12 +383,12 @@ def convert_tja_to_fumen(tja):
     # If song has only drumroll branching conditions (also allowing percentage
     # conditions that force a level up/level down), then set the header bytes
     # so that only drumrolls contribute to branching.
-    drumroll_only = branch_conditions != [] and all([
+    drumroll_only = branch_conditions and all(
         (cond[0] == 'r') or
         (cond[0] == 'p' and cond[1] == 0.0 and cond[2] == 0.0) or
         (cond[0] == 'p' and cond[1] > 1.00 and cond[2] > 1.00)
         for cond in branch_conditions
-    ])
+    )
     if drumroll_only:
         fumen.header.b468_b471_branch_points_good = 0
         fumen.header.b484_b487_branch_points_good_big = 0
@@ -399,10 +399,10 @@ def convert_tja_to_fumen(tja):
 
     # Alternatively, if the song has only percentage-based conditions, then set
     # the header bytes so that only notes and balloons contribute to branching.
-    percentage_only = branch_conditions != [] and all([
+    percentage_only = branch_conditions and all(
         (condition[0] != 'r')
         for condition in branch_conditions
-    ])
+    )
     if percentage_only:
         fumen.header.b480_b483_branch_points_drumroll = 0
         fumen.header.b492_b495_branch_points_drumroll_big = 0

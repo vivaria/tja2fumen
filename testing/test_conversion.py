@@ -62,8 +62,8 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
         co_song = parse_fumen(path_out, exclude_empty_measures=True)
         ca_song = parse_fumen(path_out_fumen, exclude_empty_measures=True)
         # 1. Check song headers
-        checkValidHeader(co_song.header)
-        checkValidHeader(ca_song.header)
+        check_valid_header(co_song.header)
+        check_valid_header(ca_song.header)
         for header_property in ['order',
                                 'b432_b435_has_branches',
                                 'b436_b439_hp_max',
@@ -184,8 +184,8 @@ def check(converted_obj, cached_obj, prop, measure=None,
     msg_failure += f": measure '{measure+1}'" if measure is not None else ""
     msg_failure += f", branch '{branch}'" if branch is not None else ""
     msg_failure += f", note '{note+1}'" if note is not None else ""
-    converted_val = converted_obj.__getattribute__(prop)
-    cached_val = cached_obj.__getattribute__(prop)
+    converted_val = getattr(converted_obj, prop)
+    cached_val = getattr(cached_obj, prop)
     if func:
         assert func(converted_val) == func(cached_val), msg_failure
     elif abv:
@@ -198,7 +198,7 @@ def normalize_type(note_type):
     return re.sub(r'[0-9]', '', note_type)
 
 
-def checkValidHeader(header):
+def check_valid_header(header):
     assert len(header.raw_bytes)                       == 520
     assert header.b432_b435_has_branches               in [0, 1]
     assert header.b436_b439_hp_max                     == 10000

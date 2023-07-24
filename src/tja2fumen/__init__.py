@@ -29,7 +29,7 @@ def main(argv=None):
     # Convert parsed TJA courses and write each course to `.bin` files
     for course in parsed_tja.courses.items():
         convert_and_write(course, base_name,
-                          single_course=(len(parsed_tja.courses) == 1))
+                          single_course=len(parsed_tja.courses) == 1)
 
 
 def convert_and_write(parsed_course, base_name, single_course=False):
