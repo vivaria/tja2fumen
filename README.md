@@ -25,9 +25,9 @@ tja2fumen is included as part of several existing projects. So, you may be using
 - **XB1/TDMX**: [TakoTako](https://github.com/fluto/takotako) converts both chart and audio files for XB1/TDMX.
 - **Nijiro**: [TaikoSoundEditor](https://github.com/NotImplementedLife/TaikoSoundEditor) converts both chart and audio files for NIjiro.
 
-> **Note**: For older versions of TakoTako (3.2.0 and below), you can add tja2fumen by renaming `tja2fumen.exe` to `tja2bin.exe` and placing it inside TakoTako's plugin folder (`BepInEx/plugins/com.fluto.takotako/`).
-
 You can also use tja2fumen directly on a `.tja` file by downloading `tja2fumen.exe` from the [Releases](https://github.com/vivaria/tja2fumen/releases) page and running `tja2fumen.exe file.tja` in a command prompt.
+
+> **Note**: For older versions of TakoTako (3.2.0 and below), you can add tja2fumen by renaming `tja2fumen.exe` to `tja2bin.exe` and placing it inside TakoTako's plugin folder (`BepInEx/plugins/com.fluto.takotako/`).
 
 ## TJA Support
 
@@ -35,7 +35,7 @@ If there is an unsupported command or metadata field that you would like support
 
 ### Supported metadata
 
-> **Legend**: `✅` = Fully supported, `⚪️` = Ignored, `⚠️` = Incorrect behavior, `❌` = Crashes the converter
+> **Legend**: `✅` = Fully supported, `⚪️` = Ignored, `⚠️` = Incorrect behavior, `❌` = Not supported
 
 | Metadata                                                        | tja2fumen | tja2bin | Comments                                                    |
 | --------------------------------------------------------------- | --------- | ------- | ----------------------------------------------------------- |
@@ -47,7 +47,7 @@ If there is an unsupported command or metadata field that you would like support
 
 ### Supported notes/commands
 
-> **Legend**: `✅` = Fully supported, `⚪️` = Ignored, `⚠️` = Incorrect behavior, `❌` = Crashes the converter
+> **Legend**: `✅` = Fully supported, `⚪️` = Ignored, `⚠️` = Incorrect behavior, `❌` = Not supported
 
 | Note/command                                    | tja2fumen | tja2bin | Comments                                                  |
 | ------------------------------------------------| ----------- | --------- | ----------------------------------------------------- |
