@@ -74,8 +74,8 @@ If there is an unsupported feature that you would like support for, please make 
 | `#GOGOSTART`, `#GOGOEND`                        | `✅`       | `✅`     |                                                                                                  |
 | `#BARLINEOFF`, `#BARLINEON`                     | `✅`       | `✅`     |                                                                                                  |
 | `#BRANCHSTART`                                  | `✅`       | `✅`     |                                                                                                  |
-| `#SECTION`                                      | `✅`       | `✅`     |                                                                                                  |
-| `#LEVELHOLD`                                    | `❔`       | `❔`     |                                                                                                  |
+| `#SECTION`                                      | `⚠️`      | `✅`     | See https://github.com/vivaria/tja2fumen/issues/52                                               |
+| `#LEVELHOLD`                                    | `⚠️`      | `❌`     | See https://github.com/vivaria/tja2fumen/issues/52                                               |
 | `#N`, `#E`, `#M`                                | `✅`       | `✅`     |                                                                                                  |
 | `#BRANCHEND`                                    | `✅`       | `✅`     |                                                                                                  |
 | `#BMSCROLL`, `#LYRIC`,<br>`#DIRECTION`, etc.    | `⚪️`      | `❌`     | Other simulator-specific chart commands are not currently supported.                             |
