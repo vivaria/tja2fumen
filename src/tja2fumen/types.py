@@ -232,7 +232,7 @@ class FumenHeader:
                                    'Hard': 7000, 'Oni': 8000}[difficulty]
 
     def _get_hp_from_LUTs(self, n_notes, difficulty, stars):
-        if n_notes > 2500:
+        if not 0 < n_notes <= 2500:
             return
         star_to_key = {
             'Oni':    {1: '17', 2: '17', 3: '17', 4: '17', 5: '17',
