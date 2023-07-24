@@ -8,6 +8,7 @@ from conftest import convert
 
 @pytest.mark.parametrize('id_song,err_msg', [
     ['basic_song', None],
+    ['basic_song_2P', None],
     ['notes_double_kusudama', None],
     ['notes_hands', None],
     ['notes_sim_only', None],
