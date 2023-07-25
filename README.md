@@ -18,6 +18,13 @@
 
 ----
 
+## Features
+
+- Parse `.tja` chart files.
+- Convert parsed TJA song data into fumen chart data.
+- Write fumen chart data to `.bin` files.
+- Decode official fumen `.bin` files.
+
 ## Usage
 
 tja2fumen is included as part of several existing projects. So, you may be using tja2fumen already!
