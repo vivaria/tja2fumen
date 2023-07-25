@@ -37,48 +37,47 @@ If there is an unsupported feature that you would like support for, please make 
 
 > **Legend**: `✅` = Fully supported, `❌` = Not supported
 
-| File format         | tja2fumen | tja2bin | Comments |
-|---------------------|-----------|---------|----------|
-| UTF-8 (with BOM)    | `✅`       | `❌`     |          |
-| UTF-8 (without BOM) | `✅️`      | `✅`     |          |
-| Shift-JIS           | `✅`       | `✅`     |          |
+|                     | tja 2 fumen | tja 2 bin | Comment  |
+|---------------------|-------------|-----------|----------|
+| UTF-8 (with BOM)    | `✅`         | `❌`       |          |
+| UTF-8 (without BOM) | `✅️`        | `✅`       |          |
+| Shift-JIS           | `✅`         | `✅`       |          |
 
 ### Supported metadata
 
 > **Legend**: `✅` = Fully supported, `⚪️` = Ignored, `⚠️` = Incorrect behavior, `❌` = Not supported
 
-| Metadata                                                        | tja2fumen | tja2bin | Comments                                                                |
-|-----------------------------------------------------------------|-----------|---------|-------------------------------------------------------------------------|
-| `BPM:`, `OFFSET:`                                               | `✅`       | `✅`     |                                                                         |
-| `TITLE:`, `SUBTITLE:`, `WAVE:`,<br>`DEMOSTART:`, etc.           | `⚪️`      | `⚪️`    | The only global metadata needed are `BPM:` and `OFFSET:`.               |
-| `COURSE:`, `LEVEL:`, `BALLOON:`,<br> `SCOREINIT:`, `SCOREDIFF:` | `✅`       | `✅`     |                                                                         |
-| `STYLE:Single`, `STYLE:Double`                                  | `✅`       | `❌`     |                                                                         |
-| `EXAM1:`, `GAUGEINCR:`, `TOTAL:`, etc.                          | `⚪️`      | `⚪️`    | Other simulator-specific metadata fields are currently ignored.         |
+|                                                                 | tja 2 fumen | tja 2 bin | Comment                                                                 |
+|-----------------------------------------------------------------|-------------|-----------|-------------------------------------------------------------------------|
+| `BPM:`, `OFFSET:`                                               | `✅`         | `✅`       |                                                                         |
+| `TITLE:`, `SUBTITLE:`, `WAVE:`,<br>`DEMOSTART:`, etc.           | `⚪️`        | `⚪️`      | The only global metadata needed are `BPM:` and `OFFSET:`.               |
+| `COURSE:`, `LEVEL:`, `BALLOON:`,<br> `SCOREINIT:`, `SCOREDIFF:` | `✅`         | `✅`       |                                                                         |
+| `STYLE:` (`Single`, `Double`)                                   | `✅`         | `❌`       |                                                                         |
+| `EXAM1:`, `GAUGEINCR:`, `TOTAL:`, etc.                          | `⚪️`        | `⚪️`      | Other simulator-specific metadata fields are currently ignored.         |
 
 ### Supported notes/commands
 
 > **Legend**: `✅` = Fully supported, `⚪️` = Ignored, `⚠️` = Incorrect behavior, `❌` = Not supported
 
-| Note/command                                    | tja2fumen | tja2bin | Comments                                                                                         |
-|-------------------------------------------------|-----------|--------|--------------------------------------------------------------------------------------------------|
-| `0`, `1`, `2`, `3`, `4` `5`, `6`, `7`, `8`, `9` | `✅`       | `✅`    |                                                                                                  |
-| `A`, `B`                                        | `✅`       | `❌`    |                                                                                                  | 
-| `C`, `D`, `E`, `F`, `G`, `H`, `I`               | `⚠️`      | `❌`    | Replaced by normal notes/rolls in tja2fumen.                                                     |
-| `9000,`<br>`9008,`                              | `⚪️`      | `⚠️`   | Double Kusudama note treated as 1 drumroll by tja2fumen, but 2 overlapping drumrolls by tja2bin. |
-| `#START`, `#END`                                | `✅`       | `✅`    |                                                                                                  |
-| `#START P1`, `#START P2`                        | `✅`       | `❌`    |                                                                                                  |
-| `#MEASURE`                                      | `✅`       | `✅`    |                                                                                                  |
-| `#BPMCHANGE`                                    | `✅`       | `⚠️`   | See https://github.com/Fluto/TakoTako/issues/16                                                  |
-| `#DELAY`                                        | `✅`       | `❌`    | See https://github.com/Fluto/TakoTako/issues/27                                                  |
-| `#SCROLL`                                       | `✅`       | `✅`    |                                                                                                  |
-| `#GOGOSTART`, `#GOGOEND`                        | `✅`       | `✅`    |                                                                                                  |
-| `#BARLINEOFF`, `#BARLINEON`                     | `✅`       | `✅`    |                                                                                                  |
-| `#BRANCHSTART`                                  | `✅`       | `✅`    |                                                                                                  |
-| `#SECTION`                                      | `⚠️`      | `❌`     | See https://github.com/vivaria/tja2fumen/issues/52, https://github.com/Fluto/TakoTako/issues/27                                             |
-| `#LEVELHOLD`                                    | `⚠️`      | `❌`    | See https://github.com/vivaria/tja2fumen/issues/52                                               |
-| `#N`, `#E`, `#M`                                | `✅`       | `✅`    |                                                                                                  |
-| `#BRANCHEND`                                    | `✅`       | `✅`    |                                                                                                  |
-| `#BMSCROLL`, `#LYRIC`,<br>`#DIRECTION`, etc.    | `⚪️`      | `❌`    | Other simulator-specific chart commands are currently ignored.                                   |
+|                                                  | tja 2 fumen | tja 2 bin | Comment                                                                                                       |
+|--------------------------------------------------|-------------|-----------|---------------------------------------------------------------------------------------------------------------|
+| `0`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9` | `✅`         | `✅`       |                                                                                                               |
+| `A`, `B`                                         | `✅`         | `❌`       |                                                                                                               | 
+| `C`, `D`, `E`, `F`, `G`, `H`, `I`                | `⚠️`        | `❌`       | Replaced by normal notes/rolls in tja2fumen.                                                                  |
+| `9000,`<br>`9008,`                               | `⚪️`        | `⚠️`      | Double Kusudama note treated as 1 drumroll by tja2fumen, but 2 overlapping drumrolls by tja2bin.              |
+| `#START`, `#END`                                 | `✅`         | `✅`       |                                                                                                               |
+| `#START P1`, `#START P2`                         | `✅`         | `❌`       |                                                                                                               |
+| `#BPMCHANGE`                                     | `✅`         | `⚠️`      | See [#16](https://github.com/Fluto/TakoTako/issues/16)                                                        |
+| `#MEASURE`                                       | `✅`         | `✅`       |                                                                                                               |
+| `#SCROLL`                                        | `✅`         | `✅`       |                                                                                                               |
+| `#GOGOSTART`, `#GOGOEND`                         | `✅`         | `✅`       |                                                                                                               |
+| `#BARLINEOFF`, `#BARLINEON`                      | `✅`         | `✅`       |                                                                                                               |
+| `#DELAY`                                         | `✅`         | `❌`       | See [#27](https://github.com/Fluto/TakoTako/issues/27)                                                        |
+| `#BRANCHSTART`, `#BRANCHEND`                     | `✅`         | `✅`       |                                                                                                               |
+| `#N`, `#E`, `#M`                                 | `✅`         | `✅`       |                                                                                                               |
+| `#SECTION`                                       | `⚠️`        | `❌`       | See [#52](https://github.com/vivaria/tja2fumen/issues/52), [#27](https://github.com/Fluto/TakoTako/issues/27) |
+| `#LEVELHOLD`                                     | `⚠️`        | `❌`       | See [#52](https://github.com/vivaria/tja2fumen/issues/52)                                                     |
+| `#BMSCROLL`, `#LYRIC`,<br>`#DIRECTION`, etc.     | `⚪️`        | `❌`       | Other simulator-specific chart commands are currently ignored.                                                |
 
 ## Reporting bugs
 
