@@ -108,6 +108,91 @@ class FumenMeasure:
         self.branches = {b: FumenBranch() for b in BRANCH_NAMES}
         self.padding1 = padding1
         self.padding2 = padding2
+        
+    def set_duration(self, time_sig, measure_length, subdivisions):
+        """Compute the millisecond duration of the measure."""
+        # First, we compute the duration for a full 4/4 measure.
+        full_duration = (4 * 60_000 / self.bpm)
+        # Next, we adjust this duration based on both:
+        #   1. The *actual* measure size (e.g. #MEASURE 1/8, 5/4, etc.)
+        #   2. Whether this is a "submeasure" (i.e. whether it contains
+        #      mid-measure commands, which split up the measure)
+        #      - If this is a submeasure, then `measure_length` will be
+        #        less than the total number of subdivisions.
+        #      - In other words, `measure_ratio` will be less than 1.0.
+        measure_size = time_sig[0] / time_sig[1]
+        measure_ratio = (
+            1.0 if subdivisions == 0.0  # Avoid DivisionByZeroErrors
+            else (measure_length / subdivisions)
+        )
+        self.duration = (full_duration * measure_size * measure_ratio)
+
+    def set_ms_offsets(self, song_offset, delay, prev_measure, first_measure):
+        """Compute the millisecond offsets for the start/end of the measure."""
+        if first_measure:
+            self.offset_start = (song_offset * -1000) - (4 * 60_000 / self.bpm)
+        else:
+            # First, start with sing the end timing of the previous measure
+            self.offset_start = prev_measure.offset_end
+            # Add any #DELAY commands
+            self.offset_start += delay
+            # Adjust the start timing to account for #BPMCHANGE commands
+            # (!!! Discovered by tana :3 !!!)
+            self.offset_start += (4 * 60_000 / prev_measure.bpm)
+            self.offset_start -= (4 * 60_000 / self.bpm)
+
+        # Compute the end offset by adding the duration to the start offset
+        self.offset_end = self.offset_start + self.duration
+    
+    def set_branch_info(self, branch_condition, branch_points_total,
+                        current_branch, first_branch_condition, has_section):
+        """Compute the values that represent branching/diverge conditions."""
+        # Handle branch conditions for percentage accuracy
+        # There are three cases for interpreting #BRANCHSTART p:
+        #    1. Percentage is between 0% and 100%
+        #    2. Percentage is above 100% (guaranteed level down)
+        #    3. Percentage is 0% (guaranteed level up)
+        if branch_condition[0] == 'p':
+            vals = []
+            for percent in branch_condition[1:]:
+                if 0 < percent <= 1:
+                    vals.append(int(branch_points_total * percent))
+                elif percent > 1:
+                    vals.append(999)
+                else:
+                    vals.append(0)
+            if current_branch == 'normal':
+                self.branch_info[0:2] = vals
+            elif current_branch == 'professional':
+                self.branch_info[2:4] = vals
+            elif current_branch == 'master':
+                self.branch_info[4:6] = vals
+
+        # Handle branch conditions for drumroll accuracy
+        # There are three cases for interpreting #BRANCHSTART r:
+        #    1. It's the first branching condition.
+        #    2. It's not the first branching condition, but it
+        #       has a #SECTION command to reset the accuracy.
+        #    3. It's not the first branching condition, and it
+        #       doesn't have a #SECTION command.
+        # For the first two cases, the branching conditions are the
+        # same no matter what branch you're currently on, so we just
+        # use the values as-is: [c1, c2, c1, c2, c1, c2]
+        # But, for the third case, since there is no #SECTION, the
+        # accuracy is not reset. This results in the following
+        # condition: [999, 999, c1, c2, c2, c2]
+        #    - Normal can't advance to professional/master
+        #    - Professional can stay, or advance to master.
+        #    - Master can only stay in master.
+        elif branch_condition[0] == 'r':
+            if first_branch_condition or has_section:
+                self.branch_info = branch_condition[1:] * 3
+            else:
+                self.branch_info = (
+                        [999, 999] +
+                        [branch_condition[1]] +
+                        [branch_condition[2]] * 3
+                )
 
     def __repr__(self):
         return str(self.__dict__)

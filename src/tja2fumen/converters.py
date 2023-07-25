@@ -163,8 +163,7 @@ def convert_tja_to_fumen(tja):
 
         # Iterate through the measures within the branch
         for idx_m, measure_tja in enumerate(branch_tja):
-            # Fetch a pair of measures
-            measure_fumen_prev = fumen.measures[idx_m-1] if idx_m else None
+            # Fetch the corresponding fumen measure
             measure_fumen = fumen.measures[idx_m]
 
             # Copy over basic measure properties from the TJA
@@ -173,48 +172,26 @@ def convert_tja_to_fumen(tja):
             measure_fumen.bpm = measure_tja.bpm
 
             # Compute the duration of the measure
-            # First, we compute the duration for a full 4/4 measure
-            # Next, we adjust this duration based on both:
-            #   1. The *actual* measure size (e.g. #MEASURE 1/8, 5/4, etc.)
-            #   2. Whether this is a "submeasure" (i.e. whether it contains
-            #      mid-measure commands, which split up the measure)
-            #      - If this is a submeasure, then `measure_length` will be
-            #        less than the total number of subdivisions.
-            #      - In other words, `measure_ratio` will be less than 1.0.
-            measure_duration_full_measure = (240000 / measure_fumen.bpm)
-            measure_size = (measure_tja.time_sig[0] / measure_tja.time_sig[1])
-            measure_length = (measure_tja.pos_end - measure_tja.pos_start)
-            measure_ratio = (
-                1.0 if measure_tja.subdivisions == 0.0  # Avoid "/0"
-                else (measure_length / measure_tja.subdivisions)
+            measure_length = measure_tja.pos_end - measure_tja.pos_start
+            measure_fumen.set_duration(
+                time_sig=measure_tja.time_sig,
+                measure_length=measure_length,
+                subdivisions=measure_tja.subdivisions
             )
-            measure_fumen.duration = (measure_duration_full_measure
-                                      * measure_size * measure_ratio)
 
-            # Compute the millisecond offsets for the start of each measure
-            # First, start the measure using the end timing of the
-            # previous measure (plus any #DELAY commands)
-            # Next, adjust the start timing to account for #BPMCHANGE
-            # commands (!!! Discovered by tana :3 !!!)
-            if idx_m == 0:
-                measure_fumen.offset_start = (
-                    (tja.offset * 1000 * -1) - measure_duration_full_measure
-                )
-            else:
-                measure_fumen.offset_start = measure_fumen_prev.offset_end
-                measure_fumen.offset_start += measure_tja.delay
-                measure_fumen.offset_start += (240000 / measure_fumen_prev.bpm)
-                measure_fumen.offset_start -= (240000 / measure_fumen.bpm)
-
-            # Compute the millisecond offset for the end of each measure
-            measure_fumen.offset_end = (measure_fumen.offset_start +
-                                        measure_fumen.duration)
+            # Compute the millisecnd offsets for the start/end of each measure
+            measure_fumen.set_ms_offsets(
+                song_offset=tja.offset,
+                delay=measure_tja.delay,
+                prev_measure=(fumen.measures[idx_m-1] if idx_m else None),
+                first_measure=(idx_m == 0)
+            )
 
             # Handle whether barline should be hidden:
             #     1. Measures where #BARLINEOFF has been set
             #     2. Sub-measures that don't fall on the barline
             barline_off = measure_tja.barline is False
-            is_submeasure = (measure_ratio != 1.0 and
+            is_submeasure = (measure_length < measure_tja.subdivisions and
                              measure_tja.pos_start != 0)
             if barline_off or is_submeasure:
                 measure_fumen.barline = False
@@ -230,55 +207,12 @@ def convert_tja_to_fumen(tja):
 
             # Check to see if the measure contains a branching condition
             if branch_condition:
-                # Handle branch conditions for percentage accuracy
-                # There are three cases for interpreting #BRANCHSTART p:
-                #    1. Percentage is between 0% and 100%
-                #    2. Percentage is above 100% (guaranteed level down)
-                #    3. Percentage is 0% (guaranteed level up)
-                if branch_condition[0] == 'p':
-                    vals = []
-                    for percent in branch_condition[1:]:
-                        if 0 < percent <= 1:
-                            vals.append(int(branch_points_total * percent))
-                        elif percent > 1:
-                            vals.append(999)
-                        else:
-                            vals.append(0)
-                    if current_branch == 'normal':
-                        measure_fumen.branch_info[0:2] = vals
-                    elif current_branch == 'professional':
-                        measure_fumen.branch_info[2:4] = vals
-                    elif current_branch == 'master':
-                        measure_fumen.branch_info[4:6] = vals
-
-                # Handle branch conditions for drumroll accuracy
-                # There are three cases for interpreting #BRANCHSTART r:
-                #    1. It's the first branching condition.
-                #    2. It's not the first branching condition, but it
-                #       has a #SECTION command to reset the accuracy.
-                #    3. It's not the first branching condition, and it
-                #       doesn't have a #SECTION command.
-                # For the first two cases, the branching conditions are the
-                # same no matter what branch you're currently on, so we just
-                # use the values as-is: [c1, c2, c1, c2, c1, c2]
-                # But, for the third case, since there is no #SECTION, the
-                # accuracy is not reset. This results in the following
-                # condition: [999, 999, c1, c2, c2, c2]
-                #    - Normal can't advance to professional/master
-                #    - Professional can stay, or advance to master.
-                #    - Master can only stay in master.
-                elif branch_condition[0] == 'r':
-                    is_first_branch_condition = not branch_conditions
-                    has_section = bool(measure_tja.section)
-                    if is_first_branch_condition or has_section:
-                        measure_fumen.branch_info = branch_condition[1:] * 3
-                    else:
-                        measure_fumen.branch_info = (
-                            [999, 999] +
-                            [branch_condition[1]] +
-                            [branch_condition[2]] * 3
-                        )
-
+                # Update the branch_info values for the measure
+                measure_fumen.set_branch_info(
+                    branch_condition, branch_points_total, current_branch,
+                    first_branch_condition=(not branch_conditions),
+                    has_section=bool(measure_tja.section)
+                )
                 # Reset the points to prepare for the next #BRANCHSTART p
                 branch_points_total = 0
                 # Keep track of the branch conditions (to later determine how
@@ -299,8 +233,8 @@ def convert_tja_to_fumen(tja):
             branch_points_measure = 0
             for idx_d, data in enumerate(measure_tja.data):
                 # Compute the ms position of the note
-                pos_ratio = ((data.pos - measure_tja.pos_start)
-                             / measure_length)
+                pos_ratio = ((data.pos            - measure_tja.pos_start) /
+                             (measure_tja.pos_end - measure_tja.pos_start))
                 note_pos = (measure_fumen.duration * pos_ratio)
 
                 # Handle '8' notes (end of a drumroll/balloon)
