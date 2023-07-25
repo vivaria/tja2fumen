@@ -185,16 +185,18 @@ def parse_tja_course_data(course):
             elif line.name == 'MEASURE':
                 current_event = TJAData('measure', line.value, pos)
             elif line.name == 'SECTION':
-                if branch_condition is None:
-                    current_event = TJAData('section', 'not_available', pos)
-                else:
-                    current_event = TJAData('section', branch_condition, pos)
-                # If the command immediately after #SECTION is #BRANCHSTART,
-                # then we need to make sure that #SECTION is put on every
-                # branch. (We can't do this unconditionally because #SECTION
-                # commands can also exist in isolation.)
+                # If #SECTION occurs before a #BRANCHSTART, then ensure that
+                # it's present on every branch. Otherwise, #SECTION will only
+                # be present on the current branch, and so the `branch_info`
+                # values won't be correctly set for the other two branches.
                 if course.data[idx_l+1].name == 'BRANCHSTART':
+                    current_event = TJAData('section', None, pos)
                     current_branch = 'all'
+                # Otherwise, #SECTION exists in isolation. In this case, to
+                # reset the accuracy, we just repeat the previous #BRANCHSTART.
+                else:
+                    current_event = TJAData('branch_start', branch_condition,
+                                            pos)
             elif line.name == 'BRANCHSTART':
                 if flag_levelhold:
                     continue

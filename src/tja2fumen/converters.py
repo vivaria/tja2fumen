@@ -196,16 +196,8 @@ def convert_tja_to_fumen(tja):
             if barline_off or is_submeasure:
                 measure_fumen.barline = False
 
-            # If a #SECTION command occurs in isolation, and it has a valid
-            # condition, then treat it like a branch_start
-            if (measure_tja.section is not None
-                    and measure_tja.section != 'not_available'
-                    and not measure_tja.branch_start):
-                branch_condition = measure_tja.section
-            else:
-                branch_condition = measure_tja.branch_start
-
             # Check to see if the measure contains a branching condition
+            branch_condition = measure_tja.branch_start
             if branch_condition:
                 # Update the branch_info values for the measure
                 measure_fumen.set_branch_info(
