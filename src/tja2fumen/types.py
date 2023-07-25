@@ -5,7 +5,13 @@ import struct
 from tja2fumen.constants import TJA_COURSE_NAMES, BRANCH_NAMES
 
 
-class TJASong:
+class DefaultObject:
+    """Set default methods for all TJA/Fumen classes."""
+    def __repr__(self):
+        return str(self.__dict__)
+
+
+class TJASong(DefaultObject):
     def __init__(self, BPM=None, offset=None):
         self.BPM = float(BPM)
         self.offset = float(offset)
@@ -13,11 +19,12 @@ class TJASong:
                         for course in TJA_COURSE_NAMES}
 
     def __repr__(self):
+        # Show truncated version of courses to avoid long representation
         return (f"{{'BPM': {self.BPM}, 'offset': {self.offset}, "
                 f"'courses': {list(self.courses.keys())}}}")
 
 
-class TJACourse:
+class TJACourse(DefaultObject):
     def __init__(self, BPM, offset, course, level=0, balloon=None,
                  score_init=0, score_diff=0):
         self.level = level
@@ -35,20 +42,18 @@ class TJACourse:
         }
 
     def __repr__(self):
+        # Don't show default fields if the course contains no data
         return str(self.__dict__) if self.data else "{'data': []}"
 
 
-class TJAMeasure:
+class TJAMeasure(DefaultObject):
     def __init__(self, notes=None, events=None):
         self.notes = [] if notes is None else notes
         self.events = [] if events is None else events
         self.combined = []
 
-    def __repr__(self):
-        return str(self.__dict__)
 
-
-class TJAMeasureProcessed:
+class TJAMeasureProcessed(DefaultObject):
     def __init__(self, bpm, scroll, gogo, barline, time_sig, subdivisions,
                  pos_start=0, pos_end=0, delay=0, section=None,
                  branch_start=None, data=None):
@@ -65,21 +70,15 @@ class TJAMeasureProcessed:
         self.branch_start = branch_start
         self.data = [] if data is None else data
 
-    def __repr__(self):
-        return str(self.__dict__)
 
-
-class TJAData:
+class TJAData(DefaultObject):
     def __init__(self, name, value, pos=None):
         self.pos = pos
         self.name = name
         self.value = value
 
-    def __repr__(self):
-        return str(self.__dict__)
 
-
-class FumenCourse:
+class FumenCourse(DefaultObject):
     def __init__(self, measures=None, header=None, score_init=0, score_diff=0):
         if isinstance(measures, int):
             self.measures = [FumenMeasure() for _ in range(measures)]
@@ -89,11 +88,8 @@ class FumenCourse:
         self.score_init = score_init
         self.score_diff = score_diff
 
-    def __repr__(self):
-        return str(self.__dict__)
 
-
-class FumenMeasure:
+class FumenMeasure(DefaultObject):
     def __init__(self, bpm=0.0, offset_start=0.0, offset_end=0.0,
                  duration=0.0, gogo=False, barline=True, branch_start=None,
                  branch_info=None, padding1=0, padding2=0):
@@ -194,22 +190,16 @@ class FumenMeasure:
                         [branch_condition[2]] * 3
                 )
 
-    def __repr__(self):
-        return str(self.__dict__)
 
-
-class FumenBranch:
+class FumenBranch(DefaultObject):
     def __init__(self, length=0, speed=0.0, padding=0):
         self.length = length
         self.speed = speed
         self.padding = padding
         self.notes = []
 
-    def __repr__(self):
-        return str(self.__dict__)
 
-
-class FumenNote:
+class FumenNote(DefaultObject):
     def __init__(self, note_type='', pos=0.0, score_init=0, score_diff=0,
                  padding=0, item=0, duration=0.0, multimeasure=False,
                  hits=0, hits_padding=0,
@@ -229,11 +219,8 @@ class FumenNote:
         self.hits_padding = hits_padding
         self.drumroll_bytes = drumroll_bytes
 
-    def __repr__(self):
-        return str(self.__dict__)
 
-
-class FumenHeader:
+class FumenHeader(DefaultObject):
     def __init__(self, raw_bytes=None):
         if raw_bytes is None:
             self.order = "<"
