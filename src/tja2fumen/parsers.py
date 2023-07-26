@@ -58,12 +58,15 @@ def split_tja_lines_into_courses(lines):
     lines = [line.split("//")[0].strip() for line in lines
              if line.split("//")[0].strip()]
 
-    parsed_tja = None
+    # Initialize song with BPM and OFFSET global metadata
+    bpm = [line.split(":")[1] for line in lines
+           if line.startswith("BPM")][0]
+    offset = [line.split(":")[1] for line in lines
+              if line.startswith("OFFSET")][0]
+    parsed_tja = TJASong(bpm, offset)
+
     current_course = ''
     current_course_basename = ''
-    song_bpm = 0
-    song_offset = 0
-
     for line in lines:
         # Only metadata and #START commands are relevant for this function
         match_metadata = re.match(r"^([A-Z]+):(.*)", line)
@@ -74,17 +77,8 @@ def split_tja_lines_into_courses(lines):
             name_upper = match_metadata.group(1).upper()
             value = match_metadata.group(2).strip()
 
-            # Global metadata fields
-            if name_upper in ['BPM', 'OFFSET']:
-                if name_upper == 'BPM':
-                    song_bpm = value
-                elif name_upper == 'OFFSET':
-                    song_offset = value
-                if song_bpm and song_offset:
-                    parsed_tja = TJASong(song_bpm, song_offset)
-
             # Course-specific metadata fields
-            elif name_upper == 'COURSE':
+            if name_upper == 'COURSE':
                 if value not in NORMALIZE_COURSE.keys():
                     raise ValueError(f"Invalid COURSE value: '{value}'")
                 current_course = NORMALIZE_COURSE[value]
