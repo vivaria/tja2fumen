@@ -54,6 +54,10 @@ def split_tja_lines_into_courses(lines):
     The data for each TJACourse can then be parsed individually using the
     `parse_tja_course_data()` function.
     """
+    # Strip leading/trailing whitespace and comments ('// Comment')
+    lines = [line.split("//")[0].strip() for line in lines
+             if line.split("//")[0].strip()]
+
     parsed_tja = None
     current_course = ''
     current_course_cached = ''
@@ -61,8 +65,11 @@ def split_tja_lines_into_courses(lines):
     song_offset = 0
 
     for line in lines:
-        # Case 1: Metadata lines
+        # Only metadata and #START commands are relevant for this function
         match_metadata = re.match(r"^([A-Z]+):(.*)", line)
+        match_start = re.match(r"^#START(?:\s+(.+))?", line)
+
+        # Case 1: Metadata lines
         if match_metadata:
             name_upper = match_metadata.group(1).upper()
             value = match_metadata.group(2).strip()
@@ -105,37 +112,27 @@ def split_tja_lines_into_courses(lines):
             else:
                 pass  # Ignore 'TITLE', 'SUBTITLE', 'WAVE', etc.
 
-        # Case 2: Commands and note data (to be further processed
-        #         course-by-course later on)
-        elif not re.match(r"//.*", line):  # Exclude comment-only lines ('//')
-            match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
-            match_notes = re.match(r"^(([0-9]|A|B|C|F|G)*,?).*$", line)
-            if match_command:
-                name_upper = match_command.group(1).upper()
-                value = (match_command.group(2).strip()
-                         if match_command.group(2) else '')
-                # For STYLE:Double, #START P1/P2 indicates the start of a new
-                # chart. But, we want multiplayer charts to inherit the
-                # metadata from the course as a whole, so we deepcopy the
-                # existing course for that difficulty.
-                if name_upper == "START":
-                    if value in ["P1", "P2"]:
-                        current_course = current_course_cached + value
-                        parsed_tja.courses[current_course] = \
-                            deepcopy(parsed_tja.courses[current_course_cached])
-                        parsed_tja.courses[current_course].data = list()
-                        # Once we've made the new course, we can reset
-                        # #START P1/P2 to a normal #START command
-                        value = ''
-                    elif value:
-                        raise ValueError(f"Invalid value '{value}' for "
-                                         f"#START command.")
-            elif match_notes:
-                name_upper = 'NOTES'
-                value = match_notes.group(1)
-            parsed_tja.courses[current_course].data.append(
-                TJAData(name_upper, value)
-            )
+        # Case 2: #START commands
+        elif match_start:
+            value = match_start.group(1) if match_start.group(1) else ''
+            # For STYLE:Double, #START P1/P2 indicates the start of a new
+            # chart. But, we want multiplayer charts to inherit the
+            # metadata from the course as a whole, so we deepcopy the
+            # existing course for that difficulty.
+            if value in ["P1", "P2"]:
+                current_course = current_course_cached + value
+                parsed_tja.courses[current_course] = \
+                    deepcopy(parsed_tja.courses[current_course_cached])
+                parsed_tja.courses[current_course].data = list()
+            elif value:
+                raise ValueError(f"Invalid value '{value}' for #START.")
+
+            # Since P1/P2 has been handled, we can just use a normal '#START'
+            parsed_tja.courses[current_course].data.append("#START")
+
+        # Case 3: For other commands and data, simply copy as-is (parse later)
+        else:
+            parsed_tja.courses[current_course].data.append(line)
 
     # If a course has no song data, then this is likely because the course has
     # "STYLE: Double" but no "STYLE: Single". To fix this, we copy over the P1
@@ -181,7 +178,7 @@ def parse_tja_course_data(course):
     This provides a faithful, easy-to-inspect tree-style representation of the
     branches and measures within each course of the .tja file.
     """
-    has_branches = bool([d for d in course.data if d.name == 'BRANCHSTART'])
+    has_branches = bool([d for d in course.data if d.startswith('#BRANCH')])
     current_branch = 'all' if has_branches else 'normal'
     branch_condition = None
     flag_levelhold = False
@@ -190,9 +187,16 @@ def parse_tja_course_data(course):
     idx_m = 0
     idx_m_branchstart = 0
     for idx_l, line in enumerate(course.data):
+        # 0. Check to see whether line is a command or note data
+        command, value, notes = None, None, None
+        match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
+        if match_command:
+            command, value = match_command.groups()
+        else:
+            notes = line  # If not a command, then line must be note data
+
         # 1. Parse measure notes
-        if line.name == 'NOTES':
-            notes = line.value
+        if notes:
             # If measure has ended, then add notes to the current measure,
             # then start a new measure by incrementing idx_m
             if notes.endswith(','):
@@ -210,37 +214,37 @@ def parse_tja_course_data(course):
                     course.branches[branch][idx_m].notes += notes
 
         # 2. Parse measure commands that produce an "event"
-        elif line.name in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
-                           'DELAY', 'SCROLL', 'BPMCHANGE', 'MEASURE',
-                           'SECTION', 'BRANCHSTART']:
+        elif command in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
+                         'DELAY', 'SCROLL', 'BPMCHANGE', 'MEASURE',
+                         'SECTION', 'BRANCHSTART']:
             # Get position of the event
             for branch in (course.branches.keys() if current_branch == 'all'
                            else [current_branch]):
                 pos = len(course.branches[branch][idx_m].notes)
 
             # Parse event type
-            if line.name == 'GOGOSTART':
+            if command == 'GOGOSTART':
                 current_event = TJAData('gogo', '1', pos)
-            elif line.name == 'GOGOEND':
+            elif command == 'GOGOEND':
                 current_event = TJAData('gogo', '0', pos)
-            elif line.name == 'BARLINEON':
+            elif command == 'BARLINEON':
                 current_event = TJAData('barline', '1', pos)
-            elif line.name == 'BARLINEOFF':
+            elif command == 'BARLINEOFF':
                 current_event = TJAData('barline', '0', pos)
-            elif line.name == 'DELAY':
-                current_event = TJAData('delay', float(line.value), pos)
-            elif line.name == 'SCROLL':
-                current_event = TJAData('scroll', float(line.value), pos)
-            elif line.name == 'BPMCHANGE':
-                current_event = TJAData('bpm', float(line.value), pos)
-            elif line.name == 'MEASURE':
-                current_event = TJAData('measure', line.value, pos)
-            elif line.name == 'SECTION':
+            elif command == 'DELAY':
+                current_event = TJAData('delay', float(value), pos)
+            elif command == 'SCROLL':
+                current_event = TJAData('scroll', float(value), pos)
+            elif command == 'BPMCHANGE':
+                current_event = TJAData('bpm', float(value), pos)
+            elif command == 'MEASURE':
+                current_event = TJAData('measure', value, pos)
+            elif command == 'SECTION':
                 # If #SECTION occurs before a #BRANCHSTART, then ensure that
                 # it's present on every branch. Otherwise, #SECTION will only
                 # be present on the current branch, and so the `branch_info`
                 # values won't be correctly set for the other two branches.
-                if course.data[idx_l+1].name == 'BRANCHSTART':
+                if course.data[idx_l+1].startswith('#BRANCHSTART'):
                     current_event = TJAData('section', None, pos)
                     current_branch = 'all'
                 # Otherwise, #SECTION exists in isolation. In this case, to
@@ -248,12 +252,12 @@ def parse_tja_course_data(course):
                 else:
                     current_event = TJAData('branch_start', branch_condition,
                                             pos)
-            elif line.name == 'BRANCHSTART':
+            elif command == 'BRANCHSTART':
                 if flag_levelhold:
                     continue
                 # Ensure that the #BRANCHSTART command is added to all branches
                 current_branch = 'all'
-                branch_condition = line.value.split(',')
+                branch_condition = value.split(',')
                 if branch_condition[0] == 'r':  # r = drumRoll
                     branch_condition[1] = int(branch_condition[1])  # drumrolls
                     branch_condition[2] = int(branch_condition[2])  # drumrolls
@@ -272,25 +276,25 @@ def parse_tja_course_data(course):
         # 3. Parse commands that don't create an event
         #    (e.g. simply changing the current branch)
         else:
-            if line.name == 'START' or line.name == 'END':
+            if command == 'START' or command == 'END':
                 current_branch = 'all' if has_branches else 'normal'
                 flag_levelhold = False
-            elif line.name == 'LEVELHOLD':
+            elif command == 'LEVELHOLD':
                 flag_levelhold = True
-            elif line.name == 'N':
+            elif command == 'N':
                 current_branch = 'normal'
                 idx_m = idx_m_branchstart
-            elif line.name == 'E':
+            elif command == 'E':
                 current_branch = 'professional'
                 idx_m = idx_m_branchstart
-            elif line.name == 'M':
+            elif command == 'M':
                 current_branch = 'master'
                 idx_m = idx_m_branchstart
-            elif line.name == 'BRANCHEND':
+            elif command == 'BRANCHEND':
                 current_branch = 'all'
 
             else:
-                print(f"Ignoring unsupported command '{line.name}'")
+                print(f"Ignoring unsupported command '{command}'")
 
     # Delete the last measure in the branch if no notes or events
     # were added to it (due to preallocating empty measures)
