@@ -60,7 +60,7 @@ def split_tja_lines_into_courses(lines):
 
     parsed_tja = None
     current_course = ''
-    current_course_cached = ''
+    current_course_basename = ''
     song_bpm = 0
     song_offset = 0
 
@@ -88,7 +88,7 @@ def split_tja_lines_into_courses(lines):
                 if value not in NORMALIZE_COURSE.keys():
                     raise ValueError(f"Invalid COURSE value: '{value}'")
                 current_course = NORMALIZE_COURSE[value]
-                current_course_cached = current_course
+                current_course_basename = current_course
             elif name_upper == 'LEVEL':
                 if value not in ['1', '2', '3', '4', '5',
                                  '6', '7', '8', '9', '10']:
@@ -108,7 +108,7 @@ def split_tja_lines_into_courses(lines):
                 # Reset the course name to remove "P1/P2" that may have been
                 # added by a previous STYLE:DOUBLE chart
                 if value == 'Single':
-                    current_course = current_course_cached
+                    current_course = current_course_basename
             else:
                 pass  # Ignore 'TITLE', 'SUBTITLE', 'WAVE', etc.
 
@@ -120,9 +120,9 @@ def split_tja_lines_into_courses(lines):
             # metadata from the course as a whole, so we deepcopy the
             # existing course for that difficulty.
             if value in ["P1", "P2"]:
-                current_course = current_course_cached + value
+                current_course = current_course_basename + value
                 parsed_tja.courses[current_course] = \
-                    deepcopy(parsed_tja.courses[current_course_cached])
+                    deepcopy(parsed_tja.courses[current_course_basename])
                 parsed_tja.courses[current_course].data = list()
             elif value:
                 raise ValueError(f"Invalid value '{value}' for #START.")
