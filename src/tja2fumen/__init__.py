@@ -3,12 +3,20 @@ import os
 import sys
 
 from tja2fumen.parsers import parse_tja
-from tja2fumen.writers import write_fumen
 from tja2fumen.converters import convert_tja_to_fumen
+from tja2fumen.writers import write_fumen
 from tja2fumen.constants import COURSE_IDS
 
 
 def main(argv=None):
+    """
+    Main entry point for tja2fumen's command line interface.
+
+    Three steps are performed:
+       1. Parse TJA into multiple TJACourse objects. Then, for each course:
+          2. Convert TJACourse objects into FumenCourse objects.
+          3. Write each FumenCourse to its own .bin file.
+    """
     if not argv:
         argv = sys.argv[1:]
 
@@ -33,6 +41,7 @@ def main(argv=None):
 
 
 def convert_and_write(parsed_course, base_name, single_course=False):
+    """Process the parsed data for a single TJA course."""
     course_name, tja_data = parsed_course
     fumen_data = convert_tja_to_fumen(tja_data)
     # Add course ID (e.g. '_x', '_x_1', '_x_2') to the output file's base name

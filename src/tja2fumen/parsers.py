@@ -14,6 +14,7 @@ from tja2fumen.constants import (NORMALIZE_COURSE, TJA_NOTE_TYPES,
 
 
 def parse_tja(fname_tja):
+    """Read in lines of a .tja file and load them into a TJASong object."""
     try:
         tja_text = open(fname_tja, "r", encoding="utf-8-sig").read()
     except UnicodeDecodeError:
@@ -28,6 +29,31 @@ def parse_tja(fname_tja):
 
 
 def split_tja_lines_into_courses(lines):
+    """
+    Parse TJA metadata in order to divide TJA lines into separate courses.
+    
+    In TJA files, metadata lines are denoted by a colon (':'). These lines
+    provide general info about the song (BPM, TITLE, OFFSET, etc.). They also
+    define properties for each course in the song (difficulty, level, etc.).
+
+    This function processes each line of metadata, and assigns the metadata
+    to TJACourse objects (one for each course). To separate each course, this
+    function uses the `COURSE:` metadata and any `#START P1/P2` commands,
+    resulting in the following structure:
+
+    TJASong
+    ├─ TJACourse (e.g. Ura)
+    │  ├─ Course metadata (level, balloons, scoreinit, scorediff, etc.)
+    │  └─ Unparsed data (notes, commands)
+    ├─ TJACourse (e.g. Ura-P1)
+    ├─ TJACourse (e.g. Ura-P2)
+    ├─ TJACourse (e.g. Oni)
+    ├─ TJACourse (e.g. Hard)
+    └─ ...
+
+    The data for each TJACourse can then be parsed individually using the
+    `parse_tja_course_data()` function.
+    """
     parsed_tja = None
     current_course = ''
     current_course_cached = ''
@@ -35,13 +61,13 @@ def split_tja_lines_into_courses(lines):
     song_offset = 0
 
     for line in lines:
-        # Case 1: Header metadata
-        match_header = re.match(r"^([A-Z]+):(.*)", line)
-        if match_header:
-            name_upper = match_header.group(1).upper()
-            value = match_header.group(2).strip()
+        # Case 1: Metadata lines
+        match_metadata = re.match(r"^([A-Z]+):(.*)", line)
+        if match_metadata:
+            name_upper = match_metadata.group(1).upper()
+            value = match_metadata.group(2).strip()
 
-            # Global header fields
+            # Global metadata fields
             if name_upper in ['BPM', 'OFFSET']:
                 if name_upper == 'BPM':
                     song_bpm = value
@@ -50,7 +76,7 @@ def split_tja_lines_into_courses(lines):
                 if song_bpm and song_offset:
                     parsed_tja = TJASong(song_bpm, song_offset)
 
-            # Course-specific header fields
+            # Course-specific metadata fields
             elif name_upper == 'COURSE':
                 if value not in NORMALIZE_COURSE.keys():
                     raise ValueError(f"Invalid COURSE value: '{value}'")
@@ -90,7 +116,8 @@ def split_tja_lines_into_courses(lines):
                          if match_command.group(2) else '')
                 # For STYLE:Double, #START P1/P2 indicates the start of a new
                 # chart. But, we want multiplayer charts to inherit the
-                # metadata from the course as a whole, so we deepcopy.
+                # metadata from the course as a whole, so we deepcopy the
+                # existing course for that difficulty.
                 if name_upper == "START":
                     if value in ["P1", "P2"]:
                         current_course = current_course_cached + value
@@ -128,9 +155,33 @@ def split_tja_lines_into_courses(lines):
 
 
 def parse_tja_course_data(course):
-    # Check if the course has branches or not
-    has_branches = (True if [d for d in course.data if d.name == 'BRANCHSTART']
-                    else False)
+    """
+    Parse course data (notes, commands) into a nested song structure.
+
+    The goal of this function is to take raw note and command strings
+    (e.g. '1020,', '#BPMCHANGE') and parse their values into appropriate
+    types (e.g. lists, ints, floats, etc.).
+
+    This function also processes measure separators (',') and branch commands
+    ('#BRANCHSTART`, '#N`, '#E', '#M') to split the data into branches and
+    measures, resulting in the following structure:
+
+    TJACourse
+    ├─ TJABranch ('normal')
+    │  ├─ TJAMeasure
+    │  │  ├─ TJAData (notes, commands)
+    │  │  ├─ TJAData
+    │  │  └─ ...
+    │  ├─ TJAMeasure
+    │  ├─ TJAMeasure
+    │  └─ ...
+    ├─ TJABranch ('professional')
+    └─ TJABranch ('master')
+
+    This provides a faithful, easy-to-inspect tree-style representation of the
+    branches and measures within each course of the .tja file.
+    """
+    has_branches = bool([d for d in course.data if d.name == 'BRANCHSTART'])
     current_branch = 'all' if has_branches else 'normal'
     branch_condition = None
     flag_levelhold = False

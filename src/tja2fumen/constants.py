@@ -1,3 +1,7 @@
+# Names for branches in diverge songs
+BRANCH_NAMES = ("normal", "professional", "master")
+
+# Types of notes that can be found in TJA files
 TJA_NOTE_TYPES = {
     '0': 'Blank',
     '1': 'Don',
@@ -20,6 +24,7 @@ TJA_NOTE_TYPES = {
     'I': 'Drumroll',  # green roll
 }
 
+# Types of notes that can be found in fumen files
 FUMEN_NOTE_TYPES = {
     0x1: "Don",   # ドン
     0x2: "Don2",  # ド
@@ -49,15 +54,17 @@ FUMEN_NOTE_TYPES = {
     0x22: "Unknown13",  # ? (Present in some Wii1 songs)
     0x62: "Drumroll2"   # ?
 }
+
+# Invert the dict to go from note type to fumen byte values
 FUMEN_TYPE_NOTES = {v: k for k, v in FUMEN_NOTE_TYPES.items()}
 
-BRANCH_NAMES = ("normal", "professional", "master")
-
+# All combinations of difficulty and single/multiplayer type
 TJA_COURSE_NAMES = []
 for difficulty in ['Ura', 'Oni', 'Hard', 'Normal', 'Easy']:
     for player in ['', 'P1', 'P2']:
         TJA_COURSE_NAMES.append(difficulty+player)
 
+# Normalize the various fumen course names into 1 name per difficulty
 NORMALIZE_COURSE = {
     '0': 'Easy',
     'Easy': 'Easy',
@@ -72,11 +79,11 @@ NORMALIZE_COURSE = {
     'Edit': 'Ura'
 }
 
+# Map course difficulty to filename IDs (e.g. Oni -> `song_m.bin`)
 COURSE_IDS = {
     'Easy': 'e',
     'Normal': 'n',
     'Hard': 'h',
     'Oni': 'm',
     'Ura': 'x',
-    'Edit': 'x'
 }
