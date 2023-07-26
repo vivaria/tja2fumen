@@ -31,7 +31,7 @@ def parse_tja(fname_tja):
 def split_tja_lines_into_courses(lines):
     """
     Parse TJA metadata in order to divide TJA lines into separate courses.
-    
+
     In TJA files, metadata lines are denoted by a colon (':'). These lines
     provide general info about the song (BPM, TITLE, OFFSET, etc.). They also
     define properties for each course in the song (difficulty, level, etc.).

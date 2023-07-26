@@ -104,7 +104,7 @@ class FumenMeasure(DefaultObject):
         self.branches = {b: FumenBranch() for b in BRANCH_NAMES}
         self.padding1 = padding1
         self.padding2 = padding2
-        
+
     def set_duration(self, time_sig, measure_length, subdivisions):
         """Compute the millisecond duration of the measure."""
         # First, we compute the duration for a full 4/4 measure.
@@ -139,7 +139,7 @@ class FumenMeasure(DefaultObject):
 
         # Compute the end offset by adding the duration to the start offset
         self.offset_end = self.offset_start + self.duration
-    
+
     def set_branch_info(self, branch_condition, branch_points_total,
                         current_branch, first_branch_condition, has_section):
         """Compute the values that represent branching/diverge conditions."""

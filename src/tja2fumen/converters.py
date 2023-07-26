@@ -225,7 +225,7 @@ def convert_tja_to_fumen(tja):
             branch_points_measure = 0
             for idx_d, data in enumerate(measure_tja.data):
                 # Compute the ms position of the note
-                pos_ratio = ((data.pos            - measure_tja.pos_start) /
+                pos_ratio = ((data.pos - measure_tja.pos_start) /
                              (measure_tja.pos_end - measure_tja.pos_start))
                 note_pos = (measure_fumen.duration * pos_ratio)
 
