@@ -5,8 +5,8 @@ from copy import deepcopy
 
 from tja2fumen.types import (TJASong, TJAMeasure, TJAData, FumenCourse,
                              FumenMeasure, FumenBranch, FumenNote, FumenHeader)
-from tja2fumen.constants import (NORMALIZE_COURSE, TJA_NOTE_TYPES,
-                                 BRANCH_NAMES, FUMEN_NOTE_TYPES)
+from tja2fumen.constants import (NORMALIZE_COURSE, COURSE_NAMES, BRANCH_NAMES,
+                                 TJA_NOTE_TYPES, FUMEN_NOTE_TYPES)
 
 ###############################################################################
 #                          TJA-parsing functions                              #
@@ -128,14 +128,14 @@ def split_tja_lines_into_courses(lines):
         else:
             parsed_tja.courses[current_course].data.append(line)
 
-    # If a course has no song data, then this is likely because the course has
-    # "STYLE: Double" but no "STYLE: Single". To fix this, we copy over the P1
-    # chart from "STYLE: Double" to fill the "STYLE: Single" role.
-    for course_name, course in parsed_tja.courses.items():
-        if not course.data:
-            if course_name+"P1" in parsed_tja.courses.keys():
-                parsed_tja.courses[course_name] = \
-                    deepcopy(parsed_tja.courses[course_name+"P1"])
+    # If a .tja has "STYLE: Double" but no "STYLE: Single", then it will be
+    # missing data for the "single player" chart. To fix this, we copy over
+    # the P1 chart from "STYLE: Double" to fill the "STYLE: Single" role.
+    for course_name in COURSE_NAMES:
+        course_single_player = parsed_tja.courses[course_name]
+        course_player_one = parsed_tja.courses[course_name+"P1"]
+        if course_player_one.data and not course_single_player.data:
+            parsed_tja.courses[course_name] = deepcopy(course_player_one)
 
     # Remove any charts (e.g. P1/P2) not present in the TJA file (empty data)
     for course_name in [k for k, v in parsed_tja.courses.items()

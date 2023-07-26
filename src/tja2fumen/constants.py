@@ -58,12 +58,6 @@ FUMEN_NOTE_TYPES = {
 # Invert the dict to go from note type to fumen byte values
 FUMEN_TYPE_NOTES = {v: k for k, v in FUMEN_NOTE_TYPES.items()}
 
-# All combinations of difficulty and single/multiplayer type
-TJA_COURSE_NAMES = []
-for difficulty in ['Ura', 'Oni', 'Hard', 'Normal', 'Easy']:
-    for player in ['', 'P1', 'P2']:
-        TJA_COURSE_NAMES.append(difficulty+player)
-
 # Normalize the various fumen course names into 1 name per difficulty
 NORMALIZE_COURSE = {
     '0': 'Easy',
@@ -78,6 +72,15 @@ NORMALIZE_COURSE = {
     'Ura': 'Ura',
     'Edit': 'Ura'
 }
+
+# Fetch the 5 valid course names from NORMALIZE_COURSE's values
+COURSE_NAMES = list(set(NORMALIZE_COURSE.values()))
+
+# All combinations of difficulty and single/multiplayer type
+TJA_COURSE_NAMES = []
+for difficulty in COURSE_NAMES:
+    for player in ['', 'P1', 'P2']:
+        TJA_COURSE_NAMES.append(difficulty+player)
 
 # Map course difficulty to filename IDs (e.g. Oni -> `song_m.bin`)
 COURSE_IDS = {
