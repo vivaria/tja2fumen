@@ -82,8 +82,8 @@ If there is an unsupported feature that you would like support for, please make 
 | `#DELAY`                                         | `✅`         | `❌`       | See [#27](https://github.com/Fluto/TakoTako/issues/27)                                                        |
 | `#BRANCHSTART`, `#BRANCHEND`                     | `✅`         | `✅`       |                                                                                                               |
 | `#N`, `#E`, `#M`                                 | `✅`         | `✅`       |                                                                                                               |
-| `#SECTION`                                       | `⚠️`        | `❌`       | See [#52](https://github.com/vivaria/tja2fumen/issues/52), [#27](https://github.com/Fluto/TakoTako/issues/27) |
-| `#LEVELHOLD`                                     | `⚠️`        | `❌`       | See [#52](https://github.com/vivaria/tja2fumen/issues/52)                                                     |
+| `#SECTION`                                       | `⚠️`        | `❌`       | See [#53](https://github.com/vivaria/tja2fumen/issues/53), [#27](https://github.com/Fluto/TakoTako/issues/27) |
+| `#LEVELHOLD`                                     | `✅`         | `❌`       |                                                                                                               |
 | `#BMSCROLL`, `#LYRIC`,<br>`#DIRECTION`, etc.     | `⚪️`        | `❌`       | Other simulator-specific chart commands are currently ignored.                                                |
 
 ## Reporting bugs
