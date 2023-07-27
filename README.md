@@ -71,7 +71,8 @@ If there is an unsupported feature that you would like support for, please make 
 | `0`, `1`, `2`, `3`, `4`                      | `✅`         | `✅`       |                                                                                                               |
 | `5008,`, `6008,`, `7008,`                    | `✅`         | `✅`       |                                                                                                               |
 | `9008,`                                      | `✅`         | `⚠️`      |                                                                                                               |
-| `9000,`<br>`9008,`                           | `⚪️`        | `⚠️`      | Double Kusudama note treated as 1 drumroll by tja2fumen, but 2 overlapping drumrolls by tja2bin.              || `A`, `B`                                         | `✅`         | `❌`       |                                                                                                               | 
+| `9000,`<br>`9008,`                           | `⚪️`        | `⚠️`      | Double Kusudama note treated as 1 drumroll by tja2fumen, but 2 overlapping drumrolls by tja2bin.              |
+| `A`, `B`                                     | `✅`         | `❌`       | Multiplayer "hands" notes are valid in fumens, but unrecognized by tja2bin.                                   |
 | `C`, `D`, `E`, `F`, `G`, `H`, `I`            | `⚠️`        | `❌`       | Replaced by normal notes/rolls in tja2fumen.                                                                  |
 | `#START`, `#END`                             | `✅`         | `✅`       |                                                                                                               |
 | `#START P1`, `#START P2`                     | `✅`         | `❌`       |                                                                                                               |
