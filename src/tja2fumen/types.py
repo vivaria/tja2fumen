@@ -353,16 +353,12 @@ class FumenHeader(DefaultObject):
         key = f"{difficulty}-{star_to_key[difficulty][stars]}"
         pkg_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(pkg_dir, "hp_values.csv"), newline='') as fp:
-            # Parse row data
-            rows = [row for row in csv.reader(fp, delimiter=',')]
-            # Get column numbers by indexing header row
-            column_good = rows[0].index(f"good_{key}")
-            column_ok = rows[0].index(f"ok_{key}")
-            column_bad = rows[0].index(f"bad_{key}")
-            # Fetch values from the row corresponding to the number of notes
-            self.b444_b447_hp_gain_good = int(rows[n_notes][column_good])
-            self.b448_b451_hp_gain_ok = int(rows[n_notes][column_ok])
-            self.b452_b455_hp_loss_bad = int(rows[n_notes][column_bad])
+            for num, line in enumerate(csv.DictReader(fp)):
+                if num+1 == n_notes:
+                    self.b444_b447_hp_gain_good = int(line[f"good_{key}"])
+                    self.b448_b451_hp_gain_ok = int(line[f"ok_{key}"])
+                    self.b452_b455_hp_loss_bad = int(line[f"bad_{key}"])
+                    break
 
     @property
     def raw_bytes(self):
