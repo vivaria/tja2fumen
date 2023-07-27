@@ -70,8 +70,8 @@ class TJAMeasureProcessed(DefaultObject):
       the number of `TJAMeasure` objects for a given song.))
     """
     def __init__(self, bpm, scroll, gogo, barline, time_sig, subdivisions,
-                 pos_start=0, pos_end=0, delay=0, section=None,
-                 branch_start=None, data=None):
+                 pos_start=0, pos_end=0, delay=0, levelhold=False,
+                 section=None, branch_start=None, data=None):
         self.bpm = bpm
         self.scroll = scroll
         self.gogo = gogo
@@ -82,6 +82,7 @@ class TJAMeasureProcessed(DefaultObject):
         self.pos_end = pos_end
         self.delay = delay
         self.section = section
+        self.levelhold = levelhold
         self.branch_start = branch_start
         self.data = [] if data is None else data
 
@@ -160,14 +161,25 @@ class FumenMeasure(DefaultObject):
         self.offset_end = self.offset_start + self.duration
 
     def set_branch_info(self, branch_condition, branch_points_total,
-                        current_branch, first_branch_condition, has_section):
+                        current_branch, first_branch_condition,
+                        has_section, has_levelhold):
         """Compute the values that represent branching/diverge conditions."""
+        # If levelhold is set, force the branch to stay the same,
+        # regardless of the value of the current branch condition.
+        if has_levelhold:
+            if current_branch == 'normal':
+                self.branch_info[0:2] = [999, 999]  # Forces fail/fail
+            elif current_branch == 'professional':
+                self.branch_info[2:4] = [0, 999]    # Forces pass/fail
+            elif current_branch == 'master':
+                self.branch_info[4:6] = [0, 0]      # Forces pass/pass
+
         # Handle branch conditions for percentage accuracy
         # There are three cases for interpreting #BRANCHSTART p:
         #    1. Percentage is between 0% and 100%
         #    2. Percentage is above 100% (guaranteed level down)
         #    3. Percentage is 0% (guaranteed level up)
-        if branch_condition[0] == 'p':
+        elif branch_condition[0] == 'p':
             vals = []
             for percent in branch_condition[1:]:
                 if 0 < percent <= 1:
@@ -190,24 +202,14 @@ class FumenMeasure(DefaultObject):
         #       has a #SECTION command to reset the accuracy.
         #    3. It's not the first branching condition, and it
         #       doesn't have a #SECTION command.
-        # For the first two cases, the branching conditions are the
-        # same no matter what branch you're currently on, so we just
-        # use the values as-is: [c1, c2, c1, c2, c1, c2]
-        # But, for the third case, since there is no #SECTION, the
-        # accuracy is not reset. This results in the following
-        # condition: [999, 999, c1, c2, c2, c2]
-        #    - Normal can't advance to professional/master
-        #    - Professional can stay, or advance to master.
-        #    - Master can only stay in master.
+        # TODO: Determine the behavior for these 3 conditions
         elif branch_condition[0] == 'r':
-            if first_branch_condition or has_section:
-                self.branch_info = branch_condition[1:] * 3
-            else:
-                self.branch_info = (
-                        [999, 999] +
-                        [branch_condition[1]] +
-                        [branch_condition[2]] * 3
-                )
+            if current_branch == 'normal':
+                self.branch_info[0:2] = branch_condition[1:]
+            elif current_branch == 'professional':
+                self.branch_info[2:4] = branch_condition[1:]
+            elif current_branch == 'master':
+                self.branch_info[4:6] = branch_condition[1:]
 
 
 class FumenBranch(DefaultObject):

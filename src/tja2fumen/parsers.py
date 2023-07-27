@@ -175,7 +175,6 @@ def parse_tja_course_data(course):
     has_branches = bool([d for d in course.data if d.startswith('#BRANCH')])
     current_branch = 'all' if has_branches else 'normal'
     branch_condition = None
-    flag_levelhold = False
 
     # Process course lines
     idx_m = 0
@@ -210,7 +209,7 @@ def parse_tja_course_data(course):
         # 2. Parse measure commands that produce an "event"
         elif command in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
                          'DELAY', 'SCROLL', 'BPMCHANGE', 'MEASURE',
-                         'SECTION', 'BRANCHSTART']:
+                         'LEVELHOLD', 'SECTION', 'BRANCHSTART']:
             # Get position of the event
             for branch in (course.branches.keys() if current_branch == 'all'
                            else [current_branch]):
@@ -233,6 +232,8 @@ def parse_tja_course_data(course):
                 current_event = TJAData('bpm', float(value), pos)
             elif command == 'MEASURE':
                 current_event = TJAData('measure', value, pos)
+            elif command == 'LEVELHOLD':
+                current_event = TJAData('levelhold', None, pos)
             elif command == 'SECTION':
                 # If #SECTION occurs before a #BRANCHSTART, then ensure that
                 # it's present on every branch. Otherwise, #SECTION will only
@@ -247,8 +248,6 @@ def parse_tja_course_data(course):
                     current_event = TJAData('branch_start', branch_condition,
                                             pos)
             elif command == 'BRANCHSTART':
-                if flag_levelhold:
-                    continue
                 # Ensure that the #BRANCHSTART command is added to all branches
                 current_branch = 'all'
                 branch_condition = value.split(',')
@@ -272,9 +271,6 @@ def parse_tja_course_data(course):
         else:
             if command == 'START' or command == 'END':
                 current_branch = 'all' if has_branches else 'normal'
-                flag_levelhold = False
-            elif command == 'LEVELHOLD':
-                flag_levelhold = True
             elif command == 'N':
                 current_branch = 'normal'
                 idx_m = idx_m_branchstart

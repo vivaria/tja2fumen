@@ -52,6 +52,8 @@ def process_tja_commands(tja):
                     measure_tja_processed.branch_start = data.value
                 elif data.name == 'section':
                     measure_tja_processed.section = data.value
+                elif data.name == 'levelhold':
+                    measure_tja_processed.levelhold = True
                 elif data.name == 'barline':
                     current_barline = bool(int(data.value))
                     measure_tja_processed.barline = current_barline
@@ -181,6 +183,7 @@ def convert_tja_to_fumen(tja):
         branch_points_total = 0
         branch_points_measure = 0
         current_drumroll = None
+        current_levelhold = False
         branch_conditions = []
         course_balloons = tja.balloon.copy()
 
@@ -226,10 +229,14 @@ def convert_tja_to_fumen(tja):
                 measure_fumen.set_branch_info(
                     branch_condition, branch_points_total, current_branch,
                     first_branch_condition=(not branch_conditions),
-                    has_section=bool(measure_tja.section)
+                    has_section=bool(measure_tja.section),
+                    has_levelhold=current_levelhold
                 )
                 # Reset the points to prepare for the next `#BRANCHSTART p`
                 branch_points_total = 0
+                # Reset the levelhold value (so that future branch_conditions
+                # work normally)
+                current_levelhold = False
                 # Keep track of the branch conditions (to later determine how
                 # to set the header bytes for branches)
                 branch_conditions.append(branch_condition)
@@ -243,6 +250,12 @@ def convert_tja_to_fumen(tja):
             # So, by delaying the summation by one measure, we perform the
             # calculation with notes "one measure before".
             branch_points_total += branch_points_measure
+
+            # LEVELHOLD essentially means "ignore the branch condition for
+            # the next `#BRANCHSTART` command", so we check this value after
+            # we've already processed the branch condition for this measure.
+            if measure_tja.levelhold:
+                current_levelhold = True
 
             # Create notes based on TJA measure data
             branch_points_measure = 0
