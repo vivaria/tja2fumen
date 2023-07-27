@@ -4,6 +4,12 @@ from tja2fumen.constants import BRANCH_NAMES, FUMEN_TYPE_NOTES
 
 
 def write_fumen(path_out, song):
+    """
+    Write the values in a FumenCourse object to a `.bin` file.
+
+    This operation is the reverse of the `parse_fumen` function. Please refer
+    to that function for more details about the fumen file structure.
+    """
     with open(path_out, "wb") as file:
         file.write(song.header.raw_bytes)
 
@@ -42,6 +48,7 @@ def write_fumen(path_out, song):
 
 
 def write_struct(file, order, format_string, value_list, seek=None):
+    """Pack (int, float, etc.) values into a string of bytes, then write."""
     if seek:
         file.seek(seek)
     packed_bytes = struct.pack(order + format_string, *value_list)

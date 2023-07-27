@@ -30,7 +30,7 @@ def parse_tja(fname_tja):
 
 def split_tja_lines_into_courses(lines):
     """
-    Parse TJA metadata in order to divide TJA lines into separate courses.
+    Parse TJA metadata in order to split TJA lines into separate courses.
 
     In TJA files, metadata lines are denoted by a colon (':'). These lines
     provide general info about the song (BPM, TITLE, OFFSET, etc.). They also
@@ -332,6 +332,27 @@ def parse_tja_course_data(course):
 def parse_fumen(fumen_file, exclude_empty_measures=False):
     """
     Parse bytes of a fumen .bin file into nested measures, branches, and notes.
+
+    Fumen files use a very strict file structure. Certain values are expected
+    at very specific byte locations in the file. Here, we parse these specific
+    byte locations into the following structure:
+
+    FumenCourse
+    ├─ FumenHeader
+    │  ├─ Timing windows
+    │  ├─ Branch points
+    │  ├─ Soul gauge bytes
+    │  └─ ...
+    ├─ FumenMeasure
+    │  ├─ FumenBranch ('normal')
+    │  │  ├─ FumenNote
+    │  │  ├─ FumenNote
+    │  │  └─ ...
+    │  ├─ FumenBranch ('professional')
+    │  └─ FumenBranch ('master')
+    ├─ FumenMeasure
+    ├─ FumenMeasure
+    └─ ...
     """
     file = open(fumen_file, "rb")
     size = os.fstat(file.fileno()).st_size

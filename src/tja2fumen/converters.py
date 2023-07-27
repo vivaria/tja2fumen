@@ -5,27 +5,21 @@ from tja2fumen.types import TJAMeasureProcessed, FumenCourse, FumenNote
 
 def process_tja_commands(tja):
     """
-    Merge TJA 'data' and 'event' fields into a single measure property, and
-    split measures into sub-measures whenever a mid-measure BPM/SCROLL/GOGO
-    change occurs.
+    Process each #COMMAND present in a TJASong's measures, and assign their
+    values as attributes to each measure.
 
-    The TJA parser produces measure objects with two important properties:
-      - 'data': Contains the note data (1: don, 2: ka, etc.) along with
-                spacing (s)
-      - 'events' Contains event commands such as MEASURE, BPMCHANGE,
-                 GOGOTIME, etc.
+    This function takes care of two main tasks:
+        1. Keeping track of what the current values are for BPM, scroll,
+           gogotime, barline, and time signature (#MEASURE).
+        2. Detecting when a command is placed in the middle of a measure,
+           and splitting that measure into sub-measures.
 
-    However, notes and events can be intertwined within a single measure. So,
-    it's not possible to process them separately; they must be considered as
-    single sequence.
+    ((Note: We split measures into sub-measures because official `.bin` files
+      can only have 1 value for BPM/SCROLL/GOGO per measure. So, if a TJA
+      measure has multiple BPMs/SCROLLs/GOGOs, it has to be split up.))
 
-    A particular danger is BPM changes. TJA allows multiple BPMs within a
-    single measure, but the fumen format permits one BPM per measure. So, a
-    TJA measure must be split up if it has multiple BPM changes within a
-    measure.
-
-    In the future, this logic should probably be moved into the TJA parser
-    itself.
+    After this function is finished, all the #COMMANDS will be gone, and each
+    measure will have attributes (e.g. measure.bpm, measure.scroll) instead.
     """
     tja_branches_processed = {branch_name: []
                               for branch_name in tja.branches.keys()}
@@ -37,7 +31,6 @@ def process_tja_commands(tja):
         current_dividend = 4
         current_divisor = 4
         for measure_tja in branch_measures_tja:
-            # Split measure into submeasure
             measure_tja_processed = TJAMeasureProcessed(
                 bpm=current_bpm,
                 scroll=current_scroll,
@@ -75,7 +68,7 @@ def process_tja_commands(tja):
                 # measure. (For fumen files, if there is a mid-measure change
                 # to BPM/SCROLL/GOGO, then the measure will actually be split
                 # into two small submeasures. So, we need to start a new
-                # measure in those cases.
+                # measure in those cases.)
                 elif data.name in ['bpm', 'scroll', 'gogo']:
                     # Parse the values
                     if data.name == 'bpm':
@@ -133,6 +126,36 @@ def process_tja_commands(tja):
 
 
 def convert_tja_to_fumen(tja):
+    """
+    Convert TJA data to Fumen data by calculating Fumen-specific values.
+
+    Fumen files (`.bin`) use a very strict file structure. Certain values are
+    expected at very specific byte locations in the file, such as:
+      - Header metadata (first 520 bytes). The header stores information such
+        as branch points for each note type, soul gauge behavior, etc.
+      - Note data (millisecond offset values, drumroll duration, etc.)
+      - Branch condition info for each measure
+
+    Since TJA files only contain notes and commands, we must compute all of
+    these extra values ourselves. The values are then stored in new "Fumen"
+    Python objects that mimic the structure of the fumen `.bin` files:
+
+    FumenCourse
+    ├─ FumenMeasure
+    │  ├─ FumenBranch ('normal')
+    │  │  ├─ FumenNote
+    │  │  ├─ FumenNote
+    │  │  └─ ...
+    │  ├─ FumenBranch ('professional')
+    │  └─ FumenBranch ('master')
+    ├─ FumenMeasure
+    ├─ FumenMeasure
+    └─ ...
+
+    ((Note: The fumen file structure is the opposite of the TJA file structure;
+    branch data is stored within the measure object, rather than measure data
+    being stored within the branch object.))
+    """
     # Preprocess commands
     tja_branches_processed = process_tja_commands(tja)
 
@@ -179,7 +202,7 @@ def convert_tja_to_fumen(tja):
                 subdivisions=measure_tja.subdivisions
             )
 
-            # Compute the millisecnd offsets for the start/end of each measure
+            # Compute the millisecond offsets for the start/end of each measure
             measure_fumen.set_ms_offsets(
                 song_offset=tja.offset,
                 delay=measure_tja.delay,
@@ -205,7 +228,7 @@ def convert_tja_to_fumen(tja):
                     first_branch_condition=(not branch_conditions),
                     has_section=bool(measure_tja.section)
                 )
-                # Reset the points to prepare for the next #BRANCHSTART p
+                # Reset the points to prepare for the next `#BRANCHSTART p`
                 branch_points_total = 0
                 # Keep track of the branch conditions (to later determine how
                 # to set the header bytes for branches)

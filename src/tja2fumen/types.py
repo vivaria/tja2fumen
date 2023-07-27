@@ -12,7 +12,10 @@ class DefaultObject:
 
 
 class TJASong(DefaultObject):
+    """Contains all the data in a single TJA (`.tja`) chart file."""
     def __init__(self, BPM=None, offset=None):
+        # Note: TJA song metadata (e.g. TITLE, SUBTITLE, WAVE) is not stored
+        #       because it is not needed to convert a `.tja` to `.bin` files.
         self.BPM = float(BPM)
         self.offset = float(offset)
         self.courses = {course: TJACourse(self.BPM, self.offset, course)
@@ -25,6 +28,7 @@ class TJASong(DefaultObject):
 
 
 class TJACourse(DefaultObject):
+    """Contains all the data in a single TJA `COURSE:` section."""
     def __init__(self, BPM, offset, course, level=0, balloon=None,
                  score_init=0, score_diff=0):
         self.level = level
@@ -35,6 +39,7 @@ class TJACourse(DefaultObject):
         self.offset = offset
         self.course = course
         self.data = []
+        # A "TJA Branch" is just a list of measures
         self.branches = {
             'normal': [TJAMeasure()],
             'professional': [TJAMeasure()],
@@ -47,6 +52,7 @@ class TJACourse(DefaultObject):
 
 
 class TJAMeasure(DefaultObject):
+    """Contains all the data in a single TJA measure (denoted by ',')."""
     def __init__(self, notes=None, events=None):
         self.notes = [] if notes is None else notes
         self.events = [] if events is None else events
@@ -54,6 +60,15 @@ class TJAMeasure(DefaultObject):
 
 
 class TJAMeasureProcessed(DefaultObject):
+    """
+    Contains all the data in a single TJA measure (denoted by ','), but with
+    all `#COMMAND` lines processed, and their values stored as attributes.
+
+    ((Note: Because only one BPM/SCROLL/GOGO value can be stored per measure,
+      any TJA measures with mid-measure commands must be split up. So, the
+      number of `TJAMeasureProcessed` objects will often be greater than
+      the number of `TJAMeasure` objects for a given song.))
+    """
     def __init__(self, bpm, scroll, gogo, barline, time_sig, subdivisions,
                  pos_start=0, pos_end=0, delay=0, section=None,
                  branch_start=None, data=None):
@@ -72,13 +87,16 @@ class TJAMeasureProcessed(DefaultObject):
 
 
 class TJAData(DefaultObject):
+    """Contains the information for a single note or single command."""
     def __init__(self, name, value, pos=None):
+        # For TJA, 'pos' is stored as an integer rather than in milliseconds
         self.pos = pos
         self.name = name
         self.value = value
 
 
 class FumenCourse(DefaultObject):
+    """Contains all the data in a single Fumen (`.bin`) chart file."""
     def __init__(self, measures=None, header=None, score_init=0, score_diff=0):
         if isinstance(measures, int):
             self.measures = [FumenMeasure() for _ in range(measures)]
@@ -90,6 +108,7 @@ class FumenCourse(DefaultObject):
 
 
 class FumenMeasure(DefaultObject):
+    """Contains all the data in a single Fumen measure."""
     def __init__(self, bpm=0.0, offset_start=0.0, offset_end=0.0,
                  duration=0.0, gogo=False, barline=True, branch_start=None,
                  branch_info=None, padding1=0, padding2=0):
@@ -128,7 +147,7 @@ class FumenMeasure(DefaultObject):
         if first_measure:
             self.offset_start = (song_offset * -1000) - (4 * 60_000 / self.bpm)
         else:
-            # First, start with sing the end timing of the previous measure
+            # First, start with the end timing of the previous measure
             self.offset_start = prev_measure.offset_end
             # Add any #DELAY commands
             self.offset_start += delay
@@ -192,6 +211,7 @@ class FumenMeasure(DefaultObject):
 
 
 class FumenBranch(DefaultObject):
+    """Contains all the data in a single Fumen branch."""
     def __init__(self, length=0, speed=0.0, padding=0):
         self.length = length
         self.speed = speed
@@ -200,6 +220,7 @@ class FumenBranch(DefaultObject):
 
 
 class FumenNote(DefaultObject):
+    """Contains all the byte values for a single Fumen note."""
     def __init__(self, note_type='', pos=0.0, score_init=0, score_diff=0,
                  padding=0, item=0, duration=0.0, multimeasure=False,
                  hits=0, hits_padding=0,
@@ -221,6 +242,7 @@ class FumenNote(DefaultObject):
 
 
 class FumenHeader(DefaultObject):
+    """Contains all the byte values for a Fumen chart file's header."""
     def __init__(self, raw_bytes=None):
         if raw_bytes is None:
             self.order = "<"
@@ -230,7 +252,10 @@ class FumenHeader(DefaultObject):
             self._parse_header_values(raw_bytes)
 
     def _assign_default_header_values(self):
-        # This byte string corresponds to
+        """Set the default header values."""
+        # This byte string corresponds to the timing windows for Hard/Oni
+        # ((When these bytes are parsed, you get roughly about
+        #   (25.025, 75.075, 108.442), but repeated 36 times.))
         timing_windows = self.up(b'43\xc8Ag&\x96B"\xe2\xd8B' * 36, "fff" * 36)
         self.b000_b431_timing_windows             = timing_windows
         self.b432_b435_has_branches               = 0
@@ -257,9 +282,9 @@ class FumenHeader(DefaultObject):
         self.b516_b519_unknown_data               = 0
 
     def _parse_header_values(self, raw_bytes):
-        rb = raw_bytes
-        self.b000_b431_timing_windows             = self.up(rb, "f" * 108,
-                                                            0, 431)
+        """Parse a raw string of 520 bytes to get the header values."""
+        rb = raw_bytes  # We use a shortened form just for visual clarity:
+        self.b000_b431_timing_windows           = self.up(rb, "f"*108, 0, 431)
         self.b432_b435_has_branches               = self.up(rb, "i", 432, 435)
         self.b436_b439_hp_max                     = self.up(rb, "i", 436, 439)
         self.b440_b443_hp_clear                   = self.up(rb, "i", 440, 443)
@@ -284,13 +309,17 @@ class FumenHeader(DefaultObject):
         self.b516_b519_unknown_data               = self.up(rb, "i", 516, 519)
 
     def up(self, raw_bytes, type_string, s=None, e=None):
+        """Unpack a raw byte string according to specific types."""
         if s is not None and e is not None:
             raw_bytes = raw_bytes[s:e+1]
         vals = struct.unpack(self.order + type_string, raw_bytes)
         return vals[0] if len(vals) == 1 else vals
 
     def _parse_order(self, raw_bytes):
+        """Parse the order of the song (little or big endian)."""
         self.order = ''
+        # Bytes 512-515 are the number of measures. We check the values using
+        # both little and big endian, then compare to see which is correct.
         if (self.up(raw_bytes, ">I", 512, 515) <
                 self.up(raw_bytes, "<I", 512, 515)):
             return ">"
@@ -298,12 +327,15 @@ class FumenHeader(DefaultObject):
             return "<"
 
     def set_hp_bytes(self, n_notes, difficulty, stars):
+        """Compute header bytes related to the soul gauge (HP) behavior."""
+        # Note: Ura Oni is equivalent to Oni for soul gauge behavior
         difficulty = 'Oni' if difficulty in ['Ura', 'Edit'] else difficulty
         self._get_hp_from_LUTs(n_notes, difficulty, stars)
         self.b440_b443_hp_clear = {'Easy': 6000, 'Normal': 7000,
                                    'Hard': 7000, 'Oni': 8000}[difficulty]
 
     def _get_hp_from_LUTs(self, n_notes, difficulty, stars):
+        """Fetch pre-computed soul gauge values from lookup tables (LUTs)."""
         if not 0 < n_notes <= 2500:
             return
         star_to_key = {
@@ -332,6 +364,7 @@ class FumenHeader(DefaultObject):
 
     @property
     def raw_bytes(self):
+        """Represent the header values as a string of raw bytes."""
         value_list = []
         format_string = self.order
         for key, val in self.__dict__.items():
