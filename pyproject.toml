@@ -19,7 +19,7 @@ tja2fumen = "tja2fumen:main"
 
 [project.optional-dependencies]
 dev = ["pytest", "build", "pyinstaller", "twine", "toml-cli",
-       "flake8", "pyproject-flake8"]
+       "flake8", "pyproject-flake8", "pydantic"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

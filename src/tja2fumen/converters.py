@@ -1,6 +1,7 @@
 import re
 
-from tja2fumen.types import TJAMeasureProcessed, FumenCourse, FumenNote
+from tja2fumen.types import (TJAMeasureProcessed,
+                             FumenCourse, FumenHeader, FumenMeasure, FumenNote)
 
 
 def process_tja_commands(tja):
@@ -47,9 +48,16 @@ def process_tja_commands(tja):
                 # Handle commands that can only be placed between measures
                 # (i.e. no mid-measure variations)
                 elif data.name == 'delay':
-                    measure_tja_processed.delay = data.value * 1000  # ms -> s
+                    measure_tja_processed.delay = float(data.value) * 1000
                 elif data.name == 'branch_start':
-                    measure_tja_processed.branch_start = data.value
+                    branch_condition = data.value.split(',')
+                    if branch_condition[0] == 'r':  # r = drumRoll
+                        branch_condition[1] = int(branch_condition[1])
+                        branch_condition[2] = int(branch_condition[2])
+                    elif branch_condition[0] == 'p':  # p = Percentage
+                        branch_condition[1] = float(branch_condition[1]) / 100
+                        branch_condition[2] = float(branch_condition[2]) / 100
+                    measure_tja_processed.branch_start = branch_condition
                 elif data.name == 'section':
                     measure_tja_processed.section = data.value
                 elif data.name == 'levelhold':
@@ -76,7 +84,7 @@ def process_tja_commands(tja):
                     if data.name == 'bpm':
                         new_val = current_bpm = float(data.value)
                     elif data.name == 'scroll':
-                        new_val = current_scroll = data.value
+                        new_val = current_scroll = float(data.value)
                     elif data.name == 'gogo':
                         new_val = current_gogo = bool(int(data.value))
                     # Check for mid-measure commands
@@ -164,7 +172,8 @@ def convert_tja_to_fumen(tja):
     # Pre-allocate the measures for the converted TJA
     n_measures = len(tja_branches_processed['normal'])
     fumen = FumenCourse(
-        measures=n_measures,
+        measures=[FumenMeasure() for _ in range(n_measures)],
+        header=FumenHeader(),
         score_init=tja.score_init,
         score_diff=tja.score_diff,
     )

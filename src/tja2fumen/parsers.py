@@ -3,10 +3,12 @@ import re
 import struct
 from copy import deepcopy
 
-from tja2fumen.types import (TJASong, TJAMeasure, TJAData, FumenCourse,
-                             FumenMeasure, FumenBranch, FumenNote, FumenHeader)
+from tja2fumen.types import (TJASong, TJACourse, TJAMeasure, TJAData,
+                             FumenCourse, FumenMeasure, FumenBranch, FumenNote,
+                             FumenHeader)
 from tja2fumen.constants import (NORMALIZE_COURSE, COURSE_NAMES, BRANCH_NAMES,
-                                 TJA_NOTE_TYPES, FUMEN_NOTE_TYPES)
+                                 TJA_COURSE_NAMES, TJA_NOTE_TYPES,
+                                 FUMEN_NOTE_TYPES)
 
 ###############################################################################
 #                          TJA-parsing functions                              #
@@ -59,11 +61,16 @@ def split_tja_lines_into_courses(lines):
              if line.split("//")[0].strip()]
 
     # Initialize song with BPM and OFFSET global metadata
-    bpm = [line.split(":")[1] for line in lines
-           if line.startswith("BPM")][0]
-    offset = [line.split(":")[1] for line in lines
-              if line.startswith("OFFSET")][0]
-    parsed_tja = TJASong(bpm, offset)
+    bpm = float([line.split(":")[1] for line in lines
+                if line.startswith("BPM")][0])
+    offset = float([line.split(":")[1] for line in lines
+                   if line.startswith("OFFSET")][0])
+    parsed_tja = TJASong(
+        BPM=bpm,
+        offset=offset,
+        courses={course: TJACourse(BPM=bpm, offset=offset, course=course)
+                 for course in TJA_COURSE_NAMES}
+    )
 
     current_course = ''
     current_course_basename = ''
@@ -174,17 +181,18 @@ def parse_tja_course_data(course):
     """
     has_branches = bool([d for d in course.data if d.startswith('#BRANCH')])
     current_branch = 'all' if has_branches else 'normal'
-    branch_condition = None
+    branch_condition = ''
 
     # Process course lines
     idx_m = 0
     idx_m_branchstart = 0
     for idx_l, line in enumerate(course.data):
         # 0. Check to see whether line is a command or note data
-        command, value, notes = None, None, None
+        command, name, value, notes = None, None, None, None
         match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
         if match_command:
             command, value = match_command.groups()
+            value = '' if value is None else value
         else:
             notes = line  # If not a command, then line must be note data
 
@@ -217,54 +225,49 @@ def parse_tja_course_data(course):
 
             # Parse event type
             if command == 'GOGOSTART':
-                current_event = TJAData('gogo', '1', pos)
+                name, value = 'gogo', '1'
             elif command == 'GOGOEND':
-                current_event = TJAData('gogo', '0', pos)
+                name, value = 'gogo', '0'
             elif command == 'BARLINEON':
-                current_event = TJAData('barline', '1', pos)
+                name, value = 'barline', '1'
             elif command == 'BARLINEOFF':
-                current_event = TJAData('barline', '0', pos)
+                name, value = 'barline', '0'
             elif command == 'DELAY':
-                current_event = TJAData('delay', float(value), pos)
+                name = 'delay'
             elif command == 'SCROLL':
-                current_event = TJAData('scroll', float(value), pos)
+                name = 'scroll'
             elif command == 'BPMCHANGE':
-                current_event = TJAData('bpm', float(value), pos)
+                name = 'bpm'
             elif command == 'MEASURE':
-                current_event = TJAData('measure', value, pos)
+                name = 'measure'
             elif command == 'LEVELHOLD':
-                current_event = TJAData('levelhold', None, pos)
+                name = 'levelhold'
             elif command == 'SECTION':
                 # If #SECTION occurs before a #BRANCHSTART, then ensure that
                 # it's present on every branch. Otherwise, #SECTION will only
                 # be present on the current branch, and so the `branch_info`
                 # values won't be correctly set for the other two branches.
                 if course.data[idx_l+1].startswith('#BRANCHSTART'):
-                    current_event = TJAData('section', None, pos)
+                    name = 'section'
                     current_branch = 'all'
                 # Otherwise, #SECTION exists in isolation. In this case, to
                 # reset the accuracy, we just repeat the previous #BRANCHSTART.
                 else:
-                    current_event = TJAData('branch_start', branch_condition,
-                                            pos)
+                    name, value = 'branch_start', branch_condition
             elif command == 'BRANCHSTART':
                 # Ensure that the #BRANCHSTART command is added to all branches
                 current_branch = 'all'
-                branch_condition = value.split(',')
-                if branch_condition[0] == 'r':  # r = drumRoll
-                    branch_condition[1] = int(branch_condition[1])  # drumrolls
-                    branch_condition[2] = int(branch_condition[2])  # drumrolls
-                elif branch_condition[0] == 'p':  # p = Percentage
-                    branch_condition[1] = float(branch_condition[1]) / 100  # %
-                    branch_condition[2] = float(branch_condition[2]) / 100  # %
-                current_event = TJAData('branch_start', branch_condition, pos)
+                name = 'branch_start'
+                branch_condition = value
                 # Preserve the index of the BRANCHSTART command to re-use
                 idx_m_branchstart = idx_m
 
             # Append event to the current measure's events
             for branch in (course.branches.keys() if current_branch == 'all'
                            else [current_branch]):
-                course.branches[branch][idx_m].events.append(current_event)
+                course.branches[branch][idx_m].events.append(
+                    TJAData(name=name, value=value, pos=pos)
+                )
 
         # 3. Parse commands that don't create an event
         #    (e.g. simply changing the current branch)
@@ -295,7 +298,7 @@ def parse_tja_course_data(course):
     # Merge measure data and measure events in chronological order
     for branch_name, branch in course.branches.items():
         for measure in branch:
-            notes = [TJAData('note', TJA_NOTE_TYPES[note], i)
+            notes = [TJAData(name='note', value=TJA_NOTE_TYPES[note], pos=i)
                      for i, note in enumerate(measure.notes) if
                      TJA_NOTE_TYPES[note] != 'Blank']
             events = measure.events
@@ -353,9 +356,9 @@ def parse_fumen(fumen_file, exclude_empty_measures=False):
     file = open(fumen_file, "rb")
     size = os.fstat(file.fileno()).st_size
 
-    song = FumenCourse(
-        header=FumenHeader(raw_bytes=file.read(520))
-    )
+    header = FumenHeader()
+    header.parse_header_values(file.read(520))
+    song = FumenCourse(header=header)
 
     for measure_number in range(song.header.b512_b515_number_of_measures):
         # Parse the measure data using the following `format_string`:
@@ -374,8 +377,8 @@ def parse_fumen(fumen_file, exclude_empty_measures=False):
         measure = FumenMeasure(
             bpm=measure_struct[0],
             offset_start=measure_struct[1],
-            gogo=measure_struct[2],
-            barline=measure_struct[3],
+            gogo=bool(measure_struct[2]),
+            barline=bool(measure_struct[3]),
             padding1=measure_struct[4],
             branch_info=list(measure_struct[5:11]),
             padding2=measure_struct[11]
