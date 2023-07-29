@@ -3,51 +3,13 @@ import os
 import struct
 from typing import Dict, List
 
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field
 
 from tja2fumen.constants import BRANCH_NAMES
 
 
 @dataclass(slots=True)
-class ConvertTypesOnInit:
-    """
-    Add type conversion support to dataclasses.
-
-    This mimics type validation from the Pydantic library, without incurring
-    the performance slowdown that comes with using Pydantic's BaseModel class.
-
-    (Pydantic's additional feature set is overkill for this project.)
-    """
-    def __post_init__(self):
-        for f in fields(self):
-            # Check if passed value matches expected type
-            value = getattr(self, f.name)
-            try:
-                correct_type = isinstance(value, f.type)
-            except TypeError:
-                # Catch "TypeError: Subscripted generics cannot be used with
-                #        class and instance checks"
-                # This is thrown when the `typing` module's generic types
-                # are used with subscripted types, e.g.: "List[int]"
-                return
-
-            # If the value is already the correct type, don't try to convert
-            if correct_type:
-                return
-            # Otherwise, try coercing the value to the expected type
-            else:
-                try:
-                    value = f.type(value)
-                    setattr(self, f.name, value)
-                except ValueError as exc:
-                    raise ValueError(
-                        f"Error setting {f.name}: Value '{repr(value)}' "
-                        f"cannot be coerced to type '{f.type}'."
-                    ) from exc
-
-
-@dataclass(slots=True)
-class TJAData(ConvertTypesOnInit):
+class TJAData:
     """Contains the information for a single note or single command."""
     name: str
     value: str
@@ -56,7 +18,7 @@ class TJAData(ConvertTypesOnInit):
 
 
 @dataclass(slots=True)
-class TJAMeasure(ConvertTypesOnInit):
+class TJAMeasure:
     """Contains all the data in a single TJA measure (denoted by ',')."""
     notes: List[TJAData] = field(default_factory=list)
     events: List[TJAData] = field(default_factory=list)
@@ -64,7 +26,7 @@ class TJAMeasure(ConvertTypesOnInit):
 
 
 @dataclass(slots=True)
-class TJACourse(ConvertTypesOnInit):
+class TJACourse:
     """Contains all the data in a single TJA `COURSE:` section."""
     BPM: float
     offset: float
@@ -80,7 +42,7 @@ class TJACourse(ConvertTypesOnInit):
 
 
 @dataclass(slots=True)
-class TJASong(ConvertTypesOnInit):
+class TJASong:
     """Contains all the data in a single TJA (`.tja`) chart file."""
     BPM: float
     offset: float
@@ -88,7 +50,7 @@ class TJASong(ConvertTypesOnInit):
 
 
 @dataclass(slots=True)
-class TJAMeasureProcessed(ConvertTypesOnInit):
+class TJAMeasureProcessed:
     """
     Contains all the data in a single TJA measure (denoted by ','), but with
     all `#COMMAND` lines processed, and their values stored as attributes.
@@ -114,7 +76,7 @@ class TJAMeasureProcessed(ConvertTypesOnInit):
 
 
 @dataclass(slots=True)
-class FumenNote(ConvertTypesOnInit):
+class FumenNote:
     """Contains all the byte values for a single Fumen note."""
     note_type: str = ''
     pos: float = 0.0
@@ -130,7 +92,7 @@ class FumenNote(ConvertTypesOnInit):
 
 
 @dataclass(slots=True)
-class FumenBranch(ConvertTypesOnInit):
+class FumenBranch:
     """Contains all the data in a single Fumen branch."""
     length: int = 0
     speed: float = 0.0
@@ -139,7 +101,7 @@ class FumenBranch(ConvertTypesOnInit):
 
 
 @dataclass(slots=True)
-class FumenMeasure(ConvertTypesOnInit):
+class FumenMeasure:
     """Contains all the data in a single Fumen measure."""
     bpm: float = 0.0
     offset_start: float = 0.0
@@ -243,7 +205,7 @@ class FumenMeasure(ConvertTypesOnInit):
 
 
 @dataclass(slots=True)
-class FumenHeader(ConvertTypesOnInit):
+class FumenHeader:
     """Contains all the byte values for a Fumen chart file's header."""
     order: str = "<"
     b000_b431_timing_windows: List[float] = field(default_factory=lambda:
@@ -369,7 +331,7 @@ class FumenHeader(ConvertTypesOnInit):
 
 
 @dataclass(slots=True)
-class FumenCourse(ConvertTypesOnInit):
+class FumenCourse:
     """Contains all the data in a single Fumen (`.bin`) chart file."""
     header: FumenHeader
     measures: List[FumenMeasure] = field(default_factory=list)
