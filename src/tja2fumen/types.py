@@ -8,7 +8,7 @@ from dataclasses import dataclass, field, fields
 from tja2fumen.constants import BRANCH_NAMES
 
 
-@dataclass
+@dataclass(slots=True)
 class ConvertTypesOnInit:
     """
     Add type conversion support to dataclasses.
@@ -46,7 +46,7 @@ class ConvertTypesOnInit:
                     ) from exc
 
 
-@dataclass
+@dataclass(slots=True)
 class TJAData(ConvertTypesOnInit):
     """Contains the information for a single note or single command."""
     name: str
@@ -55,7 +55,7 @@ class TJAData(ConvertTypesOnInit):
     pos: int
 
 
-@dataclass
+@dataclass(slots=True)
 class TJAMeasure(ConvertTypesOnInit):
     """Contains all the data in a single TJA measure (denoted by ',')."""
     notes: List[TJAData] = field(default_factory=list)
@@ -63,7 +63,7 @@ class TJAMeasure(ConvertTypesOnInit):
     combined: List[TJAData] = field(default_factory=list)
 
 
-@dataclass
+@dataclass(slots=True)
 class TJACourse(ConvertTypesOnInit):
     """Contains all the data in a single TJA `COURSE:` section."""
     BPM: float
@@ -79,7 +79,7 @@ class TJACourse(ConvertTypesOnInit):
     )
 
 
-@dataclass
+@dataclass(slots=True)
 class TJASong(ConvertTypesOnInit):
     """Contains all the data in a single TJA (`.tja`) chart file."""
     BPM: float
@@ -87,7 +87,7 @@ class TJASong(ConvertTypesOnInit):
     courses: Dict[str, TJACourse]
 
 
-@dataclass
+@dataclass(slots=True)
 class TJAMeasureProcessed(ConvertTypesOnInit):
     """
     Contains all the data in a single TJA measure (denoted by ','), but with
@@ -113,7 +113,7 @@ class TJAMeasureProcessed(ConvertTypesOnInit):
     data: list = field(default_factory=list)
 
 
-@dataclass
+@dataclass(slots=True)
 class FumenNote(ConvertTypesOnInit):
     """Contains all the byte values for a single Fumen note."""
     note_type: str = ''
@@ -129,7 +129,7 @@ class FumenNote(ConvertTypesOnInit):
     drumroll_bytes: bytes = b'\x00\x00\x00\x00\x00\x00\x00\x00'
 
 
-@dataclass
+@dataclass(slots=True)
 class FumenBranch(ConvertTypesOnInit):
     """Contains all the data in a single Fumen branch."""
     length: int = 0
@@ -138,7 +138,7 @@ class FumenBranch(ConvertTypesOnInit):
     notes: list = field(default_factory=list)
 
 
-@dataclass
+@dataclass(slots=True)
 class FumenMeasure(ConvertTypesOnInit):
     """Contains all the data in a single Fumen measure."""
     bpm: float = 0.0
@@ -242,7 +242,7 @@ class FumenMeasure(ConvertTypesOnInit):
                 self.branch_info[4:6] = branch_condition[1:]
 
 
-@dataclass
+@dataclass(slots=True)
 class FumenHeader(ConvertTypesOnInit):
     """Contains all the byte values for a Fumen chart file's header."""
     order: str = "<"
@@ -354,27 +354,21 @@ class FumenHeader(ConvertTypesOnInit):
         """Represent the header values as a string of raw bytes."""
         value_list = []
         format_string = self.order
-        for key, val in self.__dict__.items():
+        for key in self.__slots__:
             if key in ["order", "_raw_bytes"]:
                 pass
             elif key == "b000_b431_timing_windows":
-                value_list.extend(list(val))
-                format_string += "f" * len(val)
+                value_list.extend(list(getattr(self, key)))
+                format_string += "f" * len(getattr(self, key))
             else:
-                value_list.append(val)
+                value_list.append(getattr(self, key))
                 format_string += "i"
         raw_bytes = struct.pack(format_string, *value_list)
         assert len(raw_bytes) == 520
         return raw_bytes
 
-    def __repr__(self):
-        # Display truncated version of timing windows
-        return str([v if not isinstance(v, tuple)
-                    else [round(timing, 2) for timing in v[:3]]
-                    for v in self.__dict__.values()])
 
-
-@dataclass
+@dataclass(slots=True)
 class FumenCourse(ConvertTypesOnInit):
     """Contains all the data in a single Fumen (`.bin`) chart file."""
     header: FumenHeader
