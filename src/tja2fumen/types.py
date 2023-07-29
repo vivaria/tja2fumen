@@ -3,12 +3,51 @@ import os
 import struct
 from typing import Dict, List
 
-from pydantic import BaseModel
+from dataclasses import dataclass, field, fields
 
 from tja2fumen.constants import BRANCH_NAMES
 
 
-class TJAData(BaseModel):
+@dataclass
+class ConvertTypesOnInit:
+    """
+    Add type conversion support to dataclasses.
+
+    This mimics type validation from the Pydantic library, without incurring
+    the performance slowdown that comes with using Pydantic's BaseModel class.
+
+    (Pydantic's additional feature set is overkill for this project.)
+    """
+    def __post_init__(self):
+        for f in fields(self):
+            # Check if passed value matches expected type
+            value = getattr(self, f.name)
+            try:
+                correct_type = isinstance(value, f.type)
+            except TypeError:
+                # Catch "TypeError: Subscripted generics cannot be used with
+                #        class and instance checks"
+                # This is thrown when the `typing` module's generic types
+                # are used with subscripted types, e.g.: "List[int]"
+                return
+
+            # If the value is already the correct type, don't try to convert
+            if correct_type:
+                return
+            # Otherwise, try coercing the value to the expected type
+            else:
+                try:
+                    value = f.type(value)
+                    setattr(self, f.name, value)
+                except ValueError as exc:
+                    raise ValueError(
+                        f"Error setting {f.name}: Value '{repr(value)}' "
+                        f"cannot be coerced to type '{f.type}'."
+                    ) from exc
+
+
+@dataclass
+class TJAData(ConvertTypesOnInit):
     """Contains the information for a single note or single command."""
     name: str
     value: str
@@ -16,36 +55,40 @@ class TJAData(BaseModel):
     pos: int
 
 
-class TJAMeasure(BaseModel):
+@dataclass
+class TJAMeasure(ConvertTypesOnInit):
     """Contains all the data in a single TJA measure (denoted by ',')."""
-    notes: List[TJAData] = []
-    events: List[TJAData] = []
-    combined: List[TJAData] = []
+    notes: List[TJAData] = field(default_factory=list)
+    events: List[TJAData] = field(default_factory=list)
+    combined: List[TJAData] = field(default_factory=list)
 
 
-class TJACourse(BaseModel):
+@dataclass
+class TJACourse(ConvertTypesOnInit):
     """Contains all the data in a single TJA `COURSE:` section."""
     BPM: float
     offset: float
     course: str
     level: int = 0
-    balloon: list = []
+    balloon: list = field(default_factory=list)
     score_init: int = 0
     score_diff: int = 0
-    data: list = []
-    branches: Dict[str, List[TJAMeasure]] = {
-        k: [TJAMeasure()] for k in BRANCH_NAMES
-    }
+    data: list = field(default_factory=list)
+    branches: Dict[str, List[TJAMeasure]] = field(
+        default_factory=lambda: {k: [TJAMeasure()] for k in BRANCH_NAMES}
+    )
 
 
-class TJASong(BaseModel):
+@dataclass
+class TJASong(ConvertTypesOnInit):
     """Contains all the data in a single TJA (`.tja`) chart file."""
     BPM: float
     offset: float
     courses: Dict[str, TJACourse]
 
 
-class TJAMeasureProcessed(BaseModel):
+@dataclass
+class TJAMeasureProcessed(ConvertTypesOnInit):
     """
     Contains all the data in a single TJA measure (denoted by ','), but with
     all `#COMMAND` lines processed, and their values stored as attributes.
@@ -66,11 +109,12 @@ class TJAMeasureProcessed(BaseModel):
     delay: float = 0.0
     section: bool = False
     levelhold: bool = False
-    branch_start: List = []
-    data: list = []
+    branch_start: List = field(default_factory=list)
+    data: list = field(default_factory=list)
 
 
-class FumenNote(BaseModel):
+@dataclass
+class FumenNote(ConvertTypesOnInit):
     """Contains all the byte values for a single Fumen note."""
     note_type: str = ''
     pos: float = 0.0
@@ -85,15 +129,17 @@ class FumenNote(BaseModel):
     drumroll_bytes: bytes = b'\x00\x00\x00\x00\x00\x00\x00\x00'
 
 
-class FumenBranch(BaseModel):
+@dataclass
+class FumenBranch(ConvertTypesOnInit):
     """Contains all the data in a single Fumen branch."""
     length: int = 0
     speed: float = 0.0
     padding: int = 0
-    notes: list = []
+    notes: list = field(default_factory=list)
 
 
-class FumenMeasure(BaseModel):
+@dataclass
+class FumenMeasure(ConvertTypesOnInit):
     """Contains all the data in a single Fumen measure."""
     bpm: float = 0.0
     offset_start: float = 0.0
@@ -101,9 +147,11 @@ class FumenMeasure(BaseModel):
     duration: float = 0.0
     gogo: bool = False
     barline: bool = True
-    branch_start: list = []
-    branch_info: List[int] = [-1] * 6
-    branches: Dict[str, FumenBranch] = {b: FumenBranch() for b in BRANCH_NAMES}
+    branch_start: list = field(default_factory=list)
+    branch_info: List[int] = field(default_factory=lambda: [-1] * 6)
+    branches: Dict[str, FumenBranch] = field(
+        default_factory=lambda: {b: FumenBranch() for b in BRANCH_NAMES}
+    )
     padding1: int = 0
     padding2: int = 0
 
@@ -194,10 +242,12 @@ class FumenMeasure(BaseModel):
                 self.branch_info[4:6] = branch_condition[1:]
 
 
-class FumenHeader(BaseModel):
+@dataclass
+class FumenHeader(ConvertTypesOnInit):
     """Contains all the byte values for a Fumen chart file's header."""
     order: str = "<"
-    b000_b431_timing_windows:     List[float] = [25.025, 75.075, 108.422] * 36
+    b000_b431_timing_windows: List[float] = field(default_factory=lambda:
+                                                  [25.025, 75.075, 108.422]*36)
     b432_b435_has_branches:               int = 0
     b436_b439_hp_max:                     int = 10000
     b440_b443_hp_clear:                   int = 8000
@@ -324,9 +374,10 @@ class FumenHeader(BaseModel):
                     for v in self.__dict__.values()])
 
 
-class FumenCourse(BaseModel):
+@dataclass
+class FumenCourse(ConvertTypesOnInit):
     """Contains all the data in a single Fumen (`.bin`) chart file."""
     header: FumenHeader
-    measures: List[FumenMeasure] = []
+    measures: List[FumenMeasure] = field(default_factory=list)
     score_init: int = 0
     score_diff: int = 0
