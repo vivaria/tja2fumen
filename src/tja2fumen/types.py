@@ -1,7 +1,7 @@
 import csv
 import os
 import struct
-from typing import Dict, List, Any, Optional
+from typing import Any, Optional
 
 from dataclasses import dataclass, field, fields
 
@@ -20,9 +20,9 @@ class TJAData:
 @dataclass(slots=True)
 class TJAMeasure:
     """Contains all the data in a single TJA measure (denoted by ',')."""
-    notes: List[str] = field(default_factory=list)
-    events: List[TJAData] = field(default_factory=list)
-    combined: List[TJAData] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+    events: list[TJAData] = field(default_factory=list)
+    combined: list[TJAData] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -36,7 +36,7 @@ class TJACourse:
     score_init: int = 0
     score_diff: int = 0
     data: list[str] = field(default_factory=list)
-    branches: Dict[str, List[TJAMeasure]] = field(
+    branches: dict[str, list[TJAMeasure]] = field(
         default_factory=lambda: {k: [TJAMeasure()] for k in BRANCH_NAMES}
     )
 
@@ -46,7 +46,7 @@ class TJASong:
     """Contains all the data in a single TJA (`.tja`) chart file."""
     BPM: float
     offset: float
-    courses: Dict[str, TJACourse]
+    courses: dict[str, TJACourse]
 
 
 @dataclass(slots=True)
@@ -64,7 +64,7 @@ class TJAMeasureProcessed:
     scroll: float
     gogo: bool
     barline: bool
-    time_sig: List[int]
+    time_sig: list[int]
     subdivisions: int
     pos_start: int = 0
     pos_end: int = 0
@@ -110,8 +110,8 @@ class FumenMeasure:
     duration: float = 0.0
     gogo: bool = False
     barline: bool = True
-    branch_info: List[int] = field(default_factory=lambda: [-1] * 6)
-    branches: Dict[str, FumenBranch] = field(
+    branch_info: list[int] = field(default_factory=lambda: [-1] * 6)
+    branches: dict[str, FumenBranch] = field(
         default_factory=lambda: {b: FumenBranch() for b in BRANCH_NAMES}
     )
     padding1: int = 0
@@ -223,7 +223,7 @@ class FumenMeasure:
 class FumenHeader:
     """Contains all the byte values for a Fumen chart file's header."""
     order: str = "<"
-    b000_b431_timing_windows: List[float] = field(default_factory=lambda:
+    b000_b431_timing_windows: list[float] = field(default_factory=lambda:
                                                   [25.025, 75.075, 108.422]*36)
     b432_b435_has_branches:               int = 0
     b436_b439_hp_max:                     int = 10000
@@ -352,6 +352,6 @@ class FumenHeader:
 class FumenCourse:
     """Contains all the data in a single Fumen (`.bin`) chart file."""
     header: FumenHeader
-    measures: List[FumenMeasure] = field(default_factory=list)
+    measures: list[FumenMeasure] = field(default_factory=list)
     score_init: int = 0
     score_diff: int = 0
