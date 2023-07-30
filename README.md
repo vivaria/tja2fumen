@@ -13,7 +13,16 @@
   <a href="https://github.com/vivaria/tja2fumen/actions/workflows/test_and_publish_release.yml?query=branch%3Amain"><img src="https://img.shields.io/github/actions/workflow/status/vivaria/tja2fumen/test_and_publish_release.yml?label=Tests" alt="Test status (main branch)"></a>
   <a href="https://github.com/vivaria/tja2fumen/releases/latest"><img src="https://img.shields.io/github/v/release/vivaria/tja2fumen" alt="GitHub release (with filter)"></a>
   <a href="https://github.com/vivaria/tja2fumen/blob/main/LICENSE.txt"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License"></a>
+  <a href="https://github.com/pylint-dev/pylint"><img src="https://img.shields.io/badge/Linting-pylint-black" alt="Linting pylint"></a>
+  <a href="https://github.com/PyCQA/flake8"><img src="https://img.shields.io/badge/Linting-flake8-black" alt="Linting flake8"></a>
+  <a href="https://github.com/python/mypy"><img src="https://img.shields.io/badge/Typing-mypy-black" alt="Linting mypy"></a>
 </p>
+
+<p align="center">
+
+
+</p>
+
 
 
 ----
