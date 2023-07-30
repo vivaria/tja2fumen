@@ -1,10 +1,11 @@
 import re
 
-from tja2fumen.types import (TJAMeasureProcessed,
+from tja2fumen.types import (TJACourse, TJAMeasureProcessed,
                              FumenCourse, FumenHeader, FumenMeasure, FumenNote)
 
 
-def process_tja_commands(tja):
+def process_tja_commands(tja: TJACourse) \
+        -> dict[str, list[TJAMeasureProcessed]]:
     """
     Process each #COMMAND present in a TJASong's measures, and assign their
     values as attributes to each measure.
@@ -22,8 +23,9 @@ def process_tja_commands(tja):
     After this function is finished, all the #COMMANDS will be gone, and each
     measure will have attributes (e.g. measure.bpm, measure.scroll) instead.
     """
-    tja_branches_processed = {branch_name: []
-                              for branch_name in tja.branches.keys()}
+    tja_branches_processed: dict[str, list[TJAMeasureProcessed]] = {
+        branch_name: [] for branch_name in tja.branches.keys()
+    }
     for branch_name, branch_measures_tja in tja.branches.items():
         current_bpm = tja.BPM
         current_scroll = 1.0
@@ -50,16 +52,15 @@ def process_tja_commands(tja):
                 elif data.name == 'delay':
                     measure_tja_processed.delay = float(data.value) * 1000
                 elif data.name == 'branch_start':
-                    branch_condition = data.value.split(',')
-                    if branch_condition[0] == 'r':  # r = drumRoll
-                        branch_condition[1] = int(branch_condition[1])
-                        branch_condition[2] = int(branch_condition[2])
-                    elif branch_condition[0] == 'p':  # p = Percentage
-                        branch_condition[1] = float(branch_condition[1]) / 100
-                        branch_condition[2] = float(branch_condition[2]) / 100
-                    measure_tja_processed.branch_start = branch_condition
+                    branch_type, val1, val2 = data.value.split(',')
+                    if branch_type == 'r':  # r = drumRoll
+                        branch_cond = (float(val1), float(val2))
+                    elif branch_type == 'p':  # p = Percentage
+                        branch_cond = (float(val1)/100, float(val2)/100)
+                    measure_tja_processed.branch_type = branch_type
+                    measure_tja_processed.branch_cond = branch_cond
                 elif data.name == 'section':
-                    measure_tja_processed.section = data.value
+                    measure_tja_processed.section = bool(data.value)
                 elif data.name == 'levelhold':
                     measure_tja_processed.levelhold = True
                 elif data.name == 'barline':
@@ -135,7 +136,7 @@ def process_tja_commands(tja):
     return tja_branches_processed
 
 
-def convert_tja_to_fumen(tja):
+def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     """
     Convert TJA data to Fumen data by calculating Fumen-specific values.
 
@@ -193,7 +194,8 @@ def convert_tja_to_fumen(tja):
         branch_points_measure = 0
         current_drumroll = None
         current_levelhold = False
-        branch_conditions = []
+        branch_types: list[str] = []
+        branch_conditions: list[tuple[float, float]] = []
         course_balloons = tja.balloon.copy()
 
         # Iterate through the measures within the branch
@@ -215,12 +217,13 @@ def convert_tja_to_fumen(tja):
             )
 
             # Compute the millisecond offsets for the start/end of each measure
-            measure_fumen.set_ms_offsets(
-                song_offset=tja.offset,
-                delay=measure_tja.delay,
-                prev_measure=(fumen.measures[idx_m-1] if idx_m else None),
-                first_measure=(idx_m == 0)
-            )
+            if idx_m == 0:
+                measure_fumen.set_first_ms_offsets(song_offset=tja.offset)
+            else:
+                measure_fumen.set_ms_offsets(
+                    delay=measure_tja.delay,
+                    prev_measure=fumen.measures[idx_m-1],
+                )
 
             # Handle whether barline should be hidden:
             #     1. Measures where #BARLINEOFF has been set
@@ -232,11 +235,13 @@ def convert_tja_to_fumen(tja):
                 measure_fumen.barline = False
 
             # Check to see if the measure contains a branching condition
-            branch_condition = measure_tja.branch_start
-            if branch_condition:
+            branch_type = measure_tja.branch_type
+            branch_cond = measure_tja.branch_cond
+            if branch_type and branch_cond:
                 # Update the branch_info values for the measure
                 measure_fumen.set_branch_info(
-                    branch_condition, branch_points_total, current_branch,
+                    branch_type, branch_cond,
+                    branch_points_total, current_branch,
                     first_branch_condition=(not branch_conditions),
                     has_section=bool(measure_tja.section),
                     has_levelhold=current_levelhold
@@ -248,7 +253,8 @@ def convert_tja_to_fumen(tja):
                 current_levelhold = False
                 # Keep track of the branch conditions (to later determine how
                 # to set the header bytes for branches)
-                branch_conditions.append(branch_condition)
+                branch_types.append(branch_type)
+                branch_conditions.append(branch_cond)
 
             # NB: We update the branch condition note counter *after*
             # we check the current measure's branch condition.
@@ -276,6 +282,11 @@ def convert_tja_to_fumen(tja):
 
                 # Handle '8' notes (end of a drumroll/balloon)
                 if data.value == "EndDRB":
+                    if not isinstance(current_drumroll, FumenNote):
+                        raise ValueError(
+                            "'8' note encountered without matching "
+                            "drumroll/balloon/kusudama note."
+                        )
                     # If a drumroll spans a single measure, then add the
                     # difference between start/end position
                     if not current_drumroll.multimeasure:
@@ -311,7 +322,7 @@ def convert_tja_to_fumen(tja):
                         note.hits = course_balloons.pop(0)
                     except IndexError:
                         raise ValueError(f"Not enough values for 'BALLOON: "
-                                         f"{','.join(course_balloons)}'")
+                                         f"{course_balloons}'")
                     current_drumroll = note
                 elif note.note_type in ["Drumroll", "DRUMROLL"]:
                     current_drumroll = note
@@ -355,11 +366,11 @@ def convert_tja_to_fumen(tja):
     # If song has only drumroll branching conditions (also allowing percentage
     # conditions that force a level up/level down), then set the header bytes
     # so that only drumrolls contribute to branching.
-    drumroll_only = branch_conditions != [] and all([
-        (cond[0] == 'r') or
-        (cond[0] == 'p' and cond[1] == 0.0 and cond[2] == 0.0) or
-        (cond[0] == 'p' and cond[1] > 1.00 and cond[2] > 1.00)
-        for cond in branch_conditions
+    drumroll_only = branch_types != [] and branch_conditions != [] and all([
+        (branch_type == 'r') or
+        (branch_type == 'p' and cond[0] == 0.0 and cond[1] == 0.0) or
+        (branch_type == 'p' and cond[0] > 1.00 and cond[1] > 1.00)
+        for branch_type, cond in zip(branch_types, branch_conditions)
     ])
     if drumroll_only:
         fumen.header.b468_b471_branch_points_good = 0
@@ -371,9 +382,9 @@ def convert_tja_to_fumen(tja):
 
     # Alternatively, if the song has only percentage-based conditions, then set
     # the header bytes so that only notes and balloons contribute to branching.
-    percentage_only = branch_conditions != [] and all([
-        (condition[0] != 'r')
-        for condition in branch_conditions
+    percentage_only = branch_types != [] and all([
+        (branch_type != 'r')
+        for branch_type in branch_types
     ])
     if percentage_only:
         fumen.header.b480_b483_branch_points_drumroll = 0

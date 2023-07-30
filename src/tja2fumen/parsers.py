@@ -2,6 +2,7 @@ import os
 import re
 import struct
 from copy import deepcopy
+from typing import BinaryIO, Any
 
 from tja2fumen.types import (TJASong, TJACourse, TJAMeasure, TJAData,
                              FumenCourse, FumenMeasure, FumenBranch, FumenNote,
@@ -15,7 +16,7 @@ from tja2fumen.constants import (NORMALIZE_COURSE, COURSE_NAMES, BRANCH_NAMES,
 ###############################################################################
 
 
-def parse_tja(fname_tja):
+def parse_tja(fname_tja: str) -> TJASong:
     """Read in lines of a .tja file and load them into a TJASong object."""
     try:
         tja_text = open(fname_tja, "r", encoding="utf-8-sig").read()
@@ -30,7 +31,7 @@ def parse_tja(fname_tja):
     return tja
 
 
-def split_tja_lines_into_courses(lines):
+def split_tja_lines_into_courses(lines: list[str]) -> TJASong:
     """
     Parse TJA metadata in order to split TJA lines into separate courses.
 
@@ -152,7 +153,7 @@ def split_tja_lines_into_courses(lines):
     return parsed_tja
 
 
-def parse_tja_course_data(course):
+def parse_tja_course_data(course: TJACourse) -> None:
     """
     Parse course data (notes, commands) into a nested song structure.
 
@@ -188,40 +189,41 @@ def parse_tja_course_data(course):
     idx_m_branchstart = 0
     for idx_l, line in enumerate(course.data):
         # 0. Check to see whether line is a command or note data
-        command, name, value, notes = None, None, None, None
+        command, name, value, note_data = '', '', '', ''
         match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
         if match_command:
             command, value = match_command.groups()
             value = '' if value is None else value
         else:
-            notes = line  # If not a command, then line must be note data
+            note_data = line  # If not a command, then line must be note data
 
         # 1. Parse measure notes
-        if notes:
+        if note_data:
             # If measure has ended, then add notes to the current measure,
             # then start a new measure by incrementing idx_m
-            if notes.endswith(','):
-                for branch in (course.branches.keys()
-                               if current_branch == 'all'
-                               else [current_branch]):
-                    course.branches[branch][idx_m].notes += notes[0:-1]
-                    course.branches[branch].append(TJAMeasure())
+            if note_data.endswith(','):
+                for branch_name in (course.branches.keys()
+                                    if current_branch == 'all'
+                                    else [current_branch]):
+                    course.branches[branch_name][idx_m].notes += note_data[:-1]
+                    course.branches[branch_name].append(TJAMeasure())
                 idx_m += 1
             # Otherwise, keep adding notes to the current measure ('idx_m')
             else:
-                for branch in (course.branches.keys()
-                               if current_branch == 'all'
-                               else [current_branch]):
-                    course.branches[branch][idx_m].notes += notes
+                for branch_name in (course.branches.keys()
+                                    if current_branch == 'all'
+                                    else [current_branch]):
+                    course.branches[branch_name][idx_m].notes += note_data
 
         # 2. Parse measure commands that produce an "event"
         elif command in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
                          'DELAY', 'SCROLL', 'BPMCHANGE', 'MEASURE',
                          'LEVELHOLD', 'SECTION', 'BRANCHSTART']:
             # Get position of the event
-            for branch in (course.branches.keys() if current_branch == 'all'
-                           else [current_branch]):
-                pos = len(course.branches[branch][idx_m].notes)
+            for branch_name in (course.branches.keys()
+                                if current_branch == 'all'
+                                else [current_branch]):
+                pos = len(course.branches[branch_name][idx_m].notes)
 
             # Parse event type
             if command == 'GOGOSTART':
@@ -263,9 +265,10 @@ def parse_tja_course_data(course):
                 idx_m_branchstart = idx_m
 
             # Append event to the current measure's events
-            for branch in (course.branches.keys() if current_branch == 'all'
-                           else [current_branch]):
-                course.branches[branch][idx_m].events.append(
+            for branch_name in (course.branches.keys()
+                                if current_branch == 'all'
+                                else [current_branch]):
+                course.branches[branch_name][idx_m].events.append(
                     TJAData(name=name, value=value, pos=pos)
                 )
 
@@ -328,7 +331,8 @@ def parse_tja_course_data(course):
 #                          Fumen-parsing functions                            #
 ###############################################################################
 
-def parse_fumen(fumen_file, exclude_empty_measures=False):
+def parse_fumen(fumen_file: str,
+                exclude_empty_measures: bool = False) -> FumenCourse:
     """
     Parse bytes of a fumen .bin file into nested measures, branches, and notes.
 
@@ -469,7 +473,10 @@ def parse_fumen(fumen_file, exclude_empty_measures=False):
     return song
 
 
-def read_struct(file, order, format_string, seek=None):
+def read_struct(file: BinaryIO,
+                order: str,
+                format_string: str,
+                seek: int = 0) -> tuple[Any, ...]:
     """
     Interpret bytes as packed binary data.
 
