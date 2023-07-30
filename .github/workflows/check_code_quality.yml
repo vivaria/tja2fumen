@@ -1,0 +1,32 @@
+#file: noinspection LongLine
+name: "Check code quality"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  check-code-quality:
+    runs-on: windows-2019
+    steps:
+    - name: Checkout tja2fumen
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10.x'
+
+    - name: Install tja2fumen and its dev dependencies
+      run: |
+        pip install -e .[dev]
+
+    - name: Lint project using flake8
+      run: pflake8
+
+    - name: Type analysis using mypy
+      run: mypy src --strict

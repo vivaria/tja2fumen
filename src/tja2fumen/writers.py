@@ -1,9 +1,11 @@
 import struct
+from typing import BinaryIO, Any
 
+from tja2fumen.types import FumenCourse
 from tja2fumen.constants import BRANCH_NAMES, FUMEN_TYPE_NOTES
 
 
-def write_fumen(path_out, song):
+def write_fumen(path_out: str, song: FumenCourse) -> None:
     """
     Write the values in a FumenCourse object to a `.bin` file.
 
@@ -47,7 +49,11 @@ def write_fumen(path_out, song):
                         file.write(note.drumroll_bytes)
 
 
-def write_struct(file, order, format_string, value_list, seek=None):
+def write_struct(file: BinaryIO,
+                 order: str,
+                 format_string: str,
+                 value_list: list[Any],
+                 seek: int = 0) -> None:
     """Pack (int, float, etc.) values into a string of bytes, then write."""
     if seek:
         file.seek(seek)

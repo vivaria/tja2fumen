@@ -1,9 +1,9 @@
 import csv
 import os
 import struct
-from typing import Dict, List
+from typing import Any, Optional
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 
 from tja2fumen.constants import BRANCH_NAMES
 
@@ -20,9 +20,9 @@ class TJAData:
 @dataclass(slots=True)
 class TJAMeasure:
     """Contains all the data in a single TJA measure (denoted by ',')."""
-    notes: List[TJAData] = field(default_factory=list)
-    events: List[TJAData] = field(default_factory=list)
-    combined: List[TJAData] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
+    events: list[TJAData] = field(default_factory=list)
+    combined: list[TJAData] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -32,11 +32,11 @@ class TJACourse:
     offset: float
     course: str
     level: int = 0
-    balloon: list = field(default_factory=list)
+    balloon: list[int] = field(default_factory=list)
     score_init: int = 0
     score_diff: int = 0
-    data: list = field(default_factory=list)
-    branches: Dict[str, List[TJAMeasure]] = field(
+    data: list[str] = field(default_factory=list)
+    branches: dict[str, list[TJAMeasure]] = field(
         default_factory=lambda: {k: [TJAMeasure()] for k in BRANCH_NAMES}
     )
 
@@ -46,7 +46,7 @@ class TJASong:
     """Contains all the data in a single TJA (`.tja`) chart file."""
     BPM: float
     offset: float
-    courses: Dict[str, TJACourse]
+    courses: dict[str, TJACourse]
 
 
 @dataclass(slots=True)
@@ -64,15 +64,16 @@ class TJAMeasureProcessed:
     scroll: float
     gogo: bool
     barline: bool
-    time_sig: List[int]
+    time_sig: list[int]
     subdivisions: int
     pos_start: int = 0
     pos_end: int = 0
     delay: float = 0.0
     section: bool = False
     levelhold: bool = False
-    branch_start: List = field(default_factory=list)
-    data: list = field(default_factory=list)
+    branch_type: str = ''
+    branch_cond: tuple[float, float] = (0.0, 0.0)
+    data: list[TJAData] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -97,7 +98,7 @@ class FumenBranch:
     length: int = 0
     speed: float = 0.0
     padding: int = 0
-    notes: list = field(default_factory=list)
+    notes: list[FumenNote] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -109,15 +110,17 @@ class FumenMeasure:
     duration: float = 0.0
     gogo: bool = False
     barline: bool = True
-    branch_start: list = field(default_factory=list)
-    branch_info: List[int] = field(default_factory=lambda: [-1] * 6)
-    branches: Dict[str, FumenBranch] = field(
+    branch_info: list[int] = field(default_factory=lambda: [-1] * 6)
+    branches: dict[str, FumenBranch] = field(
         default_factory=lambda: {b: FumenBranch() for b in BRANCH_NAMES}
     )
     padding1: int = 0
     padding2: int = 0
 
-    def set_duration(self, time_sig, measure_length, subdivisions):
+    def set_duration(self,
+                     time_sig: list[int],
+                     measure_length: int,
+                     subdivisions: int) -> None:
         """Compute the millisecond duration of the measure."""
         # First, we compute the duration for a full 4/4 measure.
         full_duration = (4 * 60_000 / self.bpm)
@@ -135,26 +138,37 @@ class FumenMeasure:
         )
         self.duration = (full_duration * measure_size * measure_ratio)
 
-    def set_ms_offsets(self, song_offset, delay, prev_measure, first_measure):
-        """Compute the millisecond offsets for the start/end of the measure."""
-        if first_measure:
-            self.offset_start = (song_offset * -1000) - (4 * 60_000 / self.bpm)
-        else:
-            # First, start with the end timing of the previous measure
-            self.offset_start = prev_measure.offset_end
-            # Add any #DELAY commands
-            self.offset_start += delay
-            # Adjust the start timing to account for #BPMCHANGE commands
-            # (!!! Discovered by tana :3 !!!)
-            self.offset_start += (4 * 60_000 / prev_measure.bpm)
-            self.offset_start -= (4 * 60_000 / self.bpm)
-
+    def set_first_ms_offsets(self, song_offset: float) -> None:
+        # First, start with song's OFFSET: metadata
+        self.offset_start = (song_offset * -1 * 1000)  # s -> ms
+        # Then, subtract a full 4/4 measure for the current BPM
+        self.offset_start -= (4 * 60_000 / self.bpm)
         # Compute the end offset by adding the duration to the start offset
         self.offset_end = self.offset_start + self.duration
 
-    def set_branch_info(self, branch_condition, branch_points_total,
-                        current_branch, first_branch_condition,
-                        has_section, has_levelhold):
+    def set_ms_offsets(self,
+                       delay: float,
+                       prev_measure: 'FumenMeasure') -> None:
+        """Compute the millisecond offsets for the start/end of the measure."""
+        # First, start with the end timing of the previous measure
+        self.offset_start = prev_measure.offset_end
+        # Add any #DELAY commands
+        self.offset_start += delay
+        # Adjust the start timing to account for #BPMCHANGE commands
+        # (!!! Discovered by tana :3 !!!)
+        self.offset_start += (4 * 60_000 / prev_measure.bpm)
+        self.offset_start -= (4 * 60_000 / self.bpm)
+        # Compute the end offset by adding the duration to the start offset
+        self.offset_end = self.offset_start + self.duration
+
+    def set_branch_info(self,
+                        branch_type: str,
+                        branch_cond: tuple[float, float],
+                        branch_points_total: int,
+                        current_branch: str,
+                        first_branch_condition: bool,
+                        has_section: bool,
+                        has_levelhold: bool) -> None:
         """Compute the values that represent branching/diverge conditions."""
         # If levelhold is set, force the branch to stay the same,
         # regardless of the value of the current branch condition.
@@ -171,9 +185,9 @@ class FumenMeasure:
         #    1. Percentage is between 0% and 100%
         #    2. Percentage is above 100% (guaranteed level down)
         #    3. Percentage is 0% (guaranteed level up)
-        elif branch_condition[0] == 'p':
+        elif branch_type == 'p':
             vals = []
-            for percent in branch_condition[1:]:
+            for percent in branch_cond:
                 if 0 < percent <= 1:
                     vals.append(int(branch_points_total * percent))
                 elif percent > 1:
@@ -195,20 +209,21 @@ class FumenMeasure:
         #    3. It's not the first branching condition, and it
         #       doesn't have a #SECTION command.
         # TODO: Determine the behavior for these 3 conditions
-        elif branch_condition[0] == 'r':
+        elif branch_type == 'r':
+            vals = [int(v) for v in branch_cond]
             if current_branch == 'normal':
-                self.branch_info[0:2] = branch_condition[1:]
+                self.branch_info[0:2] = vals
             elif current_branch == 'professional':
-                self.branch_info[2:4] = branch_condition[1:]
+                self.branch_info[2:4] = vals
             elif current_branch == 'master':
-                self.branch_info[4:6] = branch_condition[1:]
+                self.branch_info[4:6] = vals
 
 
 @dataclass(slots=True)
 class FumenHeader:
     """Contains all the byte values for a Fumen chart file's header."""
     order: str = "<"
-    b000_b431_timing_windows: List[float] = field(default_factory=lambda:
+    b000_b431_timing_windows: list[float] = field(default_factory=lambda:
                                                   [25.025, 75.075, 108.422]*36)
     b432_b435_has_branches:               int = 0
     b436_b439_hp_max:                     int = 10000
@@ -233,7 +248,7 @@ class FumenHeader:
     b512_b515_number_of_measures:         int = 0
     b516_b519_unknown_data:               int = 0
 
-    def parse_header_values(self, raw_bytes):
+    def parse_header_values(self, raw_bytes: bytes) -> None:
         """Parse a raw string of 520 bytes to get the header values."""
         self.order = self._parse_order(raw_bytes)
         rb = raw_bytes  # We use a shortened form just for visual clarity:
@@ -261,14 +276,15 @@ class FumenHeader:
         self.b512_b515_number_of_measures         = self.up(rb, "i", 512, 515)
         self.b516_b519_unknown_data               = self.up(rb, "i", 516, 519)
 
-    def up(self, raw_bytes, type_string, s=None, e=None):
+    def up(self, raw_bytes: bytes, type_string: str,
+           s: Optional[int] = None, e: Optional[int] = None) -> Any:
         """Unpack a raw byte string according to specific types."""
         if s is not None and e is not None:
             raw_bytes = raw_bytes[s:e+1]
         vals = struct.unpack(self.order + type_string, raw_bytes)
         return vals[0] if len(vals) == 1 else vals
 
-    def _parse_order(self, raw_bytes):
+    def _parse_order(self, raw_bytes: bytes) -> str:
         """Parse the order of the song (little or big endian)."""
         self.order = ''
         # Bytes 512-515 are the number of measures. We check the values using
@@ -279,7 +295,8 @@ class FumenHeader:
         else:
             return "<"
 
-    def set_hp_bytes(self, n_notes, difficulty, stars):
+    def set_hp_bytes(self, n_notes: int, difficulty: str,
+                     stars: int) -> None:
         """Compute header bytes related to the soul gauge (HP) behavior."""
         # Note: Ura Oni is equivalent to Oni for soul gauge behavior
         difficulty = 'Oni' if difficulty in ['Ura', 'Edit'] else difficulty
@@ -287,7 +304,8 @@ class FumenHeader:
         self.b440_b443_hp_clear = {'Easy': 6000, 'Normal': 7000,
                                    'Hard': 7000, 'Oni': 8000}[difficulty]
 
-    def _get_hp_from_LUTs(self, n_notes, difficulty, stars):
+    def _get_hp_from_LUTs(self, n_notes: int, difficulty: str,
+                          stars: int) -> None:
         """Fetch pre-computed soul gauge values from lookup tables (LUTs)."""
         if not 0 < n_notes <= 2500:
             return
@@ -312,18 +330,18 @@ class FumenHeader:
                     break
 
     @property
-    def raw_bytes(self):
+    def raw_bytes(self) -> bytes:
         """Represent the header values as a string of raw bytes."""
         value_list = []
         format_string = self.order
-        for key in self.__slots__:
-            if key in ["order", "_raw_bytes"]:
+        for f in fields(self):
+            if f.name in ["order", "_raw_bytes"]:
                 pass
-            elif key == "b000_b431_timing_windows":
-                value_list.extend(list(getattr(self, key)))
-                format_string += "f" * len(getattr(self, key))
+            elif f.name == "b000_b431_timing_windows":
+                value_list.extend(list(getattr(self, f.name)))
+                format_string += "f" * len(getattr(self, f.name))
             else:
-                value_list.append(getattr(self, key))
+                value_list.append(getattr(self, f.name))
                 format_string += "i"
         raw_bytes = struct.pack(format_string, *value_list)
         assert len(raw_bytes) == 520
@@ -334,6 +352,6 @@ class FumenHeader:
 class FumenCourse:
     """Contains all the data in a single Fumen (`.bin`) chart file."""
     header: FumenHeader
-    measures: List[FumenMeasure] = field(default_factory=list)
+    measures: list[FumenMeasure] = field(default_factory=list)
     score_init: int = 0
     score_diff: int = 0
