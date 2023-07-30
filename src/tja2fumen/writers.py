@@ -42,7 +42,8 @@ def write_fumen(path_out: str, song: FumenCourse) -> None:
                         extra_vals = [note.hits, note.hits_padding]
                     else:
                         extra_vals = [note.score_init, note.score_diff * 4]
-                    note_struct.extend(extra_vals + [note.duration])
+                    note_struct.extend(extra_vals)
+                    note_struct.append(note.duration)
                     write_struct(file, song.header.order,
                                  format_string="ififHHf",
                                  value_list=note_struct)

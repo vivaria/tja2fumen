@@ -226,6 +226,7 @@ def parse_tja_course_data(course: TJACourse) -> None:
                          'DELAY', 'SCROLL', 'BPMCHANGE', 'MEASURE',
                          'LEVELHOLD', 'SECTION', 'BRANCHSTART']:
             # Get position of the event
+            pos = 0
             for branch_name in (course.branches.keys()
                                 if current_branch == 'all'
                                 else [current_branch]):

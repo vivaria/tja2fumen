@@ -61,6 +61,9 @@ def process_tja_commands(tja: TJACourse) \
                         branch_cond = (float(val1), float(val2))
                     elif branch_type == 'p':  # p = Percentage
                         branch_cond = (float(val1)/100, float(val2)/100)
+                    else:
+                        raise ValueError(f"Invalid #BRANCHSTART type: "
+                                         f"'{branch_type}'.")
                     measure_tja_processed.branch_type = branch_type
                     measure_tja_processed.branch_cond = branch_cond
                 elif data.name == 'section':
@@ -96,7 +99,8 @@ def process_tja_commands(tja: TJACourse) \
                     # - Case 1: Command happens at the start of a measure;
                     #           just change the value directly
                     if data.pos == 0:
-                        setattr(measure_tja_processed, data.name, new_val)
+                        setattr(measure_tja_processed, data.name,
+                                new_val)  # noqa: new_val will always be set
                     # - Case 2: Command happens in the middle of a measure;
                     #           start a new sub-measure
                     else:
@@ -361,11 +365,15 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     # If song has only drumroll branching conditions (also allowing percentage
     # conditions that force a level up/level down), then set the header bytes
     # so that only drumrolls contribute to branching.
-    drumroll_only = branch_types and branch_conditions and all(
-        (branch_type == 'r') or
-        (branch_type == 'p' and cond[0] == 0.0 and cond[1] == 0.0) or
-        (branch_type == 'p' and cond[0] > 1.00 and cond[1] > 1.00)
-        for branch_type, cond in zip(branch_types, branch_conditions)
+    drumroll_only = (
+        branch_types           # noqa: branch_types will always be set
+        and branch_conditions  # noqa: branch_conditions will always be set
+        and all(
+            (branch_type == 'r') or
+            (branch_type == 'p' and cond[0] == 0.0 and cond[1] == 0.0) or
+            (branch_type == 'p' and cond[0] > 1.00 and cond[1] > 1.00)
+            for branch_type, cond in zip(branch_types, branch_conditions)
+        )
     )
     if drumroll_only:
         fumen.header.b468_b471_branch_pts_good = 0
@@ -377,9 +385,12 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
 
     # Alternatively, if the song has only percentage-based conditions, then set
     # the header bytes so that only notes and balloons contribute to branching.
-    percentage_only = branch_types and all(
-        (branch_type != 'r')
-        for branch_type in branch_types
+    percentage_only = (
+        branch_types  # noqa: branch_types will always be set
+        and all(
+            (branch_type != 'r')
+            for branch_type in branch_types
+        )
     )
     if percentage_only:
         fumen.header.b480_b483_branch_pts_drumroll = 0
