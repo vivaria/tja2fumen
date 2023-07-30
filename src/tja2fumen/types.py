@@ -166,8 +166,6 @@ class FumenMeasure:
                         branch_cond: tuple[float, float],
                         branch_points_total: int,
                         current_branch: str,
-                        first_branch_condition: bool,
-                        has_section: bool,
                         has_levelhold: bool) -> None:
         """Compute the values that represent branching/diverge conditions."""
         # If levelhold is set, force the branch to stay the same,
@@ -208,7 +206,6 @@ class FumenMeasure:
         #       has a #SECTION command to reset the accuracy.
         #    3. It's not the first branching condition, and it
         #       doesn't have a #SECTION command.
-        # TODO: Determine the behavior for these 3 conditions
         elif branch_type == 'r':
             vals = [int(v) for v in branch_cond]
             if current_branch == 'normal':
@@ -321,7 +318,8 @@ class FumenHeader:
         }
         key = f"{difficulty}-{star_to_key[difficulty][stars]}"
         pkg_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(pkg_dir, "hp_values.csv"), newline='') as fp:
+        with open(os.path.join(pkg_dir, "hp_values.csv"),
+                  newline='', encoding="utf-8") as fp:
             for num, line in enumerate(csv.DictReader(fp)):
                 if num+1 == n_notes:
                     self.b444_b447_hp_gain_good = int(line[f"good_{key}"])

@@ -364,7 +364,7 @@ def parse_fumen(fumen_file: str,
     header.parse_header_values(file.read(520))
     song = FumenCourse(header=header)
 
-    for measure_number in range(song.header.b512_b515_number_of_measures):
+    for _ in range(song.header.b512_b515_number_of_measures):
         # Parse the measure data using the following `format_string`:
         #   "ffBBHiiiiiii" (12 format characters, 40 bytes per measure)
         #     - 'f': BPM               (one float (4 bytes))
@@ -407,7 +407,7 @@ def parse_fumen(fumen_file: str,
             )
 
             # Iterate through each note in the measure (per branch)
-            for note_number in range(total_notes):
+            for _ in range(total_notes):
                 # Parse the note data using the following `format_string`:
                 #   "ififHHf" (7 format characters, 24 bytes per note cluster)
                 #     - 'i': note type

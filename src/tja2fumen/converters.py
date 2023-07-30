@@ -242,8 +242,6 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 measure_fumen.set_branch_info(
                     branch_type, branch_cond,
                     branch_points_total, current_branch,
-                    first_branch_condition=(not branch_conditions),
-                    has_section=bool(measure_tja.section),
                     has_levelhold=current_levelhold
                 )
                 # Reset the points to prepare for the next `#BRANCHSTART p`
@@ -274,7 +272,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
 
             # Create notes based on TJA measure data
             branch_points_measure = 0
-            for idx_d, data in enumerate(measure_tja.data):
+            for data in measure_tja.data:
                 # Compute the ms position of the note
                 pos_ratio = ((data.pos - measure_tja.pos_start) /
                              (measure_tja.pos_end - measure_tja.pos_start))
@@ -320,9 +318,9 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 if note.note_type in ["Balloon", "Kusudama"]:
                     try:
                         note.hits = course_balloons.pop(0)
-                    except IndexError:
+                    except IndexError as exc:
                         raise ValueError(f"Not enough values for 'BALLOON: "
-                                         f"{course_balloons}'")
+                                         f"{course_balloons}'") from exc
                     current_drumroll = note
                 elif note.note_type in ["Drumroll", "DRUMROLL"]:
                     current_drumroll = note
