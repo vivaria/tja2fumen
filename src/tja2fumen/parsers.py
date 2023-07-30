@@ -1,3 +1,7 @@
+"""
+Functions for parsing TJA files (.tja) and Fumen files (.bin)
+"""
+
 import os
 import re
 import struct
@@ -19,9 +23,11 @@ from tja2fumen.constants import (NORMALIZE_COURSE, COURSE_NAMES, BRANCH_NAMES,
 def parse_tja(fname_tja: str) -> TJASong:
     """Read in lines of a .tja file and load them into a TJASong object."""
     try:
-        tja_text = open(fname_tja, "r", encoding="utf-8-sig").read()
+        with open(fname_tja, "r", encoding="utf-8-sig") as tja_file:
+            tja_text = tja_file.read()
     except UnicodeDecodeError:
-        tja_text = open(fname_tja, "r", encoding="shift-jis").read()
+        with open(fname_tja, "r", encoding="shift-jis") as tja_file:
+            tja_text = tja_file.read()
 
     tja_lines = [line for line in tja_text.splitlines() if line.strip() != '']
     tja = split_tja_lines_into_courses(tja_lines)
@@ -67,9 +73,9 @@ def split_tja_lines_into_courses(lines: list[str]) -> TJASong:
     offset = float([line.split(":")[1] for line in lines
                    if line.startswith("OFFSET")][0])
     parsed_tja = TJASong(
-        BPM=bpm,
+        bpm=bpm,
         offset=offset,
-        courses={course: TJACourse(BPM=bpm, offset=offset, course=course)
+        courses={course: TJACourse(bpm=bpm, offset=offset, course=course)
                  for course in TJA_COURSE_NAMES}
     )
 
@@ -87,7 +93,7 @@ def split_tja_lines_into_courses(lines: list[str]) -> TJASong:
 
             # Course-specific metadata fields
             if name_upper == 'COURSE':
-                if value not in NORMALIZE_COURSE.keys():
+                if value not in NORMALIZE_COURSE:
                     raise ValueError(f"Invalid COURSE value: '{value}'")
                 current_course = NORMALIZE_COURSE[value]
                 current_course_basename = current_course
@@ -125,7 +131,7 @@ def split_tja_lines_into_courses(lines: list[str]) -> TJASong:
                 current_course = current_course_basename + value
                 parsed_tja.courses[current_course] = \
                     deepcopy(parsed_tja.courses[current_course_basename])
-                parsed_tja.courses[current_course].data = list()
+                parsed_tja.courses[current_course].data = []
             elif value:
                 raise ValueError(f"Invalid value '{value}' for #START.")
 
@@ -275,7 +281,7 @@ def parse_tja_course_data(course: TJACourse) -> None:
         # 3. Parse commands that don't create an event
         #    (e.g. simply changing the current branch)
         else:
-            if command == 'START' or command == 'END':
+            if command in ('START', 'END'):
                 current_branch = 'all' if has_branches else 'normal'
             elif command == 'N':
                 current_branch = 'normal'
@@ -318,7 +324,7 @@ def parse_tja_course_data(course: TJACourse) -> None:
 
     # Ensure all branches have the same number of measures
     if has_branches:
-        if len(set([len(b) for b in course.branches.values()])) != 1:
+        if len({len(b) for b in course.branches.values()}) != 1:
             raise ValueError(
                 "Branches do not have the same number of measures. (This "
                 "check was performed prior to splitting up the measures due "
@@ -357,106 +363,103 @@ def parse_fumen(fumen_file: str,
     ├─ FumenMeasure
     └─ ...
     """
-    file = open(fumen_file, "rb")
-    size = os.fstat(file.fileno()).st_size
+    with open(fumen_file, "rb") as file:
+        size = os.fstat(file.fileno()).st_size
 
-    header = FumenHeader()
-    header.parse_header_values(file.read(520))
-    song = FumenCourse(header=header)
+        header = FumenHeader()
+        header.parse_header_values(file.read(520))
+        song = FumenCourse(header=header)
 
-    for measure_number in range(song.header.b512_b515_number_of_measures):
-        # Parse the measure data using the following `format_string`:
-        #   "ffBBHiiiiiii" (12 format characters, 40 bytes per measure)
-        #     - 'f': BPM               (one float (4 bytes))
-        #     - 'f': fumenOffset       (one float (4 bytes))
-        #     - 'B': gogo              (one unsigned char (1 byte))
-        #     - 'B': barline           (one unsigned char (1 byte))
-        #     - 'H': <padding>         (one unsigned short (2 bytes))
-        #     - 'iiiiii': branch_info  (six integers (24 bytes))
-        #     - 'i': <padding>         (one integer (4 bytes)
-        measure_struct = read_struct(file, song.header.order,
-                                     format_string="ffBBHiiiiiii")
-
-        # Create the measure dictionary using the newly-parsed measure data
-        measure = FumenMeasure(
-            bpm=measure_struct[0],
-            offset_start=measure_struct[1],
-            gogo=bool(measure_struct[2]),
-            barline=bool(measure_struct[3]),
-            padding1=measure_struct[4],
-            branch_info=list(measure_struct[5:11]),
-            padding2=measure_struct[11]
-        )
-
-        # Iterate through the three branch types
-        for branch_name in BRANCH_NAMES:
+        for _ in range(song.header.b512_b515_number_of_measures):
             # Parse the measure data using the following `format_string`:
-            #   "HHf" (3 format characters, 8 bytes per branch)
-            #     - 'H': total_notes ( one unsigned short (2 bytes))
-            #     - 'H': <padding>  ( one unsigned short (2 bytes))
-            #     - 'f': speed      ( one float (4 bytes)
-            branch_struct = read_struct(file, song.header.order,
-                                        format_string="HHf")
+            #   "ffBBHiiiiiii" (12 format characters, 40 bytes per measure)
+            #     - 'f': BPM               (one float (4 bytes))
+            #     - 'f': fumenOffset       (one float (4 bytes))
+            #     - 'B': gogo              (one unsigned char (1 byte))
+            #     - 'B': barline           (one unsigned char (1 byte))
+            #     - 'H': <padding>         (one unsigned short (2 bytes))
+            #     - 'iiiiii': branch_info  (six integers (24 bytes))
+            #     - 'i': <padding>         (one integer (4 bytes)
+            measure_struct = read_struct(file, song.header.order,
+                                         format_string="ffBBHiiiiiii")
 
-            # Create the branch dictionary using the newly-parsed branch data
-            total_notes = branch_struct[0]
-            branch = FumenBranch(
-                length=total_notes,
-                padding=branch_struct[1],
-                speed=branch_struct[2],
+            # Create the measure dictionary using the newly-parsed measure data
+            measure = FumenMeasure(
+                bpm=measure_struct[0],
+                offset_start=measure_struct[1],
+                gogo=bool(measure_struct[2]),
+                barline=bool(measure_struct[3]),
+                padding1=measure_struct[4],
+                branch_info=list(measure_struct[5:11]),
+                padding2=measure_struct[11]
             )
 
-            # Iterate through each note in the measure (per branch)
-            for note_number in range(total_notes):
-                # Parse the note data using the following `format_string`:
-                #   "ififHHf" (7 format characters, 24 bytes per note cluster)
-                #     - 'i': note type
-                #     - 'f': note position
-                #     - 'i': item
-                #     - 'f': <padding>
-                #     - 'H': score_init
-                #     - 'H': score_diff
-                #     - 'f': duration
-                # NB: 'item' doesn't seem to be used at all in this function.
-                note_struct = read_struct(file, song.header.order,
-                                          format_string="ififHHf")
+            # Iterate through the three branch types
+            for branch_name in BRANCH_NAMES:
+                # Parse the measure data using the following `format_string`:
+                #   "HHf" (3 format characters, 8 bytes per branch)
+                #     - 'H': total_notes ( one unsigned short (2 bytes))
+                #     - 'H': <padding>  ( one unsigned short (2 bytes))
+                #     - 'f': speed      ( one float (4 bytes)
+                branch_struct = read_struct(file, song.header.order,
+                                            format_string="HHf")
 
-                # Create the note dictionary using the newly-parsed note data
-                note_type = note_struct[0]
-                note = FumenNote(
-                    note_type=FUMEN_NOTE_TYPES[note_type],
-                    pos=note_struct[1],
-                    item=note_struct[2],
-                    padding=note_struct[3],
+                # Create the branch dictionary using newly-parsed branch data
+                total_notes = branch_struct[0]
+                branch = FumenBranch(
+                    length=total_notes,
+                    padding=branch_struct[1],
+                    speed=branch_struct[2],
                 )
 
-                if note_type == 0xa or note_type == 0xc:
-                    # Balloon hits
-                    note.hits = note_struct[4]
-                    note.hits_padding = note_struct[5]
-                else:
-                    song.score_init = note.score_init = note_struct[4]
-                    song.score_diff = note.score_diff = note_struct[5] // 4
+                # Iterate through each note in the measure (per branch)
+                for _ in range(total_notes):
+                    # Parse the note data using the following `format_string`:
+                    #   "ififHHf" (7 format characters, 24b per note cluster)
+                    #     - 'i': note type
+                    #     - 'f': note position
+                    #     - 'i': item
+                    #     - 'f': <padding>
+                    #     - 'H': score_init
+                    #     - 'H': score_diff
+                    #     - 'f': duration
+                    note_struct = read_struct(file, song.header.order,
+                                              format_string="ififHHf")
 
-                # Drumroll/balloon duration
-                note.duration = note_struct[6]
+                    # Create the note dictionary using newly-parsed note data
+                    note_type = note_struct[0]
+                    note = FumenNote(
+                        note_type=FUMEN_NOTE_TYPES[note_type],
+                        pos=note_struct[1],
+                        item=note_struct[2],
+                        padding=note_struct[3],
+                    )
 
-                # Account for padding at the end of drumrolls
-                if note_type == 0x6 or note_type == 0x9 or note_type == 0x62:
-                    note.drumroll_bytes = file.read(8)
+                    if note_type in (0xa, 0xc):
+                        # Balloon hits
+                        note.hits = note_struct[4]
+                        note.hits_padding = note_struct[5]
+                    else:
+                        song.score_init = note.score_init = note_struct[4]
+                        song.score_diff = note.score_diff = note_struct[5] // 4
 
-                # Assign the note to the branch
-                branch.notes.append(note)
+                    # Drumroll/balloon duration
+                    note.duration = note_struct[6]
 
-            # Assign the branch to the measure
-            measure.branches[branch_name] = branch
+                    # Account for padding at the end of drumrolls
+                    if note_type in (0x6, 0x9, 0x62):
+                        note.drumroll_bytes = file.read(8)
 
-        # Assign the measure to the song
-        song.measures.append(measure)
-        if file.tell() >= size:
-            break
+                    # Assign the note to the branch
+                    branch.notes.append(note)
 
-    file.close()
+                # Assign the branch to the measure
+                measure.branches[branch_name] = branch
+
+            # Assign the measure to the song
+            song.measures.append(measure)
+            if file.tell() >= size:
+                break
 
     # NB: Official fumens often include empty measures as a way of inserting
     # barlines for visual effect. But, TJA authors tend not to add these empty

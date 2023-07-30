@@ -1,3 +1,7 @@
+"""
+Constant song properties of TJA and fumen files.
+"""
+
 # Names for branches in diverge songs
 BRANCH_NAMES = ("normal", "professional", "master")
 

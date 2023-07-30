@@ -1,3 +1,7 @@
+"""
+Entry points for tja2fumen.
+"""
+
 import argparse
 import os
 import sys
@@ -39,7 +43,7 @@ def main(argv: Sequence[str] = ()) -> None:
     # Convert parsed TJA courses and write each course to `.bin` files
     for course_name, course in parsed_tja.courses.items():
         convert_and_write(course, course_name, base_name,
-                          single_course=(len(parsed_tja.courses) == 1))
+                          single_course=len(parsed_tja.courses) == 1)
 
 
 def convert_and_write(tja_data: TJACourse,

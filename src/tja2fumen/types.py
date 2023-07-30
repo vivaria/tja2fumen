@@ -1,3 +1,7 @@
+"""
+Dataclasses used to represent song courses, branches, measures, and notes.
+"""
+
 import csv
 import os
 import struct
@@ -28,7 +32,7 @@ class TJAMeasure:
 @dataclass(slots=True)
 class TJACourse:
     """Contains all the data in a single TJA `COURSE:` section."""
-    BPM: float
+    bpm: float
     offset: float
     course: str
     level: int = 0
@@ -44,7 +48,7 @@ class TJACourse:
 @dataclass(slots=True)
 class TJASong:
     """Contains all the data in a single TJA (`.tja`) chart file."""
-    BPM: float
+    bpm: float
     offset: float
     courses: dict[str, TJACourse]
 
@@ -123,7 +127,7 @@ class FumenMeasure:
                      subdivisions: int) -> None:
         """Compute the millisecond duration of the measure."""
         # First, we compute the duration for a full 4/4 measure.
-        full_duration = (4 * 60_000 / self.bpm)
+        full_duration = 4 * 60_000 / self.bpm
         # Next, we adjust this duration based on both:
         #   1. The *actual* measure size (e.g. #MEASURE 1/8, 5/4, etc.)
         #   2. Whether this is a "submeasure" (i.e. whether it contains
@@ -136,11 +140,12 @@ class FumenMeasure:
             1.0 if subdivisions == 0.0  # Avoid DivisionByZeroErrors
             else (measure_length / subdivisions)
         )
-        self.duration = (full_duration * measure_size * measure_ratio)
+        self.duration = full_duration * measure_size * measure_ratio
 
     def set_first_ms_offsets(self, song_offset: float) -> None:
+        """Compute the ms offsets for the start/end of the first measure."""
         # First, start with song's OFFSET: metadata
-        self.offset_start = (song_offset * -1 * 1000)  # s -> ms
+        self.offset_start = song_offset * -1 * 1000  # s -> ms
         # Then, subtract a full 4/4 measure for the current BPM
         self.offset_start -= (4 * 60_000 / self.bpm)
         # Compute the end offset by adding the duration to the start offset
@@ -149,7 +154,7 @@ class FumenMeasure:
     def set_ms_offsets(self,
                        delay: float,
                        prev_measure: 'FumenMeasure') -> None:
-        """Compute the millisecond offsets for the start/end of the measure."""
+        """Compute the ms offsets for the start/end of a given measure."""
         # First, start with the end timing of the previous measure
         self.offset_start = prev_measure.offset_end
         # Add any #DELAY commands
@@ -166,8 +171,6 @@ class FumenMeasure:
                         branch_cond: tuple[float, float],
                         branch_points_total: int,
                         current_branch: str,
-                        first_branch_condition: bool,
-                        has_section: bool,
                         has_levelhold: bool) -> None:
         """Compute the values that represent branching/diverge conditions."""
         # If levelhold is set, force the branch to stay the same,
@@ -208,7 +211,6 @@ class FumenMeasure:
         #       has a #SECTION command to reset the accuracy.
         #    3. It's not the first branching condition, and it
         #       doesn't have a #SECTION command.
-        # TODO: Determine the behavior for these 3 conditions
         elif branch_type == 'r':
             vals = [int(v) for v in branch_cond]
             if current_branch == 'normal':
@@ -234,78 +236,78 @@ class FumenHeader:
     b456_b459_normal_normal_ratio:        int = 65536
     b460_b463_normal_professional_ratio:  int = 65536
     b464_b467_normal_master_ratio:        int = 65536
-    b468_b471_branch_points_good:         int = 20
-    b472_b475_branch_points_ok:           int = 10
-    b476_b479_branch_points_bad:          int = 0
-    b480_b483_branch_points_drumroll:     int = 1
-    b484_b487_branch_points_good_big:     int = 20
-    b488_b491_branch_points_ok_big:       int = 10
-    b492_b495_branch_points_drumroll_big: int = 1
-    b496_b499_branch_points_balloon:      int = 30
-    b500_b503_branch_points_kusudama:     int = 30
-    b504_b507_branch_points_unknown:      int = 20
+    b468_b471_branch_pts_good:         int = 20
+    b472_b475_branch_pts_ok:           int = 10
+    b476_b479_branch_pts_bad:          int = 0
+    b480_b483_branch_pts_drumroll:     int = 1
+    b484_b487_branch_pts_good_big:     int = 20
+    b488_b491_branch_pts_ok_big:       int = 10
+    b492_b495_branch_pts_drumroll_big: int = 1
+    b496_b499_branch_pts_balloon:      int = 30
+    b500_b503_branch_pts_kusudama:     int = 30
+    b504_b507_branch_pts_unknown:      int = 20
     b508_b511_dummy_data:                 int = 12345678
     b512_b515_number_of_measures:         int = 0
     b516_b519_unknown_data:               int = 0
 
     def parse_header_values(self, raw_bytes: bytes) -> None:
         """Parse a raw string of 520 bytes to get the header values."""
-        self.order = self._parse_order(raw_bytes)
-        rb = raw_bytes  # We use a shortened form just for visual clarity:
-        self.b000_b431_timing_windows           = self.up(rb, "f"*108, 0, 431)
-        self.b432_b435_has_branches               = self.up(rb, "i", 432, 435)
-        self.b436_b439_hp_max                     = self.up(rb, "i", 436, 439)
-        self.b440_b443_hp_clear                   = self.up(rb, "i", 440, 443)
-        self.b444_b447_hp_gain_good               = self.up(rb, "i", 444, 447)
-        self.b448_b451_hp_gain_ok                 = self.up(rb, "i", 448, 451)
-        self.b452_b455_hp_loss_bad                = self.up(rb, "i", 452, 455)
-        self.b456_b459_normal_normal_ratio        = self.up(rb, "i", 456, 459)
-        self.b460_b463_normal_professional_ratio  = self.up(rb, "i", 460, 463)
-        self.b464_b467_normal_master_ratio        = self.up(rb, "i", 464, 467)
-        self.b468_b471_branch_points_good         = self.up(rb, "i", 468, 471)
-        self.b472_b475_branch_points_ok           = self.up(rb, "i", 472, 475)
-        self.b476_b479_branch_points_bad          = self.up(rb, "i", 476, 479)
-        self.b480_b483_branch_points_drumroll     = self.up(rb, "i", 480, 483)
-        self.b484_b487_branch_points_good_big     = self.up(rb, "i", 484, 487)
-        self.b488_b491_branch_points_ok_big       = self.up(rb, "i", 488, 491)
-        self.b492_b495_branch_points_drumroll_big = self.up(rb, "i", 492, 495)
-        self.b496_b499_branch_points_balloon      = self.up(rb, "i", 496, 499)
-        self.b500_b503_branch_points_kusudama     = self.up(rb, "i", 500, 503)
-        self.b504_b507_branch_points_unknown      = self.up(rb, "i", 504, 507)
-        self.b508_b511_dummy_data                 = self.up(rb, "i", 508, 511)
-        self.b512_b515_number_of_measures         = self.up(rb, "i", 512, 515)
-        self.b516_b519_unknown_data               = self.up(rb, "i", 516, 519)
+        self._parse_order(raw_bytes)
+        raw = raw_bytes  # We use a shortened form just for visual clarity:
+        self.b000_b431_timing_windows          = self.unp(raw, "f"*108, 0, 431)
+        self.b432_b435_has_branches              = self.unp(raw, "i", 432, 435)
+        self.b436_b439_hp_max                    = self.unp(raw, "i", 436, 439)
+        self.b440_b443_hp_clear                  = self.unp(raw, "i", 440, 443)
+        self.b444_b447_hp_gain_good              = self.unp(raw, "i", 444, 447)
+        self.b448_b451_hp_gain_ok                = self.unp(raw, "i", 448, 451)
+        self.b452_b455_hp_loss_bad               = self.unp(raw, "i", 452, 455)
+        self.b456_b459_normal_normal_ratio       = self.unp(raw, "i", 456, 459)
+        self.b460_b463_normal_professional_ratio = self.unp(raw, "i", 460, 463)
+        self.b464_b467_normal_master_ratio       = self.unp(raw, "i", 464, 467)
+        self.b468_b471_branch_pts_good           = self.unp(raw, "i", 468, 471)
+        self.b472_b475_branch_pts_ok             = self.unp(raw, "i", 472, 475)
+        self.b476_b479_branch_pts_bad            = self.unp(raw, "i", 476, 479)
+        self.b480_b483_branch_pts_drumroll       = self.unp(raw, "i", 480, 483)
+        self.b484_b487_branch_pts_good_big       = self.unp(raw, "i", 484, 487)
+        self.b488_b491_branch_pts_ok_big         = self.unp(raw, "i", 488, 491)
+        self.b492_b495_branch_pts_drumroll_big   = self.unp(raw, "i", 492, 495)
+        self.b496_b499_branch_pts_balloon        = self.unp(raw, "i", 496, 499)
+        self.b500_b503_branch_pts_kusudama       = self.unp(raw, "i", 500, 503)
+        self.b504_b507_branch_pts_unknown        = self.unp(raw, "i", 504, 507)
+        self.b508_b511_dummy_data                = self.unp(raw, "i", 508, 511)
+        self.b512_b515_number_of_measures        = self.unp(raw, "i", 512, 515)
+        self.b516_b519_unknown_data              = self.unp(raw, "i", 516, 519)
 
-    def up(self, raw_bytes: bytes, type_string: str,
-           s: Optional[int] = None, e: Optional[int] = None) -> Any:
+    def unp(self, raw_bytes: bytes, type_string: str,
+            start: Optional[int] = None, end: Optional[int] = None) -> Any:
         """Unpack a raw byte string according to specific types."""
-        if s is not None and e is not None:
-            raw_bytes = raw_bytes[s:e+1]
+        if start is not None and end is not None:
+            raw_bytes = raw_bytes[start:end+1]
         vals = struct.unpack(self.order + type_string, raw_bytes)
         return vals[0] if len(vals) == 1 else vals
 
-    def _parse_order(self, raw_bytes: bytes) -> str:
+    def _parse_order(self, raw_bytes: bytes) -> None:
         """Parse the order of the song (little or big endian)."""
         self.order = ''
         # Bytes 512-515 are the number of measures. We check the values using
         # both little and big endian, then compare to see which is correct.
-        if (self.up(raw_bytes, ">I", 512, 515) <
-                self.up(raw_bytes, "<I", 512, 515)):
-            return ">"
+        if (self.unp(raw_bytes, ">I", 512, 515) <
+                self.unp(raw_bytes, "<I", 512, 515)):
+            self.order = ">"
         else:
-            return "<"
+            self.order = "<"
 
     def set_hp_bytes(self, n_notes: int, difficulty: str,
                      stars: int) -> None:
         """Compute header bytes related to the soul gauge (HP) behavior."""
         # Note: Ura Oni is equivalent to Oni for soul gauge behavior
         difficulty = 'Oni' if difficulty in ['Ura', 'Edit'] else difficulty
-        self._get_hp_from_LUTs(n_notes, difficulty, stars)
+        self._get_hp_from_lookup_tables(n_notes, difficulty, stars)
         self.b440_b443_hp_clear = {'Easy': 6000, 'Normal': 7000,
                                    'Hard': 7000, 'Oni': 8000}[difficulty]
 
-    def _get_hp_from_LUTs(self, n_notes: int, difficulty: str,
-                          stars: int) -> None:
+    def _get_hp_from_lookup_tables(self, n_notes: int, difficulty: str,
+                                   stars: int) -> None:
         """Fetch pre-computed soul gauge values from lookup tables (LUTs)."""
         if not 0 < n_notes <= 2500:
             return
@@ -321,8 +323,9 @@ class FumenHeader:
         }
         key = f"{difficulty}-{star_to_key[difficulty][stars]}"
         pkg_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(pkg_dir, "hp_values.csv"), newline='') as fp:
-            for num, line in enumerate(csv.DictReader(fp)):
+        with open(os.path.join(pkg_dir, "hp_values.csv"),
+                  newline='', encoding="utf-8") as csv_file:
+            for num, line in enumerate(csv.DictReader(csv_file)):
                 if num+1 == n_notes:
                     self.b444_b447_hp_gain_good = int(line[f"good_{key}"])
                     self.b448_b451_hp_gain_ok = int(line[f"ok_{key}"])
@@ -334,14 +337,14 @@ class FumenHeader:
         """Represent the header values as a string of raw bytes."""
         value_list = []
         format_string = self.order
-        for f in fields(self):
-            if f.name in ["order", "_raw_bytes"]:
+        for byte_field in fields(self):
+            if byte_field.name in ["order", "_raw_bytes"]:
                 pass
-            elif f.name == "b000_b431_timing_windows":
-                value_list.extend(list(getattr(self, f.name)))
-                format_string += "f" * len(getattr(self, f.name))
+            elif byte_field.name == "b000_b431_timing_windows":
+                value_list.extend(list(getattr(self, byte_field.name)))
+                format_string += "f" * len(getattr(self, byte_field.name))
             else:
-                value_list.append(getattr(self, f.name))
+                value_list.append(getattr(self, byte_field.name))
                 format_string += "i"
         raw_bytes = struct.pack(format_string, *value_list)
         assert len(raw_bytes) == 520

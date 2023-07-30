@@ -19,7 +19,7 @@ tja2fumen = "tja2fumen:main"
 
 [project.optional-dependencies]
 dev = ["pytest", "build", "pyinstaller", "twine", "toml-cli",
-       "flake8", "pyproject-flake8", "mypy"]
+       "flake8", "pyproject-flake8", "mypy", "pylint"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -33,4 +33,13 @@ exclude = "venv/"
 per-file-ignores = """
     ./src/tja2fumen/types.py: E221
     ./testing/test_conversion.py: E221, E272
+"""
+
+[tool.pylint.'MESSAGES CONTROL']
+disable = """
+    too-many-instance-attributes,
+    too-many-branches,
+    too-many-arguments,
+    too-many-locals,
+    too-many-statements
 """

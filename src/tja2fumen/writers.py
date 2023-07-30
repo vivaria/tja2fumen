@@ -1,3 +1,7 @@
+"""
+Functions for writing song data to fumen files (.bin)
+"""
+
 import struct
 from typing import BinaryIO, Any
 
@@ -15,8 +19,7 @@ def write_fumen(path_out: str, song: FumenCourse) -> None:
     with open(path_out, "wb") as file:
         file.write(song.header.raw_bytes)
 
-        for measure_number in range(len(song.measures)):
-            measure = song.measures[measure_number]
+        for measure in song.measures:
             measure_struct = ([measure.bpm, measure.offset_start,
                                int(measure.gogo), int(measure.barline),
                                measure.padding1] + measure.branch_info +
@@ -25,15 +28,14 @@ def write_fumen(path_out: str, song: FumenCourse) -> None:
                          format_string="ffBBHiiiiiii",
                          value_list=measure_struct)
 
-            for branch_number in range(len(BRANCH_NAMES)):
-                branch = measure.branches[BRANCH_NAMES[branch_number]]
+            for branch_name in BRANCH_NAMES:
+                branch = measure.branches[branch_name]
                 branch_struct = [branch.length, branch.padding, branch.speed]
                 write_struct(file, song.header.order,
                              format_string="HHf",
                              value_list=branch_struct)
 
-                for note_number in range(branch.length):
-                    note = branch.notes[note_number]
+                for note in branch.notes:
                     note_struct = [FUMEN_TYPE_NOTES[note.note_type], note.pos,
                                    note.item, note.padding]
                     if note.hits:
