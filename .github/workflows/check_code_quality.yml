@@ -27,3 +27,6 @@ jobs:
 
     - name: Lint project using flake8
       run: pflake8
+
+    - name: Type analysis using mypy
+      run: mypy src --strict
