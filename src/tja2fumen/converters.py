@@ -121,14 +121,7 @@ def process_tja_commands(tja: TJACourse) \
 
     has_branches = all(len(b) for b in tja_branches_processed.values())
     if has_branches:
-        if len(set([len(b) for b in tja.branches.values()])) != 1:
-            raise ValueError(
-                "Branches do not have the same number of measures. (This "
-                "check was performed prior to splitting up the measures due "
-                "to mid-measure commands. Please check the number of ',' you"
-                "have in each branch.)"
-            )
-        if len(set([len(b) for b in tja_branches_processed.values()])) != 1:
+        if len({len(b) for b in tja_branches_processed.values()}) != 1:
             raise ValueError(
                 "Branches do not have the same number of measures. (This "
                 "check was performed after splitting up the measures due "
@@ -186,7 +179,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     # Set song metadata using information from the processed measures
     fumen.header.b512_b515_number_of_measures = n_measures
     fumen.header.b432_b435_has_branches = int(all(
-        [len(b) for b in tja_branches_processed.values()]
+        len(b) for b in tja_branches_processed.values()
     ))
 
     # Iterate through the different branches in the TJA
@@ -368,12 +361,12 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     # If song has only drumroll branching conditions (also allowing percentage
     # conditions that force a level up/level down), then set the header bytes
     # so that only drumrolls contribute to branching.
-    drumroll_only = branch_types and branch_conditions and all([
+    drumroll_only = branch_types and branch_conditions and all(
         (branch_type == 'r') or
         (branch_type == 'p' and cond[0] == 0.0 and cond[1] == 0.0) or
         (branch_type == 'p' and cond[0] > 1.00 and cond[1] > 1.00)
         for branch_type, cond in zip(branch_types, branch_conditions)
-    ])
+    )
     if drumroll_only:
         fumen.header.b468_b471_branch_pts_good = 0
         fumen.header.b484_b487_branch_pts_good_big = 0
@@ -384,10 +377,10 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
 
     # Alternatively, if the song has only percentage-based conditions, then set
     # the header bytes so that only notes and balloons contribute to branching.
-    percentage_only = branch_types and all([
+    percentage_only = branch_types and all(
         (branch_type != 'r')
         for branch_type in branch_types
-    ])
+    )
     if percentage_only:
         fumen.header.b480_b483_branch_pts_drumroll = 0
         fumen.header.b492_b495_branch_pts_drumroll_big = 0

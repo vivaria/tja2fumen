@@ -79,15 +79,15 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
         # cannot be expressed in a TJA file. So, we skip checking the
         # `branch_point` header values for KAGEKIYO.
         if id_song != 'genpe':
-            for header_property in ['b468_b471_branch_points_good',
-                                    'b472_b475_branch_points_ok',
-                                    'b476_b479_branch_points_bad',
-                                    'b480_b483_branch_points_drumroll',
-                                    'b484_b487_branch_points_good_big',
-                                    'b488_b491_branch_points_ok_big',
-                                    'b492_b495_branch_points_drumroll_big',
-                                    'b496_b499_branch_points_balloon',
-                                    'b500_b503_branch_points_kusudama']:
+            for header_property in ['b468_b471_branch_pts_good',
+                                    'b472_b475_branch_pts_ok',
+                                    'b476_b479_branch_pts_bad',
+                                    'b480_b483_branch_pts_drumroll',
+                                    'b484_b487_branch_pts_good_big',
+                                    'b488_b491_branch_pts_ok_big',
+                                    'b492_b495_branch_pts_drumroll_big',
+                                    'b496_b499_branch_pts_balloon',
+                                    'b500_b503_branch_pts_kusudama']:
                 check(co_song.header, ca_song.header, header_property)
         # 2. Check song metadata
         check(co_song, ca_song, 'score_init')
@@ -199,22 +199,22 @@ def normalize_type(note_type):
 
 
 def checkValidHeader(header):
-    assert len(header.raw_bytes)                       == 520
-    assert header.b432_b435_has_branches               in [0, 1]
-    assert header.b436_b439_hp_max                     == 10000
-    assert header.b440_b443_hp_clear                   in [6000, 7000, 8000]
-    assert 10   <= header.b444_b447_hp_gain_good       <= 1020
-    assert 5    <= header.b448_b451_hp_gain_ok         <= 1020
-    assert -765 <= header.b452_b455_hp_loss_bad        <= -20
-    assert header.b456_b459_normal_normal_ratio        <= 65536
-    assert header.b460_b463_normal_professional_ratio  <= 65536
-    assert header.b464_b467_normal_master_ratio        <= 65536
-    assert header.b468_b471_branch_pts_good         in [20, 0, 1, 2]
-    assert header.b472_b475_branch_pts_ok           in [10, 0, 1]
-    assert header.b476_b479_branch_pts_bad          == 0
-    assert header.b480_b483_branch_pts_drumroll     in [1, 0]
-    assert header.b484_b487_branch_pts_good_big     in [20, 0, 1, 2]
-    assert header.b488_b491_branch_pts_ok_big       in [10, 0, 1]
-    assert header.b492_b495_branch_pts_drumroll_big in [1, 0]
-    assert header.b496_b499_branch_pts_balloon      in [30, 0, 1]
-    assert header.b500_b503_branch_pts_kusudama     in [30, 0]
+    assert len(header.raw_bytes)                      == 520
+    assert header.b432_b435_has_branches              in [0, 1]
+    assert header.b436_b439_hp_max                    == 10000
+    assert header.b440_b443_hp_clear                  in [6000, 7000, 8000]
+    assert 10   <= header.b444_b447_hp_gain_good      <= 1020
+    assert 5    <= header.b448_b451_hp_gain_ok        <= 1020
+    assert -765 <= header.b452_b455_hp_loss_bad       <= -20
+    assert header.b456_b459_normal_normal_ratio       <= 65536
+    assert header.b460_b463_normal_professional_ratio <= 65536
+    assert header.b464_b467_normal_master_ratio       <= 65536
+    assert header.b468_b471_branch_pts_good           in [20, 0, 1, 2]
+    assert header.b472_b475_branch_pts_ok             in [10, 0, 1]
+    assert header.b476_b479_branch_pts_bad            == 0
+    assert header.b480_b483_branch_pts_drumroll       in [1, 0]
+    assert header.b484_b487_branch_pts_good_big       in [20, 0, 1, 2]
+    assert header.b488_b491_branch_pts_ok_big         in [10, 0, 1]
+    assert header.b492_b495_branch_pts_drumroll_big   in [1, 0]
+    assert header.b496_b499_branch_pts_balloon        in [30, 0, 1]
+    assert header.b500_b503_branch_pts_kusudama       in [30, 0]

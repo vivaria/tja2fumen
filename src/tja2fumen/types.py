@@ -252,7 +252,7 @@ class FumenHeader:
 
     def parse_header_values(self, raw_bytes: bytes) -> None:
         """Parse a raw string of 520 bytes to get the header values."""
-        self.order = self._parse_order(raw_bytes)
+        self._parse_order(raw_bytes)
         raw = raw_bytes  # We use a shortened form just for visual clarity:
         self.b000_b431_timing_windows          = self.unp(raw, "f"*108, 0, 431)
         self.b432_b435_has_branches              = self.unp(raw, "i", 432, 435)
@@ -286,16 +286,16 @@ class FumenHeader:
         vals = struct.unpack(self.order + type_string, raw_bytes)
         return vals[0] if len(vals) == 1 else vals
 
-    def _parse_order(self, raw_bytes: bytes) -> str:
+    def _parse_order(self, raw_bytes: bytes) -> None:
         """Parse the order of the song (little or big endian)."""
         self.order = ''
         # Bytes 512-515 are the number of measures. We check the values using
         # both little and big endian, then compare to see which is correct.
         if (self.unp(raw_bytes, ">I", 512, 515) <
                 self.unp(raw_bytes, "<I", 512, 515)):
-            return ">"
+            self.order = ">"
         else:
-            return "<"
+            self.order = "<"
 
     def set_hp_bytes(self, n_notes: int, difficulty: str,
                      stars: int) -> None:
