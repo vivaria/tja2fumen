@@ -29,7 +29,7 @@ jobs:
       run: pflake8
 
     - name: Strict linting using pylint
-      run: pylint src --disable=C,R
+      run: pylint src --disable=R
 
     - name: Type analysis using mypy
       run: mypy src --strict

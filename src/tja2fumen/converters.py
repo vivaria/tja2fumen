@@ -1,3 +1,7 @@
+"""
+Functions for converting TJA song data to Fumen song data.
+"""
+
 import re
 
 from tja2fumen.types import (TJACourse, TJAMeasureProcessed,
@@ -27,7 +31,7 @@ def process_tja_commands(tja: TJACourse) \
         branch_name: [] for branch_name in tja.branches.keys()
     }
     for branch_name, branch_measures_tja in tja.branches.items():
-        current_bpm = tja.BPM
+        current_bpm = tja.bpm
         current_scroll = 1.0
         current_gogo = False
         current_barline = True
@@ -92,7 +96,7 @@ def process_tja_commands(tja: TJACourse) \
                     # - Case 1: Command happens at the start of a measure;
                     #           just change the value directly
                     if data.pos == 0:
-                        measure_tja_processed.__setattr__(data.name, new_val)
+                        setattr(measure_tja_processed, data.name, new_val)
                     # - Case 2: Command happens in the middle of a measure;
                     #           start a new sub-measure
                     else:
@@ -188,7 +192,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     # Iterate through the different branches in the TJA
     total_notes = {'normal': 0, 'professional': 0, 'master': 0}
     for current_branch, branch_tja in tja_branches_processed.items():
-        if not len(branch_tja):
+        if not branch_tja:
             continue
         branch_points_total = 0
         branch_points_measure = 0
@@ -276,7 +280,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 # Compute the ms position of the note
                 pos_ratio = ((data.pos - measure_tja.pos_start) /
                              (measure_tja.pos_end - measure_tja.pos_start))
-                note_pos = (measure_fumen.duration * pos_ratio)
+                note_pos = measure_fumen.duration * pos_ratio
 
                 # Handle '8' notes (end of a drumroll/balloon)
                 if data.value == "EndDRB":
@@ -332,13 +336,13 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
 
                 # Track branch points (to later compute `#BRANCHSTART p` vals)
                 if note.note_type in ['Don', 'Ka']:
-                    pts_to_add = fumen.header.b468_b471_branch_points_good
+                    pts_to_add = fumen.header.b468_b471_branch_pts_good
                 elif note.note_type in ['DON', 'KA']:
-                    pts_to_add = fumen.header.b484_b487_branch_points_good_big
+                    pts_to_add = fumen.header.b484_b487_branch_pts_good_big
                 elif note.note_type == 'Balloon':
-                    pts_to_add = fumen.header.b496_b499_branch_points_balloon
+                    pts_to_add = fumen.header.b496_b499_branch_pts_balloon
                 elif note.note_type == 'Kusudama':
-                    pts_to_add = fumen.header.b500_b503_branch_points_kusudama
+                    pts_to_add = fumen.header.b500_b503_branch_pts_kusudama
                 else:
                     pts_to_add = 0  # Drumrolls not relevant for `p` conditions
                 branch_points_measure += pts_to_add
@@ -364,29 +368,29 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     # If song has only drumroll branching conditions (also allowing percentage
     # conditions that force a level up/level down), then set the header bytes
     # so that only drumrolls contribute to branching.
-    drumroll_only = branch_types != [] and branch_conditions != [] and all([
+    drumroll_only = branch_types and branch_conditions and all([
         (branch_type == 'r') or
         (branch_type == 'p' and cond[0] == 0.0 and cond[1] == 0.0) or
         (branch_type == 'p' and cond[0] > 1.00 and cond[1] > 1.00)
         for branch_type, cond in zip(branch_types, branch_conditions)
     ])
     if drumroll_only:
-        fumen.header.b468_b471_branch_points_good = 0
-        fumen.header.b484_b487_branch_points_good_big = 0
-        fumen.header.b472_b475_branch_points_ok = 0
-        fumen.header.b488_b491_branch_points_ok_big = 0
-        fumen.header.b496_b499_branch_points_balloon = 0
-        fumen.header.b500_b503_branch_points_kusudama = 0
+        fumen.header.b468_b471_branch_pts_good = 0
+        fumen.header.b484_b487_branch_pts_good_big = 0
+        fumen.header.b472_b475_branch_pts_ok = 0
+        fumen.header.b488_b491_branch_pts_ok_big = 0
+        fumen.header.b496_b499_branch_pts_balloon = 0
+        fumen.header.b500_b503_branch_pts_kusudama = 0
 
     # Alternatively, if the song has only percentage-based conditions, then set
     # the header bytes so that only notes and balloons contribute to branching.
-    percentage_only = branch_types != [] and all([
+    percentage_only = branch_types and all([
         (branch_type != 'r')
         for branch_type in branch_types
     ])
     if percentage_only:
-        fumen.header.b480_b483_branch_points_drumroll = 0
-        fumen.header.b492_b495_branch_points_drumroll_big = 0
+        fumen.header.b480_b483_branch_pts_drumroll = 0
+        fumen.header.b492_b495_branch_pts_drumroll_big = 0
 
     # Compute the ratio between normal and professional/master branches
     if total_notes['professional']:

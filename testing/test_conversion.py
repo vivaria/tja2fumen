@@ -209,12 +209,12 @@ def checkValidHeader(header):
     assert header.b456_b459_normal_normal_ratio        <= 65536
     assert header.b460_b463_normal_professional_ratio  <= 65536
     assert header.b464_b467_normal_master_ratio        <= 65536
-    assert header.b468_b471_branch_points_good         in [20, 0, 1, 2]
-    assert header.b472_b475_branch_points_ok           in [10, 0, 1]
-    assert header.b476_b479_branch_points_bad          == 0
-    assert header.b480_b483_branch_points_drumroll     in [1, 0]
-    assert header.b484_b487_branch_points_good_big     in [20, 0, 1, 2]
-    assert header.b488_b491_branch_points_ok_big       in [10, 0, 1]
-    assert header.b492_b495_branch_points_drumroll_big in [1, 0]
-    assert header.b496_b499_branch_points_balloon      in [30, 0, 1]
-    assert header.b500_b503_branch_points_kusudama     in [30, 0]
+    assert header.b468_b471_branch_pts_good         in [20, 0, 1, 2]
+    assert header.b472_b475_branch_pts_ok           in [10, 0, 1]
+    assert header.b476_b479_branch_pts_bad          == 0
+    assert header.b480_b483_branch_pts_drumroll     in [1, 0]
+    assert header.b484_b487_branch_pts_good_big     in [20, 0, 1, 2]
+    assert header.b488_b491_branch_pts_ok_big       in [10, 0, 1]
+    assert header.b492_b495_branch_pts_drumroll_big in [1, 0]
+    assert header.b496_b499_branch_pts_balloon      in [30, 0, 1]
+    assert header.b500_b503_branch_pts_kusudama     in [30, 0]

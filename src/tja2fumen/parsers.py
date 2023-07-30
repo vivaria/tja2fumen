@@ -1,3 +1,7 @@
+"""
+Functions for parsing TJA files (.tja) and Fumen files (.bin)
+"""
+
 import os
 import re
 import struct
@@ -67,9 +71,9 @@ def split_tja_lines_into_courses(lines: list[str]) -> TJASong:
     offset = float([line.split(":")[1] for line in lines
                    if line.startswith("OFFSET")][0])
     parsed_tja = TJASong(
-        BPM=bpm,
+        bpm=bpm,
         offset=offset,
-        courses={course: TJACourse(BPM=bpm, offset=offset, course=course)
+        courses={course: TJACourse(bpm=bpm, offset=offset, course=course)
                  for course in TJA_COURSE_NAMES}
     )
 
@@ -87,7 +91,7 @@ def split_tja_lines_into_courses(lines: list[str]) -> TJASong:
 
             # Course-specific metadata fields
             if name_upper == 'COURSE':
-                if value not in NORMALIZE_COURSE.keys():
+                if value not in NORMALIZE_COURSE:
                     raise ValueError(f"Invalid COURSE value: '{value}'")
                 current_course = NORMALIZE_COURSE[value]
                 current_course_basename = current_course
