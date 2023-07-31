@@ -4,20 +4,19 @@ Functions for converting TJA song data to Fumen song data.
 
 import re
 
-from tja2fumen.classes import (TJACourse, TJAMeasureProcessed,
+from tja2fumen.classes import (TJACourse, TJAMeasure, TJAMeasureProcessed,
                                FumenCourse, FumenHeader, FumenMeasure,
                                FumenNote)
 
 
-def process_tja_commands(tja: TJACourse) \
-        -> dict[str, list[TJAMeasureProcessed]]:
+def process_commands(tja_branches: dict[str, list[TJAMeasure]], bpm: float) \
+                                -> dict[str, list[TJAMeasureProcessed]]:
     """
-    Process each #COMMAND present in a TJASong's measures, and assign their
-    values as attributes to each measure.
+    Process all commands in each measure.
 
     This function takes care of two main tasks:
         1. Keeping track of what the current values are for BPM, scroll,
-           gogotime, barline, and time signature (#MEASURE).
+           gogotime, barline, and time signature (i.e. #MEASURE).
         2. Detecting when a command is placed in the middle of a measure,
            and splitting that measure into sub-measures.
 
@@ -29,10 +28,10 @@ def process_tja_commands(tja: TJACourse) \
     measure will have attributes (e.g. measure.bpm, measure.scroll) instead.
     """
     tja_branches_processed: dict[str, list[TJAMeasureProcessed]] = {
-        branch_name: [] for branch_name in tja.branches.keys()
+        branch_name: [] for branch_name in tja_branches.keys()
     }
-    for branch_name, branch_measures_tja in tja.branches.items():
-        current_bpm = tja.bpm
+    for branch_name, branch_measures_tja in tja_branches.items():
+        current_bpm = bpm
         current_scroll = 1.0
         current_gogo = False
         current_barline = True
@@ -171,7 +170,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     being stored within the branch object.))
     """
     # Preprocess commands
-    tja_branches_processed = process_tja_commands(tja)
+    tja_branches_processed = process_commands(tja.branches, tja.bpm)
 
     # Pre-allocate the measures for the converted TJA
     n_measures = len(tja_branches_processed['normal'])
