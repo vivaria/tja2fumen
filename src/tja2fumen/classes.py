@@ -336,18 +336,17 @@ class FumenHeader:
     @property
     def raw_bytes(self) -> bytes:
         """Represent the header values as a string of raw bytes."""
-        value_list = []
-        format_string = self.order
+        format_string, value_list = '', []
         for byte_field in fields(self):
             value = getattr(self, byte_field.name)
             if byte_field.name == "order":
-                pass
+                format_string = value + format_string
             elif byte_field.name == "b000_b431_timing_windows":
-                value_list.extend(list(value))
                 format_string += "f" * len(value)
+                value_list.extend(list(value))
             else:
-                value_list.append(value)
                 format_string += "i"
+                value_list.append(value)
         raw_bytes = struct.pack(format_string, *value_list)
         assert len(raw_bytes) == 520
         return raw_bytes
