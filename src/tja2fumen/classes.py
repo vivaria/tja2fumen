@@ -339,7 +339,7 @@ class FumenHeader:
         value_list = []
         format_string = self.order
         for byte_field in fields(self):
-            if byte_field.name in ["order", "_raw_bytes"]:
+            if byte_field.name == "order":
                 pass
             elif byte_field.name == "b000_b431_timing_windows":
                 value_list.extend(list(getattr(self, byte_field.name)))
