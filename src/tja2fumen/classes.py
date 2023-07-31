@@ -339,13 +339,14 @@ class FumenHeader:
         value_list = []
         format_string = self.order
         for byte_field in fields(self):
+            value = getattr(self, byte_field.name)
             if byte_field.name == "order":
                 pass
             elif byte_field.name == "b000_b431_timing_windows":
-                value_list.extend(list(getattr(self, byte_field.name)))
-                format_string += "f" * len(getattr(self, byte_field.name))
+                value_list.extend(list(value))
+                format_string += "f" * len(value)
             else:
-                value_list.append(getattr(self, byte_field.name))
+                value_list.append(value)
                 format_string += "i"
         raw_bytes = struct.pack(format_string, *value_list)
         assert len(raw_bytes) == 520
