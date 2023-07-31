@@ -163,13 +163,9 @@ def parse_tja_course_data(course: TJACourse) -> None:
     """
     Parse course data (notes, commands) into a nested song structure.
 
-    The goal of this function is to take raw note and command strings
-    (e.g. '1020,', '#BPMCHANGE') and parse their values into appropriate
-    types (e.g. lists, ints, floats, etc.).
-
-    This function also processes measure separators (',') and branch commands
-    ('#BRANCHSTART`, '#N`, '#E', '#M') to split the data into branches and
-    measures, resulting in the following structure:
+    The goal of this function is to process measure separators (',') and
+    branch commands ('#BRANCHSTART`, '#N`, '#E', '#M') to split the data
+    into branches and measures, resulting in the following structure:
 
     TJACourse
     ├─ TJABranch ('normal')
