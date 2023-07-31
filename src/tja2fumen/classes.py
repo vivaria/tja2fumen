@@ -5,7 +5,7 @@ Dataclasses used to represent song courses, branches, measures, and notes.
 import csv
 import os
 import struct
-from typing import Any, Optional
+from typing import Any
 
 from dataclasses import dataclass, field, fields
 
@@ -277,12 +277,9 @@ class FumenHeader:
         self.b512_b515_number_of_measures        = self.unp(raw, "i", 512, 515)
         self.b516_b519_unknown_data              = self.unp(raw, "i", 516, 519)
 
-    def unp(self, raw_bytes: bytes, type_string: str,
-            start: Optional[int] = None, end: Optional[int] = None) -> Any:
+    def unp(self, raw_bytes: bytes, fmt: str, start: int, end: int) -> Any:
         """Unpack a raw byte string according to specific types."""
-        if start is not None and end is not None:
-            raw_bytes = raw_bytes[start:end+1]
-        vals = struct.unpack(self.order + type_string, raw_bytes)
+        vals = struct.unpack(self.order + fmt, raw_bytes[start:end+1])
         return vals[0] if len(vals) == 1 else vals
 
     def _parse_order(self, raw_bytes: bytes) -> None:
