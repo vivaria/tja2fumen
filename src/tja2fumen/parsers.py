@@ -480,8 +480,7 @@ def parse_fumen(fumen_file: str,
 
 def read_struct(file: BinaryIO,
                 order: str,
-                format_string: str,
-                seek: int = 0) -> tuple[Any, ...]:
+                format_string: str) -> tuple[Any, ...]:
     """
     Interpret bytes as packed binary data.
 
@@ -497,8 +496,6 @@ def read_struct(file: BinaryIO,
         - interpreted_string: A string containing interpreted byte values,
                               based on the specified 'fmt' format characters.
     """
-    if seek:
-        file.seek(seek)
     expected_size = struct.calcsize(order + format_string)
     byte_string = file.read(expected_size)
     # One "official" fumen (AC11\deo\deo_n.bin) runs out of data early

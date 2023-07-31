@@ -55,10 +55,7 @@ def write_fumen(path_out: str, song: FumenCourse) -> None:
 def write_struct(file: BinaryIO,
                  order: str,
                  format_string: str,
-                 value_list: list[Any],
-                 seek: int = 0) -> None:
+                 value_list: list[Any]) -> None:
     """Pack (int, float, etc.) values into a string of bytes, then write."""
-    if seek:
-        file.seek(seek)
     packed_bytes = struct.pack(order + format_string, *value_list)
     file.write(packed_bytes)
