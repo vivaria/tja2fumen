@@ -190,8 +190,11 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     # Iterate through the different branches in the TJA
     total_notes = {'normal': 0, 'professional': 0, 'master': 0}
     for current_branch, branch_tja in tja_branches_processed.items():
+        # Skip empty branches (e.g. 'professional', 'master')
         if not branch_tja:
             continue
+
+        # Track properties that will change over the course of the song
         branch_points_total = 0
         branch_points_measure = 0
         current_drumroll = FumenNote()
@@ -200,10 +203,9 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
         branch_conditions: list[tuple[float, float]] = []
         course_balloons = tja.balloon.copy()
 
-        # Iterate through the measures within the branch
-        for idx_m, measure_tja in enumerate(branch_tja):
-            # Fetch the corresponding fumen measure
-            measure_fumen = fumen.measures[idx_m]
+        # Iterate over pairs of TJA and Fumen measures
+        for idx_m, (measure_tja, measure_fumen) in \
+                enumerate(zip(branch_tja, fumen.measures)):
 
             # Copy over basic measure properties from the TJA
             measure_fumen.branches[current_branch].speed = measure_tja.scroll
@@ -309,22 +311,23 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 if data.value == "Kusudama" and current_drumroll.note_type:
                     continue
 
-                # Handle note metadata
+                # Now that the edge cases have been taken care of ('continue'),
+                # we can initialize a note and handle general note metadata.
                 note = FumenNote()
                 note.pos = note_pos
                 note.note_type = data.value
                 note.score_init = tja.score_init
                 note.score_diff = tja.score_diff
 
-                # Handle drumroll notes
-                if note.note_type in ["Balloon", "Kusudama"]:
+                # Handle drumroll-specific note metadata
+                if note.note_type in ["Drumroll", "DRUMROLL"]:
+                    current_drumroll = note
+                elif note.note_type in ["Balloon", "Kusudama"]:
                     try:
                         note.hits = course_balloons.pop(0)
                     except IndexError as exc:
                         raise ValueError(f"Not enough values for 'BALLOON: "
                                          f"{course_balloons}'") from exc
-                    current_drumroll = note
-                elif note.note_type in ["Drumroll", "DRUMROLL"]:
                     current_drumroll = note
 
                 # Track Don/Ka notes (to later compute header values)
