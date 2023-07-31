@@ -228,28 +228,28 @@ class FumenHeader:
     b000_b431_timing_windows: tuple[float, ...] = field(
         default_factory=lambda: tuple([25.025, 75.075, 108.422]*36)
     )
-    b432_b435_has_branches:               int = 0
-    b436_b439_hp_max:                     int = 10000
-    b440_b443_hp_clear:                   int = 8000
-    b444_b447_hp_gain_good:               int = 10
-    b448_b451_hp_gain_ok:                 int = 5
-    b452_b455_hp_loss_bad:                int = -20
-    b456_b459_normal_normal_ratio:        int = 65536
-    b460_b463_normal_professional_ratio:  int = 65536
-    b464_b467_normal_master_ratio:        int = 65536
-    b468_b471_branch_pts_good:         int = 20
-    b472_b475_branch_pts_ok:           int = 10
-    b476_b479_branch_pts_bad:          int = 0
-    b480_b483_branch_pts_drumroll:     int = 1
-    b484_b487_branch_pts_good_big:     int = 20
-    b488_b491_branch_pts_ok_big:       int = 10
-    b492_b495_branch_pts_drumroll_big: int = 1
-    b496_b499_branch_pts_balloon:      int = 30
-    b500_b503_branch_pts_kusudama:     int = 30
-    b504_b507_branch_pts_unknown:      int = 20
-    b508_b511_dummy_data:                 int = 12345678
-    b512_b515_number_of_measures:         int = 0
-    b516_b519_unknown_data:               int = 0
+    b432_b435_has_branches:              int = 0
+    b436_b439_hp_max:                    int = 10000
+    b440_b443_hp_clear:                  int = 8000
+    b444_b447_hp_gain_good:              int = 10
+    b448_b451_hp_gain_ok:                int = 5
+    b452_b455_hp_loss_bad:               int = -20
+    b456_b459_normal_normal_ratio:       int = 65536
+    b460_b463_normal_professional_ratio: int = 65536
+    b464_b467_normal_master_ratio:       int = 65536
+    b468_b471_branch_pts_good:           int = 20
+    b472_b475_branch_pts_ok:             int = 10
+    b476_b479_branch_pts_bad:            int = 0
+    b480_b483_branch_pts_drumroll:       int = 1
+    b484_b487_branch_pts_good_big:       int = 20
+    b488_b491_branch_pts_ok_big:         int = 10
+    b492_b495_branch_pts_drumroll_big:   int = 1
+    b496_b499_branch_pts_balloon:        int = 30
+    b500_b503_branch_pts_kusudama:       int = 30
+    b504_b507_branch_pts_unknown:        int = 20
+    b508_b511_dummy_data:                int = 12345678
+    b512_b515_number_of_measures:        int = 0
+    b516_b519_unknown_data:              int = 0
 
     def parse_header_values(self, raw_bytes: bytes) -> None:
         """Parse a raw string of 520 bytes to get the header values."""
