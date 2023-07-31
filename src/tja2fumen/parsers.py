@@ -8,9 +8,9 @@ import struct
 from copy import deepcopy
 from typing import BinaryIO, Any
 
-from tja2fumen.types import (TJASong, TJACourse, TJAMeasure, TJAData,
-                             FumenCourse, FumenMeasure, FumenBranch, FumenNote,
-                             FumenHeader)
+from tja2fumen.classes import (TJASong, TJACourse, TJAMeasure, TJAData,
+                               FumenCourse, FumenMeasure, FumenBranch,
+                               FumenNote, FumenHeader)
 from tja2fumen.constants import (NORMALIZE_COURSE, COURSE_NAMES, BRANCH_NAMES,
                                  TJA_COURSE_NAMES, TJA_NOTE_TYPES,
                                  FUMEN_NOTE_TYPES)

@@ -31,7 +31,7 @@ console_output_style = "count"
 [tool.flake8]
 exclude = "venv/"
 per-file-ignores = """
-    ./src/tja2fumen/types.py: E221
+    ./src/tja2fumen/classes.py: E221
     ./testing/test_conversion.py: E221, E272
 """
 

@@ -5,7 +5,7 @@ Functions for writing song data to fumen files (.bin)
 import struct
 from typing import BinaryIO, Any
 
-from tja2fumen.types import FumenCourse
+from tja2fumen.classes import FumenCourse
 from tja2fumen.constants import BRANCH_NAMES, FUMEN_TYPE_NOTES
 
 

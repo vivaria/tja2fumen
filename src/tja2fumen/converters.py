@@ -4,8 +4,9 @@ Functions for converting TJA song data to Fumen song data.
 
 import re
 
-from tja2fumen.types import (TJACourse, TJAMeasureProcessed,
-                             FumenCourse, FumenHeader, FumenMeasure, FumenNote)
+from tja2fumen.classes import (TJACourse, TJAMeasureProcessed,
+                               FumenCourse, FumenHeader, FumenMeasure,
+                               FumenNote)
 
 
 def process_tja_commands(tja: TJACourse) \

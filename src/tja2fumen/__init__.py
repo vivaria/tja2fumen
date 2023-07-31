@@ -11,7 +11,7 @@ from tja2fumen.parsers import parse_tja
 from tja2fumen.converters import convert_tja_to_fumen
 from tja2fumen.writers import write_fumen
 from tja2fumen.constants import COURSE_IDS
-from tja2fumen.types import TJACourse
+from tja2fumen.classes import TJACourse
 
 
 def main(argv: Sequence[str] = ()) -> None:
