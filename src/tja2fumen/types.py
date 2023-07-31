@@ -87,7 +87,7 @@ class FumenNote:
     pos: float = 0.0
     score_init: int = 0
     score_diff: int = 0
-    padding: int = 0
+    padding: float = 0.0
     item: int = 0
     duration: float = 0.0
     multimeasure: bool = False
@@ -225,8 +225,9 @@ class FumenMeasure:
 class FumenHeader:
     """Contains all the byte values for a Fumen chart file's header."""
     order: str = "<"
-    b000_b431_timing_windows: list[float] = field(default_factory=lambda:
-                                                  [25.025, 75.075, 108.422]*36)
+    b000_b431_timing_windows: tuple[float, ...] = field(
+        default_factory=lambda: tuple([25.025, 75.075, 108.422]*36)
+    )
     b432_b435_has_branches:               int = 0
     b436_b439_hp_max:                     int = 10000
     b440_b443_hp_clear:                   int = 8000

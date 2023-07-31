@@ -89,6 +89,7 @@ def process_tja_commands(tja: TJACourse) \
                 # measure in those cases.)
                 elif data.name in ['bpm', 'scroll', 'gogo']:
                     # Parse the values
+                    new_val: bool | float
                     if data.name == 'bpm':
                         new_val = current_bpm = float(data.value)
                     elif data.name == 'scroll':
@@ -193,7 +194,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
             continue
         branch_points_total = 0
         branch_points_measure = 0
-        current_drumroll = None
+        current_drumroll = FumenNote()
         current_levelhold = False
         branch_types: list[str] = []
         branch_conditions: list[tuple[float, float]] = []
@@ -281,7 +282,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
 
                 # Handle '8' notes (end of a drumroll/balloon)
                 if data.value == "EndDRB":
-                    if not isinstance(current_drumroll, FumenNote):
+                    if not current_drumroll.note_type:
                         raise ValueError(
                             "'8' note encountered without matching "
                             "drumroll/balloon/kusudama note."
@@ -299,13 +300,13 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                     current_drumroll.duration = float(int(
                         current_drumroll.duration
                     ))
-                    current_drumroll = None
+                    current_drumroll = FumenNote()
                     continue
 
                 # The TJA spec technically allows you to place
                 # double-Kusudama notes. But this is unsupported in
                 # fumens, so just skip the second Kusudama note.
-                if data.value == "Kusudama" and current_drumroll:
+                if data.value == "Kusudama" and current_drumroll.note_type:
                     continue
 
                 # Handle note metadata
@@ -349,7 +350,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 measure_fumen.branches[current_branch].length += 1
 
             # If drumroll hasn't ended by this measure, increase duration
-            if current_drumroll:
+            if current_drumroll.note_type:
                 # If drumroll spans multiple measures, add full duration
                 if current_drumroll.multimeasure:
                     current_drumroll.duration += measure_fumen.duration

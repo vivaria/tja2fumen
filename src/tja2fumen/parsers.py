@@ -198,8 +198,9 @@ def parse_tja_course_data(course: TJACourse) -> None:
         command, name, value, note_data = '', '', '', ''
         match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
         if match_command:
-            command, value = match_command.groups()
-            value = '' if value is None else value
+            command = match_command.group(1)
+            if match_command.group(2):
+                value = match_command.group(2)
         else:
             note_data = line  # If not a command, then line must be note data
 
