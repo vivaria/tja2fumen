@@ -17,8 +17,7 @@ class TJAData:
     """Contains the information for a single note or single command."""
     name: str
     value: str
-    # For TJA, 'pos' is stored as an integer rather than in milliseconds
-    pos: int
+    pos: int  # For TJAs, 'pos' is stored as an int rather than in milliseconds
 
 
 @dataclass(slots=True)
