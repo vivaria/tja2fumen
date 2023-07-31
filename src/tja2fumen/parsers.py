@@ -32,7 +32,7 @@ def parse_tja(fname_tja: str) -> TJASong:
     tja_lines = [line for line in tja_text.splitlines() if line.strip() != '']
     tja = split_tja_lines_into_courses(tja_lines)
     for course in tja.courses.values():
-        parse_tja_course_data(course)
+        course.branches = parse_tja_course_data(course.data)
 
     return tja
 
@@ -159,7 +159,7 @@ def split_tja_lines_into_courses(lines: list[str]) -> TJASong:
     return parsed_tja
 
 
-def parse_tja_course_data(course: TJACourse) -> None:
+def parse_tja_course_data(data: list[str]) -> dict[str, list[TJAMeasure]]:
     """
     Parse course data (notes, commands) into a nested song structure.
 
@@ -182,14 +182,15 @@ def parse_tja_course_data(course: TJACourse) -> None:
     This provides a faithful, easy-to-inspect tree-style representation of the
     branches and measures within each course of the .tja file.
     """
-    has_branches = bool([d for d in course.data if d.startswith('#BRANCH')])
+    parsed_branches = {k: [TJAMeasure()] for k in BRANCH_NAMES}
+    has_branches = bool([d for d in data if d.startswith('#BRANCH')])
     current_branch = 'all' if has_branches else 'normal'
     branch_condition = ''
 
     # Process course lines
     idx_m = 0
     idx_m_branchstart = 0
-    for idx_l, line in enumerate(course.data):
+    for idx_l, line in enumerate(data):
         # 0. Check to see whether line is a command or note data
         command, name, value, note_data = '', '', '', ''
         match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
@@ -205,18 +206,16 @@ def parse_tja_course_data(course: TJACourse) -> None:
             # If measure has ended, then add notes to the current measure,
             # then start a new measure by incrementing idx_m
             if note_data.endswith(','):
-                for branch_name in (course.branches.keys()
-                                    if current_branch == 'all'
+                for branch_name in (BRANCH_NAMES if current_branch == 'all'
                                     else [current_branch]):
-                    course.branches[branch_name][idx_m].notes += note_data[:-1]
-                    course.branches[branch_name].append(TJAMeasure())
+                    parsed_branches[branch_name][idx_m].notes += note_data[:-1]
+                    parsed_branches[branch_name].append(TJAMeasure())
                 idx_m += 1
             # Otherwise, keep adding notes to the current measure ('idx_m')
             else:
-                for branch_name in (course.branches.keys()
-                                    if current_branch == 'all'
+                for branch_name in (BRANCH_NAMES if current_branch == 'all'
                                     else [current_branch]):
-                    course.branches[branch_name][idx_m].notes += note_data
+                    parsed_branches[branch_name][idx_m].notes += note_data
 
         # 2. Parse measure commands that produce an "event"
         elif command in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
@@ -224,10 +223,9 @@ def parse_tja_course_data(course: TJACourse) -> None:
                          'LEVELHOLD', 'SECTION', 'BRANCHSTART']:
             # Get position of the event
             pos = 0
-            for branch_name in (course.branches.keys()
-                                if current_branch == 'all'
+            for branch_name in (BRANCH_NAMES if current_branch == 'all'
                                 else [current_branch]):
-                pos = len(course.branches[branch_name][idx_m].notes)
+                pos = len(parsed_branches[branch_name][idx_m].notes)
 
             # Parse event type
             if command == 'GOGOSTART':
@@ -253,7 +251,7 @@ def parse_tja_course_data(course: TJACourse) -> None:
                 # it's present on every branch. Otherwise, #SECTION will only
                 # be present on the current branch, and so the `branch_info`
                 # values won't be correctly set for the other two branches.
-                if course.data[idx_l+1].startswith('#BRANCHSTART'):
+                if data[idx_l+1].startswith('#BRANCHSTART'):
                     name = 'section'
                     current_branch = 'all'
                 # Otherwise, #SECTION exists in isolation. In this case, to
@@ -269,10 +267,9 @@ def parse_tja_course_data(course: TJACourse) -> None:
                 idx_m_branchstart = idx_m
 
             # Append event to the current measure's events
-            for branch_name in (course.branches.keys()
-                                if current_branch == 'all'
+            for branch_name in (BRANCH_NAMES if current_branch == 'all'
                                 else [current_branch]):
-                course.branches[branch_name][idx_m].events.append(
+                parsed_branches[branch_name][idx_m].events.append(
                     TJAData(name=name, value=value, pos=pos)
                 )
 
@@ -298,12 +295,12 @@ def parse_tja_course_data(course: TJACourse) -> None:
 
     # Delete the last measure in the branch if no notes or events
     # were added to it (due to preallocating empty measures)
-    for branch in course.branches.values():
+    for branch in parsed_branches.values():
         if not branch[-1].notes and not branch[-1].events:
             del branch[-1]
 
     # Merge measure data and measure events in chronological order
-    for branch_name, branch in course.branches.items():
+    for branch_name, branch in parsed_branches.items():
         for measure in branch:
             notes = [TJAData(name='note', value=TJA_NOTE_TYPES[note], pos=i)
                      for i, note in enumerate(measure.notes) if
@@ -322,13 +319,15 @@ def parse_tja_course_data(course: TJACourse) -> None:
 
     # Ensure all branches have the same number of measures
     if has_branches:
-        if len({len(b) for b in course.branches.values()}) != 1:
+        if len({len(b) for b in parsed_branches.values()}) != 1:
             raise ValueError(
                 "Branches do not have the same number of measures. (This "
                 "check was performed prior to splitting up the measures due "
                 "to mid-measure commands. Please check the number of ',' you"
                 "have in each branch.)"
             )
+
+    return parsed_branches
 
 
 ###############################################################################

@@ -39,9 +39,7 @@ class TJACourse:
     score_init: int = 0
     score_diff: int = 0
     data: list[str] = field(default_factory=list)
-    branches: dict[str, list[TJAMeasure]] = field(
-        default_factory=lambda: {k: [TJAMeasure()] for k in BRANCH_NAMES}
-    )
+    branches: dict[str, list[TJAMeasure]] = field(default_factory=dict)
 
 
 @dataclass(slots=True)
