@@ -296,8 +296,7 @@ class FumenHeader:
         else:
             self.order = "<"
 
-    def set_hp_bytes(self, n_notes: int, difficulty: str,
-                     stars: int) -> None:
+    def set_hp_bytes(self, n_notes: int, difficulty: str, stars: int) -> None:
         """Compute header bytes related to the soul gauge (HP) behavior."""
         # Note: Ura Oni is equivalent to Oni for soul gauge behavior
         difficulty = 'Oni' if difficulty in ['Ura', 'Edit'] else difficulty
