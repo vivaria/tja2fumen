@@ -49,7 +49,7 @@ def process_commands(tja_branches: dict[str, list[TJAMeasure]], bpm: float) \
             for data in measure_tja.combined:
                 # Handle note data
                 if data.name == 'note':
-                    measure_tja_processed.data.append(data)
+                    measure_tja_processed.notes.append(data)
 
                 # Handle commands that can only be placed between measures
                 # (i.e. no mid-measure variations)
@@ -276,14 +276,14 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
 
             # Create notes based on TJA measure data
             branch_points_measure = 0
-            for data in measure_tja.data:
+            for note_tja in measure_tja.notes:
                 # Compute the ms position of the note
-                pos_ratio = ((data.pos - measure_tja.pos_start) /
+                pos_ratio = ((note_tja.pos - measure_tja.pos_start) /
                              (measure_tja.pos_end - measure_tja.pos_start))
                 note_pos = measure_fumen.duration * pos_ratio
 
                 # Handle '8' notes (end of a drumroll/balloon)
-                if data.value == "EndDRB":
+                if note_tja.value == "EndDRB":
                     if not current_drumroll.note_type:
                         raise ValueError(
                             "'8' note encountered without matching "
@@ -308,14 +308,14 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 # The TJA spec technically allows you to place
                 # double-Kusudama notes. But this is unsupported in
                 # fumens, so just skip the second Kusudama note.
-                if data.value == "Kusudama" and current_drumroll.note_type:
+                if note_tja.value == "Kusudama" and current_drumroll.note_type:
                     continue
 
                 # Now that the edge cases have been taken care of ('continue'),
                 # we can initialize a note and handle general note metadata.
                 note = FumenNote()
                 note.pos = note_pos
-                note.note_type = data.value
+                note.note_type = note_tja.value
                 note.score_init = tja.score_init
                 note.score_diff = tja.score_diff
 

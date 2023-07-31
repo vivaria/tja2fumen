@@ -76,7 +76,7 @@ class TJAMeasureProcessed:
     levelhold: bool = False
     branch_type: str = ''
     branch_cond: tuple[float, float] = (0.0, 0.0)
-    data: list[TJAData] = field(default_factory=list)
+    notes: list[TJAData] = field(default_factory=list)
 
 
 @dataclass(slots=True)
