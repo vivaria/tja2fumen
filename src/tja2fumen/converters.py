@@ -3,14 +3,15 @@ Functions for converting TJA song data to Fumen song data.
 """
 
 import re
+from typing import List, Dict, Tuple, Union
 
 from tja2fumen.classes import (TJACourse, TJAMeasure, TJAMeasureProcessed,
                                FumenCourse, FumenHeader, FumenMeasure,
                                FumenNote)
 
 
-def process_commands(tja_branches: dict[str, list[TJAMeasure]], bpm: float) \
-                                -> dict[str, list[TJAMeasureProcessed]]:
+def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
+                                -> Dict[str, List[TJAMeasureProcessed]]:
     """
     Process all commands in each measure.
 
@@ -27,7 +28,7 @@ def process_commands(tja_branches: dict[str, list[TJAMeasure]], bpm: float) \
     After this function is finished, all the #COMMANDS will be gone, and each
     measure will have attributes (e.g. measure.bpm, measure.scroll) instead.
     """
-    tja_branches_processed: dict[str, list[TJAMeasureProcessed]] = {
+    tja_branches_processed: Dict[str, List[TJAMeasureProcessed]] = {
         branch_name: [] for branch_name in tja_branches.keys()
     }
     for branch_name, branch_measures_tja in tja_branches.items():
@@ -89,7 +90,7 @@ def process_commands(tja_branches: dict[str, list[TJAMeasure]], bpm: float) \
                 # measure in those cases.)
                 elif data.name in ['bpm', 'scroll', 'gogo']:
                     # Parse the values
-                    new_val: bool | float
+                    new_val: Union[bool, float]
                     if data.name == 'bpm':
                         new_val = current_bpm = float(data.value)
                     elif data.name == 'scroll':
@@ -199,8 +200,8 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
         branch_points_measure = 0
         current_drumroll = FumenNote()
         current_levelhold = False
-        branch_types: list[str] = []
-        branch_conditions: list[tuple[float, float]] = []
+        branch_types: List[str] = []
+        branch_conditions: List[Tuple[float, float]] = []
         course_balloons = tja.balloon.copy()
 
         # Iterate over pairs of TJA and Fumen measures

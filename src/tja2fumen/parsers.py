@@ -6,7 +6,7 @@ import os
 import re
 import struct
 from copy import deepcopy
-from typing import BinaryIO, Any
+from typing import BinaryIO, Any, List, Dict, Tuple
 
 from tja2fumen.classes import (TJASong, TJACourse, TJAMeasure, TJAData,
                                FumenCourse, FumenMeasure, FumenBranch,
@@ -37,7 +37,7 @@ def parse_tja(fname_tja: str) -> TJASong:
     return tja
 
 
-def split_tja_lines_into_courses(lines: list[str]) -> TJASong:
+def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
     """
     Parse TJA metadata in order to split TJA lines into separate courses.
 
@@ -159,7 +159,7 @@ def split_tja_lines_into_courses(lines: list[str]) -> TJASong:
     return parsed_tja
 
 
-def parse_tja_course_data(data: list[str]) -> dict[str, list[TJAMeasure]]:
+def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
     """
     Parse course data (notes, commands) into a nested song structure.
 
@@ -475,7 +475,7 @@ def parse_fumen(fumen_file: str,
 
 def read_struct(file: BinaryIO,
                 order: str,
-                format_string: str) -> tuple[Any, ...]:
+                format_string: str) -> Tuple[Any, ...]:
     """
     Interpret bytes as packed binary data.
 

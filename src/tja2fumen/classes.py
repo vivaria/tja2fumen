@@ -5,7 +5,7 @@ Dataclasses used to represent song courses, branches, measures, and notes.
 import csv
 import os
 import struct
-from typing import Any
+from typing import Any, List, Dict, Tuple
 
 from dataclasses import dataclass, field, fields
 
@@ -23,9 +23,9 @@ class TJAData:
 @dataclass()
 class TJAMeasure:
     """Contains all the data in a single TJA measure (denoted by ',')."""
-    notes: list[str] = field(default_factory=list)
-    events: list[TJAData] = field(default_factory=list)
-    combined: list[TJAData] = field(default_factory=list)
+    notes: List[str] = field(default_factory=list)
+    events: List[TJAData] = field(default_factory=list)
+    combined: List[TJAData] = field(default_factory=list)
 
 
 @dataclass()
@@ -35,11 +35,11 @@ class TJACourse:
     offset: float
     course: str
     level: int = 0
-    balloon: list[int] = field(default_factory=list)
+    balloon: List[int] = field(default_factory=list)
     score_init: int = 0
     score_diff: int = 0
-    data: list[str] = field(default_factory=list)
-    branches: dict[str, list[TJAMeasure]] = field(default_factory=dict)
+    data: List[str] = field(default_factory=list)
+    branches: Dict[str, List[TJAMeasure]] = field(default_factory=dict)
 
 
 @dataclass()
@@ -47,7 +47,7 @@ class TJASong:
     """Contains all the data in a single TJA (`.tja`) chart file."""
     bpm: float
     offset: float
-    courses: dict[str, TJACourse]
+    courses: Dict[str, TJACourse]
 
 
 @dataclass()
@@ -65,7 +65,7 @@ class TJAMeasureProcessed:
     scroll: float
     gogo: bool
     barline: bool
-    time_sig: list[int]
+    time_sig: List[int]
     subdivisions: int
     pos_start: int = 0
     pos_end: int = 0
@@ -73,8 +73,8 @@ class TJAMeasureProcessed:
     section: bool = False
     levelhold: bool = False
     branch_type: str = ''
-    branch_cond: tuple[float, float] = (0.0, 0.0)
-    notes: list[TJAData] = field(default_factory=list)
+    branch_cond: Tuple[float, float] = (0.0, 0.0)
+    notes: List[TJAData] = field(default_factory=list)
 
 
 @dataclass()
@@ -99,7 +99,7 @@ class FumenBranch:
     length: int = 0
     speed: float = 0.0
     padding: int = 0
-    notes: list[FumenNote] = field(default_factory=list)
+    notes: List[FumenNote] = field(default_factory=list)
 
 
 @dataclass()
@@ -111,15 +111,15 @@ class FumenMeasure:
     duration: float = 0.0
     gogo: bool = False
     barline: bool = True
-    branch_info: list[int] = field(default_factory=lambda: [-1] * 6)
-    branches: dict[str, FumenBranch] = field(
+    branch_info: List[int] = field(default_factory=lambda: [-1] * 6)
+    branches: Dict[str, FumenBranch] = field(
         default_factory=lambda: {b: FumenBranch() for b in BRANCH_NAMES}
     )
     padding1: int = 0
     padding2: int = 0
 
     def set_duration(self,
-                     time_sig: list[int],
+                     time_sig: List[int],
                      measure_length: int,
                      subdivisions: int) -> None:
         """Compute the millisecond duration of the measure."""
@@ -165,7 +165,7 @@ class FumenMeasure:
 
     def set_branch_info(self,
                         branch_type: str,
-                        branch_cond: tuple[float, float],
+                        branch_cond: Tuple[float, float],
                         branch_points_total: int,
                         current_branch: str,
                         has_levelhold: bool) -> None:
@@ -222,7 +222,7 @@ class FumenMeasure:
 class FumenHeader:
     """Contains all the byte values for a Fumen chart file's header."""
     order: str = "<"
-    b000_b431_timing_windows: tuple[float, ...] = (25.025, 75.075, 108.422)*36
+    b000_b431_timing_windows: Tuple[float, ...] = (25.025, 75.075, 108.422)*36
     b432_b435_has_branches:                 int = 0
     b436_b439_hp_max:                       int = 10000
     b440_b443_hp_clear:                     int = 8000
@@ -347,6 +347,6 @@ class FumenHeader:
 class FumenCourse:
     """Contains all the data in a single Fumen (`.bin`) chart file."""
     header: FumenHeader
-    measures: list[FumenMeasure] = field(default_factory=list)
+    measures: List[FumenMeasure] = field(default_factory=list)
     score_init: int = 0
     score_diff: int = 0

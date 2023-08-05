@@ -3,7 +3,7 @@ Functions for writing song data to fumen files (.bin)
 """
 
 import struct
-from typing import BinaryIO, Any
+from typing import BinaryIO, Any, List
 
 from tja2fumen.classes import FumenCourse
 from tja2fumen.constants import BRANCH_NAMES, FUMEN_TYPE_NOTES
@@ -55,7 +55,7 @@ def write_fumen(path_out: str, song: FumenCourse) -> None:
 def write_struct(file: BinaryIO,
                  order: str,
                  format_string: str,
-                 value_list: list[Any]) -> None:
+                 value_list: List[Any]) -> None:
     """Pack (int, float, etc.) values into a string of bytes, then write."""
     packed_bytes = struct.pack(order + format_string, *value_list)
     file.write(packed_bytes)
