@@ -12,7 +12,7 @@ from dataclasses import dataclass, field, fields
 from tja2fumen.constants import BRANCH_NAMES
 
 
-@dataclass(slots=True)
+@dataclass()
 class TJAData:
     """Contains the information for a single note or single command."""
     name: str
@@ -20,7 +20,7 @@ class TJAData:
     pos: int  # For TJAs, 'pos' is stored as an int rather than in milliseconds
 
 
-@dataclass(slots=True)
+@dataclass()
 class TJAMeasure:
     """Contains all the data in a single TJA measure (denoted by ',')."""
     notes: list[str] = field(default_factory=list)
@@ -28,7 +28,7 @@ class TJAMeasure:
     combined: list[TJAData] = field(default_factory=list)
 
 
-@dataclass(slots=True)
+@dataclass()
 class TJACourse:
     """Contains all the data in a single TJA `COURSE:` section."""
     bpm: float
@@ -42,7 +42,7 @@ class TJACourse:
     branches: dict[str, list[TJAMeasure]] = field(default_factory=dict)
 
 
-@dataclass(slots=True)
+@dataclass()
 class TJASong:
     """Contains all the data in a single TJA (`.tja`) chart file."""
     bpm: float
@@ -50,7 +50,7 @@ class TJASong:
     courses: dict[str, TJACourse]
 
 
-@dataclass(slots=True)
+@dataclass()
 class TJAMeasureProcessed:
     """
     Contains all the data in a single TJA measure (denoted by ','), but with
@@ -77,7 +77,7 @@ class TJAMeasureProcessed:
     notes: list[TJAData] = field(default_factory=list)
 
 
-@dataclass(slots=True)
+@dataclass()
 class FumenNote:
     """Contains all the byte values for a single Fumen note."""
     note_type: str = ''
@@ -93,7 +93,7 @@ class FumenNote:
     drumroll_bytes: bytes = b'\x00\x00\x00\x00\x00\x00\x00\x00'
 
 
-@dataclass(slots=True)
+@dataclass()
 class FumenBranch:
     """Contains all the data in a single Fumen branch."""
     length: int = 0
@@ -102,7 +102,7 @@ class FumenBranch:
     notes: list[FumenNote] = field(default_factory=list)
 
 
-@dataclass(slots=True)
+@dataclass()
 class FumenMeasure:
     """Contains all the data in a single Fumen measure."""
     bpm: float = 0.0
@@ -218,7 +218,7 @@ class FumenMeasure:
                 self.branch_info[4:6] = vals
 
 
-@dataclass(slots=True)
+@dataclass()
 class FumenHeader:
     """Contains all the byte values for a Fumen chart file's header."""
     order: str = "<"
@@ -343,7 +343,7 @@ class FumenHeader:
         return raw_bytes
 
 
-@dataclass(slots=True)
+@dataclass()
 class FumenCourse:
     """Contains all the data in a single Fumen (`.bin`) chart file."""
     header: FumenHeader
