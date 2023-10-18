@@ -29,10 +29,12 @@
 
 ## Features
 
-- Parse `.tja` chart files.
-- Convert parsed TJA song data into fumen chart data.
-- Write fumen chart data to `.bin` files.
-- Decode official fumen `.bin` files.
+tja2fumen is designed to be an open source alternative to the closed source tja2bin tool that has been floating around various Discord servers. 
+
+- Converts `.tja` chart files to official fumen `.bin` files.
+- Decodes official fumen `.bin` files (to inspect metadata and note data).
+- Uses strong development practices (thorough test suite with example charts, type checking)
+- Provides an open source resource for the Taiko no Tatsujin fumen file format.
 
 ## Usage
 
