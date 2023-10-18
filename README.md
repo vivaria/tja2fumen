@@ -29,7 +29,7 @@
 
 ## Features
 
-tja2fumen is designed to be an open source alternative to the closed source tja2bin tool that has been floating around various Discord servers. 
+tja2fumen is designed to be an open source alternative to the closed source tja2bin tool that has been floating around various Discord servers. tja2fumen fixes several outstanding tja2bin issues, while providing an open source codebase to modify and learn from.
 
 - Converts `.tja` chart files to official fumen `.bin` files.
 - Decodes official fumen `.bin` files (to inspect metadata and note data).
