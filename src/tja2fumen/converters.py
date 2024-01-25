@@ -454,7 +454,7 @@ def replace_alternate_don_kas(note_clusters):
         # in odd-length all-don runs (DDD: Do-ko-don, DDDDD: Do-ko-do-ko-don)
         all_dons = all([note.note_type.startswith("Don") for note in cluster])
         for i, note in enumerate(cluster):
-            if all_dons and (len(cluster) % 2 == 1) and (i % 2 == 0):
+            if all_dons and (len(cluster) % 2 == 1) and (i % 2 == 1):
                 note.note_type = "Don3"
 
         # Replace the last note in a cluster with the ending Don/Kat
