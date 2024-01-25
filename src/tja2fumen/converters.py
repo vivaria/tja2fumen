@@ -204,6 +204,9 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
         branch_conditions: List[Tuple[float, float]] = []
         course_balloons = tja.balloon.copy()
 
+        # track don/ka notes (to be able to group notes + change don/ka type)
+        dk_notes = []
+
         # Iterate over pairs of TJA and Fumen measures
         for idx_m, (measure_tja, measure_fumen) in \
                 enumerate(zip(branch_tja, fumen.measures)):
@@ -316,6 +319,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 # we can initialize a note and handle general note metadata.
                 note = FumenNote()
                 note.pos = note_pos
+                note.pos_abs = measure_fumen.offset_start + note_pos
                 note.note_type = note_tja.value
                 note.score_init = tja.score_init
                 note.score_diff = tja.score_diff
@@ -349,6 +353,10 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                     pts_to_add = 0  # Drumrolls not relevant for `p` conditions
                 branch_points_measure += pts_to_add
 
+                # Handle groupings of notes (to change don/ka types)
+                if note.note_type.lower() in ['don', 'ka']:
+                    dk_notes.append(note)
+
                 # Add the note to the branch for this measure
                 measure_fumen.branches[current_branch].notes.append(note)
                 measure_fumen.branches[current_branch].length += 1
@@ -363,6 +371,9 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                     current_drumroll.multimeasure = True
                     current_drumroll.duration += (measure_fumen.duration -
                                                   current_drumroll.pos)
+
+        # after branch has ended, go back and assign don/ka types
+        fix_dk_note_types(dk_notes)
 
     # Compute the header bytes that dictate the soul gauge bar behavior
     fumen.header.set_hp_bytes(total_notes['normal'], tja.course, tja.level)
@@ -410,3 +421,85 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
             int(65536 * (total_notes['normal'] / total_notes['master']))
 
     return fumen
+
+
+def fix_dk_note_types(dk_notes):
+    """NB: Modifies FumenNote objects in-place"""
+    # Get the differences between each note and the previous one
+    dk_note_diffs = [(round(note_2.pos_abs - note_1.pos_abs, 9),
+                      note_1, note_2)
+                     for (note_1, note_2) in zip(dk_notes, dk_notes[1:])]
+
+    # Isolate the unique difference values and sort them
+    dk_unique_diffs = sorted(list({ms for ms, _, _ in dk_note_diffs}))
+
+    # Cluster the notes from the smallest difference to the largest
+    # (This ensures that 48th notes are clustered before 24th notes, etc.)
+    clustered_notes = dk_note_diffs
+    for diff_val in dk_unique_diffs:
+        clustered_notes = cluster_notes(clustered_notes, diff_val)
+
+    # In each cluster, replace dons/kas with their alternate versions
+    replace_alternate_don_kas(clustered_notes)
+
+
+def replace_alternate_don_kas(note_clusters):
+    """NB: Modifies FumenNote objects in-place"""
+    for cluster in note_clusters:
+        # Replace all notes with the basic do/ka notes ("Don2", "Ka2")
+        for note in cluster:
+            note.note_type += "2"
+
+        # The "ko" type of Don note only occurs every other note, and only
+        # in odd-length all-don runs (DDD: Do-ko-don, DDDDD: Do-ko-do-ko-don)
+        all_dons = all([note.note_type.startswith("Don") for note in cluster])
+        for i, note in enumerate(cluster):
+            if all_dons and (len(cluster) % 2 == 1) and (i % 2 == 0):
+                note.note_type = "Don3"
+
+        # Replace the last note in a cluster with the ending Don/Kat
+        # In other words, remove the '2' from the last note.
+        cluster[-1].note_type = cluster[-1].note_type[:-1]
+
+
+def cluster_notes(item_list, diff_to_cluster_by):
+    # Preemptively cluster any big DON/KA notes
+    clustered_big_notes = []
+    for item in item_list:
+        if isinstance(item, tuple):
+            _, note_1, _ = item
+            if any(note_1.note_type.startswith(big)
+                   for big in ['DON', 'KA']):
+                clustered_big_notes.append([note_1])
+                continue
+        clustered_big_notes.append(item)
+    item_list = clustered_big_notes
+
+    # Cluster any remaining small notes
+    clustered_notes, current_cluster = [], []
+    for item in item_list:
+        # If we encounter an already-clustered group of items, the current
+        # cluster should end
+        if isinstance(item, list):
+            if current_cluster:
+                clustered_notes.append(current_cluster)
+                current_cluster = []
+            clustered_notes.append(item)
+        # Handle values that haven't been clustered yet
+        else:
+            diff, note_1, note_2 = item
+            # Start and/or continue the current cluster
+            if diff == diff_to_cluster_by:
+                current_cluster.append(note_1)
+            else:
+                # Finish the existing cluster
+                if current_cluster:
+                    current_cluster.append(note_1)
+                    clustered_notes.append(current_cluster)
+                    current_cluster = []
+                # Or, if there is no cluster, append the item
+                else:
+                    clustered_notes.append(item)
+    if current_cluster:
+        clustered_notes.append(current_cluster)
+    return clustered_notes
