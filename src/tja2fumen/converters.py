@@ -424,14 +424,18 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
 
 
 def fix_dk_note_types(dk_notes):
-    """NB: Modifies FumenNote objects in-place"""
+    """
+    Cluster Don/Ka notes based on their relative positions, then replace
+    Don/Ka notes with alternate versions (Don2, Don3, Ka2).
+
+    NB: Modifies FumenNote objects in-place
+    """
     # Get the differences between each note and the previous one
-    dk_note_diffs = [(round(note_2.pos_abs - note_1.pos_abs, 9),
-                      note_1, note_2)
+    dk_note_diffs = [(round(note_2.pos_abs - note_1.pos_abs, 9), note_1)
                      for (note_1, note_2) in zip(dk_notes, dk_notes[1:])]
 
     # Isolate the unique difference values and sort them
-    dk_unique_diffs = sorted(list({ms for ms, _, _ in dk_note_diffs}))
+    dk_unique_diffs = sorted(list({ms for ms, _ in dk_note_diffs}))
 
     # Cluster the notes from the smallest difference to the largest
     # (This ensures that 48th notes are clustered before 24th notes, etc.)
@@ -444,7 +448,12 @@ def fix_dk_note_types(dk_notes):
 
 
 def replace_alternate_don_kas(note_clusters):
-    """NB: Modifies FumenNote objects in-place"""
+    """
+    Replace Don/Ka notes with alternate versions (Don2, Don3, Ka2) based on
+    positions within a cluster of notes.
+
+    NB: Modifies FumenNote objects in-place
+    """
     for cluster in note_clusters:
         # Replace all notes with the basic do/ka notes ("Don2", "Ka2")
         for note in cluster:
@@ -452,7 +461,7 @@ def replace_alternate_don_kas(note_clusters):
 
         # The "ko" type of Don note only occurs every other note, and only
         # in odd-length all-don runs (DDD: Do-ko-don, DDDDD: Do-ko-do-ko-don)
-        all_dons = all([note.note_type.startswith("Don") for note in cluster])
+        all_dons = all(note.note_type.startswith("Don") for note in cluster)
         for i, note in enumerate(cluster):
             if all_dons and (len(cluster) % 2 == 1) and (i % 2 == 1):
                 note.note_type = "Don3"
@@ -463,11 +472,12 @@ def replace_alternate_don_kas(note_clusters):
 
 
 def cluster_notes(item_list, diff_to_cluster_by):
+    """Group notes based on the differences between them."""
     # Preemptively cluster any big DON/KA notes
     clustered_big_notes = []
     for item in item_list:
         if isinstance(item, tuple):
-            _, note_1, _ = item
+            _, note_1 = item
             if any(note_1.note_type.startswith(big)
                    for big in ['DON', 'KA']):
                 clustered_big_notes.append([note_1])
@@ -487,7 +497,7 @@ def cluster_notes(item_list, diff_to_cluster_by):
             clustered_notes.append(item)
         # Handle values that haven't been clustered yet
         else:
-            diff, note_1, note_2 = item
+            diff, note_1 = item
             # Start and/or continue the current cluster
             if diff == diff_to_cluster_by:
                 current_cluster.append(note_1)
