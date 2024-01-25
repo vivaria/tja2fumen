@@ -423,7 +423,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     return fumen
 
 
-def fix_dk_note_types(dk_notes):
+def fix_dk_note_types(dk_notes: List[FumenNote]) -> None:
     """
     Cluster Don/Ka notes based on their relative positions, then replace
     Don/Ka notes with alternate versions (Don2, Don3, Ka2).
@@ -431,23 +431,30 @@ def fix_dk_note_types(dk_notes):
     NB: Modifies FumenNote objects in-place
     """
     # Get the differences between each note and the previous one
-    dk_note_diffs = [(round(note_2.pos_abs - note_1.pos_abs, 9), note_1)
-                     for (note_1, note_2) in zip(dk_notes, dk_notes[1:])]
+    for (note_1, note_2) in zip(dk_notes, dk_notes[1:]):
+        note_1.diff = round(note_2.pos_abs - note_1.pos_abs, 9)
 
     # Isolate the unique difference values and sort them
-    dk_unique_diffs = sorted(list({ms for ms, _ in dk_note_diffs}))
+    dk_unique_diffs = sorted(list({note.diff for note in dk_notes}))
 
     # Cluster the notes from the smallest difference to the largest
     # (This ensures that 48th notes are clustered before 24th notes, etc.)
-    clustered_notes = dk_note_diffs
+    semi_clustered: List[Union[FumenNote, List[FumenNote]]] = list(dk_notes)
     for diff_val in dk_unique_diffs:
-        clustered_notes = cluster_notes(clustered_notes, diff_val)
+        semi_clustered = cluster_notes(semi_clustered, diff_val)
+
+    # Sanity check to ensure that all notes have been clustered
+    assert all(isinstance(cluster, list) for cluster in semi_clustered)
+    # mypy doesn't like that I'm combining List[FumenNote] with
+    # List[List[FumenNote] (https://stackoverflow.com/a/52559625),
+    # even though I've guaranteed the type using assertions...
+    clustered_notes: List[List[FumenNote]] = semi_clustered  # type: ignore
 
     # In each cluster, replace dons/kas with their alternate versions
     replace_alternate_don_kas(clustered_notes)
 
 
-def replace_alternate_don_kas(note_clusters):
+def replace_alternate_don_kas(note_clusters: List[List[FumenNote]]) -> None:
     """
     Replace Don/Ka notes with alternate versions (Don2, Don3, Ka2) based on
     positions within a cluster of notes.
@@ -471,22 +478,24 @@ def replace_alternate_don_kas(note_clusters):
         cluster[-1].note_type = cluster[-1].note_type[:-1]
 
 
-def cluster_notes(item_list, diff_to_cluster_by):
+def cluster_notes(item_list: List[Union[FumenNote, List[FumenNote]]],
+                  cluster_diff: float) \
+        -> List[Union[FumenNote, List[FumenNote]]]:
     """Group notes based on the differences between them."""
     # Preemptively cluster any big DON/KA notes
-    clustered_big_notes = []
+    clustered_big_notes: List[Union[FumenNote, List[FumenNote]]] = []
     for item in item_list:
-        if isinstance(item, tuple):
-            _, note_1 = item
-            if any(note_1.note_type.startswith(big)
+        if isinstance(item, FumenNote):
+            if any(item.note_type.startswith(big)
                    for big in ['DON', 'KA']):
-                clustered_big_notes.append([note_1])
+                clustered_big_notes.append([item])
                 continue
         clustered_big_notes.append(item)
     item_list = clustered_big_notes
 
     # Cluster any remaining small notes
-    clustered_notes, current_cluster = [], []
+    clustered_notes: List[Union[FumenNote, List[FumenNote]]] = []
+    current_cluster: List[FumenNote] = []
     for item in item_list:
         # If we encounter an already-clustered group of items, the current
         # cluster should end
@@ -497,14 +506,14 @@ def cluster_notes(item_list, diff_to_cluster_by):
             clustered_notes.append(item)
         # Handle values that haven't been clustered yet
         else:
-            diff, note_1 = item
+            assert isinstance(item, FumenNote)
             # Start and/or continue the current cluster
-            if diff == diff_to_cluster_by:
-                current_cluster.append(note_1)
+            if item.diff == cluster_diff:
+                current_cluster.append(item)
             else:
                 # Finish the existing cluster
                 if current_cluster:
-                    current_cluster.append(note_1)
+                    current_cluster.append(item)
                     clustered_notes.append(current_cluster)
                     current_cluster = []
                 # Or, if there is no cluster, append the item
