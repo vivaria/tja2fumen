@@ -430,6 +430,9 @@ def fix_dk_note_types(dk_notes: List[FumenNote]) -> None:
 
     NB: Modifies FumenNote objects in-place
     """
+    # Sort the notes by their absolute positions to account for BPMCHANGE
+    dk_notes = sorted(dk_notes, key=lambda note: note.pos_abs)
+
     # Get the differences between each note and the previous one
     for (note_1, note_2) in zip(dk_notes, dk_notes[1:]):
         note_1.diff = round(note_2.pos_abs - note_1.pos_abs, 9)
