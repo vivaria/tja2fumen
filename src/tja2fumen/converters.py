@@ -374,7 +374,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                                                   current_drumroll.pos)
 
         # after branch has ended, go back and assign don/ka types
-        fix_dk_note_types(dk_notes)
+        fix_dk_note_types(dk_notes, tja.bpm)
 
     # Compute the header bytes that dictate the soul gauge bar behavior
     fumen.header.set_hp_bytes(total_notes['normal'], tja.course, tja.level)
@@ -424,7 +424,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
     return fumen
 
 
-def fix_dk_note_types(dk_notes: List[FumenNote]) -> None:
+def fix_dk_note_types(dk_notes: List[FumenNote], song_bpm: float) -> None:
     """
     Cluster Don/Ka notes based on their relative positions, then replace
     Don/Ka notes with alternate versions (Don2, Don3, Ka2).
@@ -441,18 +441,21 @@ def fix_dk_note_types(dk_notes: List[FumenNote]) -> None:
     # Isolate the unique difference values and sort them
     dk_unique_diffs = sorted(list({note.diff for note in dk_notes}))
 
+    # Avoid clustering any whole notes or half notes
+    # i.e. only cluster quarter notes, 8th notes, 16th notes, etc.
+    measure_duration = (4 * 60_000) / song_bpm
+    dk_unique_diffs_to_cluster = [diff for diff in dk_unique_diffs
+                                  if diff < measure_duration / 2]
+
     # Cluster the notes from the smallest difference to the largest
     # (This ensures that 48th notes are clustered before 24th notes, etc.)
     semi_clustered: List[Union[FumenNote, List[FumenNote]]] = list(dk_notes)
-    for diff_val in dk_unique_diffs:
+    for diff_val in dk_unique_diffs_to_cluster:
         semi_clustered = cluster_notes(semi_clustered, diff_val)
 
-    # Sanity check to ensure that all notes have been clustered
-    assert all(isinstance(cluster, list) for cluster in semi_clustered)
-    # mypy doesn't like that I'm combining List[FumenNote] with
-    # List[List[FumenNote] (https://stackoverflow.com/a/52559625),
-    # even though I've guaranteed the type using assertions...
-    clustered_notes: List[List[FumenNote]] = semi_clustered  # type: ignore
+    # Turn any remaining isolated notes into clusters (i.e. long diffs)
+    clustered_notes = [cluster if isinstance(cluster, list) else [cluster]
+                       for cluster in semi_clustered]
 
     # In each cluster, replace dons/kas with their alternate versions
     replace_alternate_don_kas(clustered_notes)
