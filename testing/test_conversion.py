@@ -10,6 +10,39 @@ from conftest import convert
 from tja2fumen.parsers import parse_fumen
 
 
+@pytest.mark.skipif("CI" in os.environ,
+                    reason="Test is only for local debugging")
+def test_converted_tja_no_comparison(tmp_path, entry_point):
+    """
+    A test purely to aid with debugging. It lets me drop a .tja into a
+    pre-determined folder and run the conversion, allowing me to set
+    breakpoints and debug internal state without any tedious setup.
+    """
+    # Define the testing directory
+    path_test = os.path.dirname(os.path.realpath(__file__))
+    path_test = os.path.join(path_test, "data", "unpaired_tjs")
+    for fname in os.listdir(path_test):
+        # Copy input TJA to working directory
+        path_tja = os.path.join(path_test, fname)
+        path_tja_tmp = os.path.join(tmp_path, fname)
+        shutil.copy(path_tja, path_tja_tmp)
+
+        # Convert TJA file to fumen files
+        convert(path_test, path_tja_tmp, entry_point)
+
+        # Fetch output fumen paths
+        paths_out = glob.glob(os.path.join(tmp_path, "*.bin"))
+        assert paths_out, f"No bin files generated in {tmp_path}"
+        order = "xmhne"  # Ura Oni -> Oni -> Hard -> Normal -> Easy
+        paths_out = sorted(paths_out,
+                           key=lambda s: [order.index(c) if c in order
+                                          else len(order) for c in s])
+        for path_out in paths_out:
+            difficulty = os.path.basename(path_out).split(".")[0].split("_")[1]
+            song = parse_fumen(path_out, exclude_empty_measures=False)
+            print(f"{difficulty}: {len(song.measures)}")
+
+
 @pytest.mark.parametrize('id_song', [
     pytest.param('butou5'),
     pytest.param('shoto9',
