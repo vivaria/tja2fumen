@@ -319,7 +319,8 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 # we can initialize a note and handle general note metadata.
                 note = FumenNote()
                 note.pos = note_pos
-                note.pos_abs = measure_fumen.offset_start + note_pos
+                note.pos_abs = (measure_fumen.offset_start + note_pos +
+                                (4 * 60_000 / measure_fumen.bpm))
                 note.note_type = note_tja.value
                 note.score_init = tja.score_init
                 note.score_diff = tja.score_diff
