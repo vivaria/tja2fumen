@@ -472,10 +472,11 @@ def fix_dk_note_types(dk_notes: List[FumenNote], song_bpm: float) -> None:
                        for cluster in semi_clustered]
 
     # In each cluster, replace dons/kas with their alternate versions
-    replace_alternate_don_kas(clustered_notes)
+    replace_alternate_don_kas(clustered_notes, eighth_note_duration)
 
 
-def replace_alternate_don_kas(note_clusters: List[List[FumenNote]]) -> None:
+def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
+                              eighth_note_duration: float) -> None:
     """
     Replace Don/Ka notes with alternate versions (Don2, Don3, Ka2) based on
     positions within a cluster of notes.
@@ -496,7 +497,16 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]]) -> None:
 
         # Replace the last note in a cluster with the ending Don/Kat
         # In other words, remove the '2' from the last note.
-        cluster[-1].note_type = cluster[-1].note_type[:-1]
+        # However, there's one exception: Groups of 4 notes, faster than 8th
+        is_fast_cluster_of_4 = (len(cluster) == 4 and
+                                all(note.diff < eighth_note_duration
+                                    for note in cluster[:-1]))
+        if is_fast_cluster_of_4:
+            # Leave last note as Don2/Ka2
+            pass
+        else:
+            # Replace last Don2/Ka2 with Don/Ka
+            cluster[-1].note_type = cluster[-1].note_type[:-1]
 
 
 def cluster_notes(item_list: List[Union[FumenNote, List[FumenNote]]],
