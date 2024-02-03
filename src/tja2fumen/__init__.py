@@ -8,7 +8,7 @@ import sys
 from typing import Sequence
 
 from tja2fumen.parsers import parse_tja
-from tja2fumen.converters import convert_tja_to_fumen
+from tja2fumen.converters import convert_tja_to_fumen, fix_dk_note_types_course
 from tja2fumen.writers import write_fumen
 from tja2fumen.constants import COURSE_IDS
 from tja2fumen.classes import TJACourse
@@ -52,6 +52,8 @@ def convert_and_write(tja_data: TJACourse,
                       single_course: bool = False) -> None:
     """Process the parsed data for a single TJA course."""
     fumen_data = convert_tja_to_fumen(tja_data)
+    # fix don/ka types
+    fix_dk_note_types_course(fumen_data)
     # Add course ID (e.g. '_x', '_x_1', '_x_2') to the output file's base name
     output_name = base_name
     if single_course:

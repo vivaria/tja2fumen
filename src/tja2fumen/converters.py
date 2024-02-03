@@ -8,6 +8,7 @@ from typing import List, Dict, Tuple, Union
 from tja2fumen.classes import (TJACourse, TJAMeasure, TJAMeasureProcessed,
                                FumenCourse, FumenHeader, FumenMeasure,
                                FumenNote)
+from tja2fumen.constants import BRANCH_NAMES
 
 
 def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
@@ -204,9 +205,6 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
         branch_conditions: List[Tuple[float, float]] = []
         course_balloons = tja.balloon.copy()
 
-        # track don/ka notes (to be able to group notes + change don/ka type)
-        dk_notes = []
-
         # Iterate over pairs of TJA and Fumen measures
         for idx_m, (measure_tja, measure_fumen) in \
                 enumerate(zip(branch_tja, fumen.measures)):
@@ -319,8 +317,6 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 # we can initialize a note and handle general note metadata.
                 note = FumenNote()
                 note.pos = note_pos
-                note.pos_abs = (measure_fumen.offset_start + note_pos +
-                                (4 * 60_000 / measure_fumen.bpm))
                 note.note_type = note_tja.value
                 note.score_init = tja.score_init
                 note.score_diff = tja.score_diff
@@ -354,10 +350,6 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                     pts_to_add = 0  # Drumrolls not relevant for `p` conditions
                 branch_points_measure += pts_to_add
 
-                # Handle groupings of notes (to change don/ka types)
-                if note.note_type.lower() in ['don', 'ka']:
-                    dk_notes.append(note)
-
                 # Add the note to the branch for this measure
                 measure_fumen.branches[current_branch].notes.append(note)
                 measure_fumen.branches[current_branch].length += 1
@@ -372,9 +364,6 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                     current_drumroll.multimeasure = True
                     current_drumroll.duration += (measure_fumen.duration -
                                                   current_drumroll.pos)
-
-        # after branch has ended, go back and assign don/ka types
-        fix_dk_note_types(dk_notes, tja.bpm)
 
     # Compute the header bytes that dictate the soul gauge bar behavior
     fumen.header.set_hp_bytes(total_notes['normal'], tja.course, tja.level)
@@ -422,6 +411,28 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
             int(65536 * (total_notes['normal'] / total_notes['master']))
 
     return fumen
+
+
+def fix_dk_note_types_course(fumen: FumenCourse) -> None:
+    """
+    Call `fix_dk_note_types` once per branch on a FumenCourse.
+    """
+    # try to determine the song's BPM from its measures
+    measure_bpms = [m.bpm for m in fumen.measures]
+    unique_bpms = set(measure_bpms)
+    song_bpm = max(unique_bpms, key=measure_bpms.count)
+
+    # collect the d/k notes for each branch, then fix their types
+    for branch_name in BRANCH_NAMES:
+        dk_notes = []
+        for measure in fumen.measures:
+            for note in measure.branches[branch_name].notes:
+                if note.note_type.lower() in ['don', 'ka']:
+                    note.pos_abs = (measure.offset_start + note.pos +
+                                    (4 * 60_000 / measure.bpm))
+                    dk_notes.append(note)
+        if dk_notes:
+            fix_dk_note_types(dk_notes, song_bpm)
 
 
 def fix_dk_note_types(dk_notes: List[FumenNote], song_bpm: float) -> None:
