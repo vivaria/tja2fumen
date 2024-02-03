@@ -83,7 +83,7 @@ class FumenNote:
     note_type: str = ''
     pos: float = 0.0
     pos_abs: float = 0.0
-    diff: float = 0.0
+    diff: int = 0
     score_init: int = 0
     score_diff: int = 0
     padding: float = 0.0

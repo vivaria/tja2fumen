@@ -427,7 +427,8 @@ def fix_dk_note_types_course(fumen: FumenCourse) -> None:
         dk_notes = []
         for measure in fumen.measures:
             for note in measure.branches[branch_name].notes:
-                if note.note_type.lower() in ['don', 'ka']:
+                if any(note.note_type.lower().startswith(t)
+                       for t in ['don', 'ka']):
                     note.pos_abs = (measure.offset_start + note.pos +
                                     (4 * 60_000 / measure.bpm))
                     dk_notes.append(note)
@@ -447,7 +448,7 @@ def fix_dk_note_types(dk_notes: List[FumenNote], song_bpm: float) -> None:
 
     # Get the differences between each note and the previous one
     for (note_1, note_2) in zip(dk_notes, dk_notes[1:]):
-        note_1.diff = round(note_2.pos_abs - note_1.pos_abs, 9)
+        note_1.diff = int(note_2.pos_abs - note_1.pos_abs)
 
     # Isolate the unique difference values and sort them
     diffs_unique = sorted(list({note.diff for note in dk_notes}))
@@ -455,15 +456,15 @@ def fix_dk_note_types(dk_notes: List[FumenNote], song_bpm: float) -> None:
     # Avoid clustering any whole notes, half notes, or quarter notes
     # i.e. only cluster 8th notes, 16th notes, etc.
     measure_duration = (4 * 60_000) / song_bpm
-    quarter_note_duration = round(measure_duration / 4, 9)
-    diffs_under_quarter: List[float] = [diff for diff in diffs_unique
-                                        if diff < quarter_note_duration]
+    quarter_note_duration = int(measure_duration / 4)
+    diffs_under_quarter: List[int] = [diff for diff in diffs_unique
+                                      if diff < quarter_note_duration]
 
     # Anything above an 8th note (12th, 16th, 24th, 36th, etc...) should be
     # clustered together as a single stream
-    diffs_to_cluster: List[List[float]] = []
-    diffs_under_8th: List[float] = []
-    eighth_note_duration = round(measure_duration / 8, 9)
+    diffs_to_cluster: List[List[int]] = []
+    diffs_under_8th: List[int] = []
+    eighth_note_duration = int(measure_duration / 8)
     for diff in diffs_under_quarter:
         if diff < eighth_note_duration:
             diffs_under_8th.append(diff)
@@ -487,7 +488,7 @@ def fix_dk_note_types(dk_notes: List[FumenNote], song_bpm: float) -> None:
 
 
 def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
-                              eighth_note_duration: float) -> None:
+                              eighth_note_duration: int) -> None:
     """
     Replace Don/Ka notes with alternate versions (Don2, Don3, Ka2) based on
     positions within a cluster of notes.
@@ -499,7 +500,10 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
         # Replace all small notes with the basic do/ka notes ("Don2", "Ka2")
         for note in cluster:
             if note.note_type not in big_notes:
-                note.note_type += "2"
+                if note.note_type[-1].isdigit():
+                    note.note_type = note.note_type[:-1] + "2"
+                else:
+                    note.note_type += "2"
 
         # The "ko" type of Don note only occurs every other note, and only
         # in odd-length all-don runs (DDD: Do-ko-don, DDDDD: Do-ko-do-ko-don)
@@ -525,7 +529,7 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
 
 
 def cluster_notes(item_list: List[Union[FumenNote, List[FumenNote]]],
-                  cluster_diffs: List[float]) \
+                  cluster_diffs: List[int]) \
         -> List[Union[FumenNote, List[FumenNote]]]:
     """Group notes based on the differences between them."""
     clustered_notes: List[Union[FumenNote, List[FumenNote]]] = []
