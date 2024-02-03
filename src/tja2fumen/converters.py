@@ -439,19 +439,33 @@ def fix_dk_note_types(dk_notes: List[FumenNote], song_bpm: float) -> None:
         note_1.diff = round(note_2.pos_abs - note_1.pos_abs, 9)
 
     # Isolate the unique difference values and sort them
-    dk_unique_diffs = sorted(list({note.diff for note in dk_notes}))
+    diffs_unique = sorted(list({note.diff for note in dk_notes}))
 
-    # Avoid clustering any whole notes or half notes
-    # i.e. only cluster quarter notes, 8th notes, 16th notes, etc.
+    # Avoid clustering any whole notes, half notes, or quarter notes
+    # i.e. only cluster 8th notes, 16th notes, etc.
     measure_duration = (4 * 60_000) / song_bpm
-    dk_unique_diffs_to_cluster = [diff for diff in dk_unique_diffs
-                                  if diff < measure_duration / 2]
+    half_note_duration = round(measure_duration / 2, 9)
+    diffs_under_half: List[float] = [diff for diff in diffs_unique
+                                     if diff < half_note_duration]
+
+    # Anything above an 8th note (12th, 16th, 24th, 36th, etc...) should be
+    # clustered together as a single stream
+    diffs_to_cluster: List[List[float]] = []
+    diffs_under_8th: List[float] = []
+    eighth_note_duration = round(measure_duration / 8, 9)
+    for diff in diffs_under_half:
+        if diff < eighth_note_duration:
+            diffs_under_8th.append(diff)
+        else:
+            diffs_to_cluster.append([diff])
+    # Make sure to cluster the close-together notes first
+    if diffs_under_8th:
+        diffs_to_cluster.insert(0, diffs_under_8th)
 
     # Cluster the notes from the smallest difference to the largest
-    # (This ensures that 48th notes are clustered before 24th notes, etc.)
     semi_clustered: List[Union[FumenNote, List[FumenNote]]] = list(dk_notes)
-    for diff_val in dk_unique_diffs_to_cluster:
-        semi_clustered = cluster_notes(semi_clustered, diff_val)
+    for diff_vals in diffs_to_cluster:
+        semi_clustered = cluster_notes(semi_clustered, diff_vals)
 
     # Turn any remaining isolated notes into clusters (i.e. long diffs)
     clustered_notes = [cluster if isinstance(cluster, list) else [cluster]
@@ -486,7 +500,7 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]]) -> None:
 
 
 def cluster_notes(item_list: List[Union[FumenNote, List[FumenNote]]],
-                  cluster_diff: float) \
+                  cluster_diffs: List[float]) \
         -> List[Union[FumenNote, List[FumenNote]]]:
     """Group notes based on the differences between them."""
     # Preemptively cluster any big DON/KA notes
@@ -515,7 +529,7 @@ def cluster_notes(item_list: List[Union[FumenNote, List[FumenNote]]],
         else:
             assert isinstance(item, FumenNote)
             # Start and/or continue the current cluster
-            if item.diff == cluster_diff:
+            if any(item.diff == diff for diff in cluster_diffs):
                 current_cluster.append(item)
             else:
                 # Finish the existing cluster
