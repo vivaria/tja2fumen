@@ -444,16 +444,16 @@ def fix_dk_note_types(dk_notes: List[FumenNote], song_bpm: float) -> None:
     # Avoid clustering any whole notes, half notes, or quarter notes
     # i.e. only cluster 8th notes, 16th notes, etc.
     measure_duration = (4 * 60_000) / song_bpm
-    half_note_duration = round(measure_duration / 2, 9)
-    diffs_under_half: List[float] = [diff for diff in diffs_unique
-                                     if diff < half_note_duration]
+    quarter_note_duration = round(measure_duration / 4, 9)
+    diffs_under_quarter: List[float] = [diff for diff in diffs_unique
+                                        if diff < quarter_note_duration]
 
     # Anything above an 8th note (12th, 16th, 24th, 36th, etc...) should be
     # clustered together as a single stream
     diffs_to_cluster: List[List[float]] = []
     diffs_under_8th: List[float] = []
     eighth_note_duration = round(measure_duration / 8, 9)
-    for diff in diffs_under_half:
+    for diff in diffs_under_quarter:
         if diff < eighth_note_duration:
             diffs_under_8th.append(diff)
         else:
