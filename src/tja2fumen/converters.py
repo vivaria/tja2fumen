@@ -483,16 +483,19 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
 
     NB: Modifies FumenNote objects in-place
     """
+    big_notes = ['DON', 'DON2', 'KA', 'KA2']
     for cluster in note_clusters:
-        # Replace all notes with the basic do/ka notes ("Don2", "Ka2")
+        # Replace all small notes with the basic do/ka notes ("Don2", "Ka2")
         for note in cluster:
-            note.note_type += "2"
+            if note.note_type not in big_notes:
+                note.note_type += "2"
 
         # The "ko" type of Don note only occurs every other note, and only
         # in odd-length all-don runs (DDD: Do-ko-don, DDDDD: Do-ko-do-ko-don)
         all_dons = all(note.note_type.startswith("Don") for note in cluster)
         for i, note in enumerate(cluster):
-            if all_dons and (len(cluster) % 2 == 1) and (i % 2 == 1):
+            if (all_dons and (len(cluster) % 2 == 1) and (i % 2 == 1)
+                    and note.note_type not in big_notes):
                 note.note_type = "Don3"
 
         # Replace the last note in a cluster with the ending Don/Kat
@@ -506,25 +509,14 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
             pass
         else:
             # Replace last Don2/Ka2 with Don/Ka
-            cluster[-1].note_type = cluster[-1].note_type[:-1]
+            if cluster[-1].note_type not in big_notes:
+                cluster[-1].note_type = cluster[-1].note_type[:-1]
 
 
 def cluster_notes(item_list: List[Union[FumenNote, List[FumenNote]]],
                   cluster_diffs: List[float]) \
         -> List[Union[FumenNote, List[FumenNote]]]:
     """Group notes based on the differences between them."""
-    # Preemptively cluster any big DON/KA notes
-    clustered_big_notes: List[Union[FumenNote, List[FumenNote]]] = []
-    for item in item_list:
-        if isinstance(item, FumenNote):
-            if any(item.note_type.startswith(big)
-                   for big in ['DON', 'KA']):
-                clustered_big_notes.append([item])
-                continue
-        clustered_big_notes.append(item)
-    item_list = clustered_big_notes
-
-    # Cluster any remaining small notes
     clustered_notes: List[Union[FumenNote, List[FumenNote]]] = []
     current_cluster: List[FumenNote] = []
     for item in item_list:
