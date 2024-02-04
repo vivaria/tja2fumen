@@ -8,6 +8,7 @@ from typing import List, Dict, Tuple, Union
 from tja2fumen.classes import (TJACourse, TJAMeasure, TJAMeasureProcessed,
                                FumenCourse, FumenHeader, FumenMeasure,
                                FumenNote)
+from tja2fumen.constants import BRANCH_NAMES
 
 
 def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
@@ -410,3 +411,152 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
             int(65536 * (total_notes['normal'] / total_notes['master']))
 
     return fumen
+
+
+def fix_dk_note_types_course(fumen: FumenCourse) -> None:
+    """
+    Call `fix_dk_note_types` once per branch on a FumenCourse.
+    """
+    # try to determine the song's BPM from its measures
+    measure_bpms = [m.bpm for m in fumen.measures]
+    unique_bpms = set(measure_bpms)
+    song_bpm = max(unique_bpms, key=measure_bpms.count)
+
+    # collect the d/k notes for each branch, then fix their types
+    for branch_name in BRANCH_NAMES:
+        dk_notes = []
+        for measure in fumen.measures:
+            for note in measure.branches[branch_name].notes:
+                if any(note.note_type.lower().startswith(t)
+                       for t in ['don', 'ka']):
+                    note.pos_abs = (measure.offset_start + note.pos +
+                                    (4 * 60_000 / measure.bpm))
+                    dk_notes.append(note)
+        if dk_notes:
+            fix_dk_note_types(dk_notes, song_bpm)
+
+
+def fix_dk_note_types(dk_notes: List[FumenNote], song_bpm: float) -> None:
+    """
+    Cluster Don/Ka notes based on their relative positions, then replace
+    Don/Ka notes with alternate versions (Don2, Don3, Ka2).
+
+    NB: Modifies FumenNote objects in-place
+    """
+    # Sort the notes by their absolute positions to account for BPMCHANGE
+    dk_notes = sorted(dk_notes, key=lambda note: note.pos_abs)
+
+    # Get the differences between each note and the previous one
+    for (note_1, note_2) in zip(dk_notes, dk_notes[1:]):
+        note_1.diff = int(note_2.pos_abs - note_1.pos_abs)
+
+    # Isolate the unique difference values and sort them
+    diffs_unique = sorted(list({note.diff for note in dk_notes}))
+
+    # Avoid clustering any whole notes, half notes, or quarter notes
+    # i.e. only cluster 8th notes, 16th notes, etc.
+    measure_duration = (4 * 60_000) / song_bpm
+    quarter_note_duration = int(measure_duration / 4)
+    diffs_under_quarter: List[int] = [diff for diff in diffs_unique
+                                      if diff < quarter_note_duration]
+
+    # Anything above an 8th note (12th, 16th, 24th, 36th, etc...) should be
+    # clustered together as a single stream
+    diffs_to_cluster: List[List[int]] = []
+    diffs_under_8th: List[int] = []
+    eighth_note_duration = int(measure_duration / 8)
+    for diff in diffs_under_quarter:
+        if diff < eighth_note_duration:
+            diffs_under_8th.append(diff)
+        else:
+            diffs_to_cluster.append([diff])
+    # Make sure to cluster the close-together notes first
+    if diffs_under_8th:
+        diffs_to_cluster.insert(0, diffs_under_8th)
+
+    # Cluster the notes from the smallest difference to the largest
+    semi_clustered: List[Union[FumenNote, List[FumenNote]]] = list(dk_notes)
+    for diff_vals in diffs_to_cluster:
+        semi_clustered = cluster_notes(semi_clustered, diff_vals)
+
+    # Turn any remaining isolated notes into clusters (i.e. long diffs)
+    clustered_notes = [cluster if isinstance(cluster, list) else [cluster]
+                       for cluster in semi_clustered]
+
+    # In each cluster, replace dons/kas with their alternate versions
+    replace_alternate_don_kas(clustered_notes, eighth_note_duration)
+
+
+def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
+                              eighth_note_duration: int) -> None:
+    """
+    Replace Don/Ka notes with alternate versions (Don2, Don3, Ka2) based on
+    positions within a cluster of notes.
+
+    NB: Modifies FumenNote objects in-place
+    """
+    big_notes = ['DON', 'DON2', 'KA', 'KA2']
+    for cluster in note_clusters:
+        # Replace all small notes with the basic do/ka notes ("Don2", "Ka2")
+        for note in cluster:
+            if note.note_type not in big_notes:
+                if note.note_type[-1].isdigit():
+                    note.note_type = note.note_type[:-1] + "2"
+                else:
+                    note.note_type += "2"
+
+        # The "ko" type of Don note only occurs every other note, and only
+        # in odd-length all-don runs (DDD: Do-ko-don, DDDDD: Do-ko-do-ko-don)
+        all_dons = all(note.note_type.startswith("Don") for note in cluster)
+        for i, note in enumerate(cluster):
+            if (all_dons and (len(cluster) % 2 == 1) and (i % 2 == 1)
+                    and note.note_type not in big_notes):
+                note.note_type = "Don3"
+
+        # Replace the last note in a cluster with the ending Don/Kat
+        # In other words, remove the '2' from the last note.
+        # However, there's one exception: Groups of 4 notes, faster than 8th
+        is_fast_cluster_of_4 = (len(cluster) == 4 and
+                                all(note.diff < eighth_note_duration
+                                    for note in cluster[:-1]))
+        if is_fast_cluster_of_4:
+            # Leave last note as Don2/Ka2
+            pass
+        else:
+            # Replace last Don2/Ka2 with Don/Ka
+            if cluster[-1].note_type not in big_notes:
+                cluster[-1].note_type = cluster[-1].note_type[:-1]
+
+
+def cluster_notes(item_list: List[Union[FumenNote, List[FumenNote]]],
+                  cluster_diffs: List[int]) \
+        -> List[Union[FumenNote, List[FumenNote]]]:
+    """Group notes based on the differences between them."""
+    clustered_notes: List[Union[FumenNote, List[FumenNote]]] = []
+    current_cluster: List[FumenNote] = []
+    for item in item_list:
+        # If we encounter an already-clustered group of items, the current
+        # cluster should end
+        if isinstance(item, list):
+            if current_cluster:
+                clustered_notes.append(current_cluster)
+                current_cluster = []
+            clustered_notes.append(item)
+        # Handle values that haven't been clustered yet
+        else:
+            assert isinstance(item, FumenNote)
+            # Start and/or continue the current cluster
+            if any(item.diff == diff for diff in cluster_diffs):
+                current_cluster.append(item)
+            else:
+                # Finish the existing cluster
+                if current_cluster:
+                    current_cluster.append(item)
+                    clustered_notes.append(current_cluster)
+                    current_cluster = []
+                # Or, if there is no cluster, append the item
+                else:
+                    clustered_notes.append(item)
+    if current_cluster:
+        clustered_notes.append(current_cluster)
+    return clustered_notes

@@ -82,6 +82,8 @@ class FumenNote:
     """Contains all the byte values for a single Fumen note."""
     note_type: str = ''
     pos: float = 0.0
+    pos_abs: float = 0.0
+    diff: int = 0
     score_init: int = 0
     score_diff: int = 0
     padding: float = 0.0

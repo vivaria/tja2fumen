@@ -156,6 +156,12 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
                         if not v.data]:
         del parsed_tja.courses[course_name]
 
+    # Recreate dict with consistent insertion order
+    parsed_tja.courses = {
+        key: parsed_tja.courses[key] for key
+        in sorted(parsed_tja.courses.keys())
+    }
+
     return parsed_tja
 
 
