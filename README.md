@@ -33,7 +33,8 @@ tja2fumen is designed to be an open source alternative to the closed source tja2
 
 - Converts `.tja` chart files to official fumen `.bin` files.
 - Decodes official fumen `.bin` files (to inspect metadata and note data).
-- Uses strong development practices (thorough test suite with example charts, type checking)
+- Fix `.bin` files that were previously converted by `tja2bin` (WIP, see [#65](https://github.com/vivaria/tja2fumen/issues/65)).
+- Uses strong development practices (thorough test suite with example charts, type checking).
 - Provides an open source resource for the Taiko no Tatsujin fumen file format.
 
 ## Usage
@@ -80,7 +81,7 @@ If there is an unsupported feature that you would like support for, please make 
 
 |                                              | tja 2 fumen | tja 2 bin | Comment                                                                                                       |
 |----------------------------------------------|-------------|-----------|---------------------------------------------------------------------------------------------------------------|
-| `0`, `1`, `2`, `3`, `4`                      | `✅`         | `✅`       |                                                                                                               |
+| `0`, `1`, `2`, `3`, `4`                      | `✅`         | `⚠️`       | tja2fumen will write proper SENOTES (ド, コ, ドン, カ, カッ), see [#41](https://github.com/vivaria/tja2fumen/issues/41). |
 | `5008,`, `6008,`, `7008,`                    | `✅`         | `✅`       |                                                                                                               |
 | `9008,`                                      | `✅`         | `⚠️`      |                                                                                                               |
 | `9000,`<br>`9008,`                           | `⚪️`        | `⚠️`      | Double Kusudama note treated as 1 drumroll by tja2fumen, but 2 overlapping drumrolls by tja2bin.              |
