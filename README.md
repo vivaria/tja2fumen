@@ -27,11 +27,17 @@
 
 ----
 
+> [!IMPORTANT]
+> tja2fumen is a tool designed for ***mod developers***. It allows developers to work with Taiko's official binary file format (`.bin`). If you are not a mod developer, and you simply want to play TJAs on Taiko no Tatsujin PC, please install and run [TakoTako](https://github.com/fluto/takotako).
+
+> [!NOTE]
+> TakoTako 3.2.0 includes an older, flawed tool called `tja2bin.exe`. If you have downloaded TakoTako 3.2.0, you should replace the old `tja2bin.exe` with the new `tja2fumen.exe`. This will ensure that your TJAs get converted accurately.
+
 ## Features
 
 tja2fumen is designed to be an open source alternative to the closed source tja2bin tool that has been floating around various Discord servers. tja2fumen fixes several outstanding tja2bin issues, while providing an open source codebase to modify and learn from.
 
-- Converts `.tja` chart files to official fumen `.bin` files.
+- Command line tool to convert `.tja` chart files to official fumen `.bin` files.
 - Decodes official fumen `.bin` files (to inspect metadata and note data).
 - Fix `.bin` files that were previously converted by `tja2bin` (WIP, see [#65](https://github.com/vivaria/tja2fumen/issues/65)).
 - Uses strong development practices (thorough test suite with example charts, type checking).
@@ -39,15 +45,32 @@ tja2fumen is designed to be an open source alternative to the closed source tja2
 
 ## Usage
 
-> [!NOTE]  
-> For older versions of TakoTako (3.2.0 and below), you can add tja2fumen by renaming `tja2fumen.exe` to `tja2bin.exe` and placing it inside TakoTako's plugin folder (`BepInEx/plugins/com.fluto.takotako/`).
+### TJA conversion
 
-tja2fumen is included as part of several existing projects. So, you may be using tja2fumen already!
+To convert a `.tja` file to `.bin` files, simply download `tja2fumen.exe` and run:
 
-- **XB1/TDMX**: [TakoTako](https://github.com/fluto/takotako) converts both chart and audio files for XB1/TDMX.
-- **Nijiro**: [TaikoSoundEditor](https://github.com/NotImplementedLife/TaikoSoundEditor) converts both chart and audio files for NIjiro.
+```
+tja2fumen.exe file.tja
+```
 
-You can also use tja2fumen directly on a `.tja` file by downloading `tja2fumen.exe` from the [Releases](https://github.com/vivaria/tja2fumen/releases) page and running `tja2fumen.exe file.tja` in a command prompt.
+### Decoding fumen charts in Python scripts
+
+If you want to explore the song structure of existing `.bin` files or `.tja` files using Python scripts, run:
+
+```
+pip install tja2fumen
+```
+
+Then, you can use tja2fumen's Python API as follows:
+
+```python
+from tja2fumen.parsers import parse_fumen, parse_tja
+
+fumen = parse_fumen("path/to/fumen_file.bin")
+tja = parse_tja("path/to/tja_file.tja")
+```
+
+Please refer to `src/__init__.py` for further example usage of the Python API.
 
 ## TJA Support
 
