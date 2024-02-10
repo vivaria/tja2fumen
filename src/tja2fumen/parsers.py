@@ -129,6 +129,8 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
             # chart. But, we want multiplayer charts to inherit the
             # metadata from the course as a whole, so we deepcopy the
             # existing course for that difficulty.
+            if value in ["1P", "2P"]:
+                value = value[1] + value[0]  # Fix user typo (e.g. 1P -> P1)
             if value in ["P1", "P2"]:
                 current_course = current_course_basename + value
                 parsed_tja.courses[current_course] = \
