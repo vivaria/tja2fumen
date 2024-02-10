@@ -59,10 +59,15 @@ def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
                 elif data.name == 'delay':
                     measure_tja_processed.delay = float(data.value) * 1000
                 elif data.name == 'branch_start':
-                    branch_type, val1, val2 = data.value.split(',')
-                    if branch_type == 'r':  # r = drumRoll
+                    branch_parts = data.value.split(',')
+                    if len(branch_parts) != 3:
+                        raise ValueError(f"#BRANCHSTART must have 3 comma-"
+                                         f"separated values, but got "
+                                         f"'{data.value}' instead.")
+                    branch_type, val1, val2 = branch_parts
+                    if branch_type.lower() == 'r':  # r = drumRoll
                         branch_cond = (float(val1), float(val2))
-                    elif branch_type == 'p':  # p = Percentage
+                    elif branch_type.lower() == 'p':  # p = Percentage
                         branch_cond = (float(val1)/100, float(val2)/100)
                     else:
                         raise ValueError(f"Invalid #BRANCHSTART type: "
