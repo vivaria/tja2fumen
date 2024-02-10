@@ -69,14 +69,21 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
              if line.split("//")[0].strip()]
 
     # Initialize song with BPM and OFFSET global metadata
-    bpm = float([line.split(":")[1] for line in lines
-                if line.startswith("BPM")][0])
-    offset = float([line.split(":")[1] for line in lines
-                   if line.startswith("OFFSET")][0])
+    tja_metadata = {}
+    for required_metadata in ["BPM", "OFFSET"]:
+        for line in lines:
+            if line.startswith(required_metadata):
+                tja_metadata[required_metadata] = float(line.split(":")[1])
+                break
+        else:
+            raise ValueError(f"TJA does not contain required "
+                             f"'{required_metadata}' metadata.")
     parsed_tja = TJASong(
-        bpm=bpm,
-        offset=offset,
-        courses={course: TJACourse(bpm=bpm, offset=offset, course=course)
+        bpm=tja_metadata['BPM'],
+        offset=tja_metadata['OFFSET'],
+        courses={course: TJACourse(bpm=tja_metadata['BPM'],
+                                   offset=tja_metadata['OFFSET'],
+                                   course=course)
                  for course in TJA_COURSE_NAMES}
     )
 
