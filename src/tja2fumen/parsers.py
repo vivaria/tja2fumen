@@ -5,6 +5,7 @@ Functions for parsing TJA files (.tja) and Fumen files (.bin)
 import os
 import re
 import struct
+import warnings
 from copy import deepcopy
 from typing import BinaryIO, Any, List, Dict, Tuple
 
@@ -141,7 +142,11 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
 
         # Case 3: For other commands and data, simply copy as-is (parse later)
         else:
-            parsed_tja.courses[current_course].data.append(line)
+            if current_course:
+                parsed_tja.courses[current_course].data.append(line)
+            else:
+                warnings.warn(f"Data encountered before first COURSE: "
+                              f"'{line}' (Check for typos in TJA)")
 
     # If a .tja has "STYLE: Double" but no "STYLE: Single", then it will be
     # missing data for the "single player" chart. To fix this, we copy over
