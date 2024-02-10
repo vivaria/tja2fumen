@@ -327,8 +327,17 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
     # Merge measure data and measure events in chronological order
     for branch_name, branch in parsed_branches.items():
         for measure in branch:
+            # warn the user if their measure have typos
+            valid_notes = []
+            for note in measure.notes:
+                if note not in TJA_NOTE_TYPES:
+                    warnings.warn(f"Ignoring invalid note '{note}' in measure "
+                                  f"'{''.join(measure.notes)}' (check for "
+                                  f"typos in TJA)")
+                else:
+                    valid_notes.append(note)
             notes = [TJAData(name='note', value=TJA_NOTE_TYPES[note], pos=i)
-                     for i, note in enumerate(measure.notes) if
+                     for i, note in enumerate(valid_notes) if
                      TJA_NOTE_TYPES[note] != 'Blank']
             events = measure.events
             while notes or events:
