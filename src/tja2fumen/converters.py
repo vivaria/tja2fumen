@@ -134,7 +134,7 @@ def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
                 "Branches do not have the same number of measures. (This "
                 "check was performed after splitting up the measures due "
                 "to mid-measure commands. Please check any GOGO, BPMCHANGE, "
-                "and SCROLL commands you have in your branches, and make sure"
+                "and SCROLL commands you have in your branches, and make sure "
                 "that each branch has the same number of commands.)"
             )
 
