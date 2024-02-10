@@ -25,8 +25,9 @@ dev = ["pytest", "build", "pyinstaller", "twine", "toml-cli",
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "-vv --tb=short"
+addopts = "-vv --tb=short --color=yes"
 console_output_style = "count"
+disable_test_id_escaping_and_forfeit_all_rights_to_community_support = "True"
 
 [tool.flake8]
 exclude = "venv/"
