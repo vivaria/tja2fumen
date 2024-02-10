@@ -335,9 +335,11 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 elif note.note_type in ["Balloon", "Kusudama"]:
                     try:
                         note.hits = course_balloons.pop(0)
-                    except IndexError as exc:
-                        raise ValueError(f"Not enough values for 'BALLOON: "
-                                         f"{course_balloons}'") from exc
+                    except IndexError:
+                        warnings.warn(f"Not enough values for 'BALLOON:' "
+                                      f"({tja.balloon}). Using value=1 to "
+                                      f"avoid crashing. Check TJA and re-run.")
+                        note.hits = 1
                     current_drumroll = note
 
                 # Track Don/Ka notes (to later compute header values)
