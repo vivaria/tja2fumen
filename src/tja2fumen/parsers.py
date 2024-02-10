@@ -348,7 +348,7 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
             raise ValueError(
                 "Branches do not have the same number of measures. (This "
                 "check was performed prior to splitting up the measures due "
-                "to mid-measure commands. Please check the number of ',' you"
+                "to mid-measure commands. Please check the number of ',' you "
                 "have in each branch.)"
             )
 
