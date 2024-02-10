@@ -98,10 +98,11 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
                 current_course = NORMALIZE_COURSE[value]
                 current_course_basename = current_course
             elif name_upper == 'LEVEL':
-                if value not in ['1', '2', '3', '4', '5',
-                                 '6', '7', '8', '9', '10']:
-                    raise ValueError(f"Invalid LEVEL value: '{value}")
-                parsed_tja.courses[current_course].level = int(value)
+                if not value.isdigit():
+                    raise ValueError(f"Invalid LEVEL value: '{value}'")
+                # restrict to 1 <= level <= 10
+                parsed_level = min(max(int(value), 1), 10)
+                parsed_tja.courses[current_course].level = parsed_level
             elif name_upper == 'SCOREINIT':
                 parsed_tja.courses[current_course].score_init = \
                     int(value.split(",")[-1]) if value else 0
