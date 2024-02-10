@@ -3,6 +3,7 @@ Functions for converting TJA song data to Fumen song data.
 """
 
 import re
+import warnings
 from typing import List, Dict, Tuple, Union
 
 from tja2fumen.classes import (TJACourse, TJAMeasure, TJAMeasureProcessed,
@@ -121,7 +122,7 @@ def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
                         )
 
                 else:
-                    print(f"Unexpected event type: {data.name}")
+                    warnings.warn(f"Unexpected event type: {data.name}")
 
             measure_tja_processed.pos_end = len(measure_tja.notes)
             tja_branches_processed[branch_name].append(measure_tja_processed)
