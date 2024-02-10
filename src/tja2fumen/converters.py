@@ -293,10 +293,12 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 # Handle '8' notes (end of a drumroll/balloon)
                 if note_tja.value == "EndDRB":
                     if not current_drumroll.note_type:
-                        raise ValueError(
+                        warnings.warn(
                             "'8' note encountered without matching "
-                            "drumroll/balloon/kusudama note."
+                            "drumroll/balloon/kusudama note. Ignoring to "
+                            "avoid crash. Check TJA and re-run."
                         )
+                        continue
                     # If a drumroll spans a single measure, then add the
                     # difference between start/end position
                     if not current_drumroll.multimeasure:
