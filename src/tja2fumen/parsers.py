@@ -215,9 +215,9 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
     for idx_l, line in enumerate(data):
         # 0. Check to see whether line is a command or note data
         command, name, value, note_data = '', '', '', ''
-        match_command = re.match(r"^#([A-Z]+)(?:\s+(.+))?", line)
+        match_command = re.match(r"^#([a-zA-Z0-9]+)(?:\s+(.+))?", line)
         if match_command:
-            command = match_command.group(1)
+            command = match_command.group(1).upper()
             if match_command.group(2):
                 value = match_command.group(2)
         else:
