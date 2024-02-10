@@ -57,5 +57,8 @@ def write_struct(file: BinaryIO,
                  format_string: str,
                  value_list: List[Any]) -> None:
     """Pack (int, float, etc.) values into a string of bytes, then write."""
-    packed_bytes = struct.pack(order + format_string, *value_list)
+    try:
+        packed_bytes = struct.pack(order + format_string, *value_list)
+    except struct.error as err:
+        raise ValueError(f"Can't fmt {value_list} as {format_string}") from err
     file.write(packed_bytes)
