@@ -91,7 +91,7 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
     current_course_basename = ''
     for line in lines:
         # Only metadata and #START commands are relevant for this function
-        match_metadata = re.match(r"^([A-Z0-9]+):(.*)", line)
+        match_metadata = re.match(r"^([a-zA-Z0-9]+):(.*)", line)
         match_start = re.match(r"^#START(?:\s+(.+))?", line)
 
         # Case 1: Metadata lines
