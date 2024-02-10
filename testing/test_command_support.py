@@ -9,12 +9,12 @@ from conftest import convert
 @pytest.mark.parametrize('id_song,err_msg', [
     ['basic_song', None],
     ['basic_song_2P', None],
-    ['unsupported', None],
+    ['unsupported', 'UserWarning'],
     ['notes_double_kusudama', None],
     ['notes_hands', None],
     ['notes_sim_only', None],
     ['missing_score', None],
-    ['missing_balloon', "Not enough values for 'BALLOON:"],
+    ['missing_balloon', "UserWarning"],
     ['missing_course', "Invalid COURSE value:"],
     ['missing_level', "Invalid LEVEL value:"]
 ])
@@ -32,8 +32,12 @@ def test_expected_errors(id_song, err_msg, tmp_path, entry_point):
     shutil.copy(path_tja, path_tja_tmp)
 
     # Try to convert TJA file to fumen files, then check the error traceback
-    tb = convert(path_test, path_tja_tmp, entry_point, err_msg)
-    if err_msg:
-        assert err_msg in tb
+    if err_msg and 'Warning' in err_msg:
+        with pytest.warns():
+            convert(path_test, path_tja_tmp, entry_point)
     else:
-        assert tb == ''
+        tb = convert(path_test, path_tja_tmp, entry_point, err_msg)
+        if err_msg:
+            assert err_msg in tb
+        else:
+            assert tb == ''

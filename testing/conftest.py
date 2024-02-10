@@ -25,19 +25,21 @@ def convert(path_test, path_tja_tmp, entry_point, err_msg=None):
         if not err_msg:
             api_convert(argv=[path_tja_tmp])
         else:
-            with pytest.raises(Exception) as e:
+            try:
                 api_convert(argv=[path_tja_tmp])
-            tb = "".join(traceback.format_tb(e.tb))
+            except Exception as e:
+                tb = str(e)
 
     elif entry_point == "python-cli":
         if not err_msg:
             subprocess.check_output(f"tja2fumen {path_tja_tmp}", text=True,
                                     shell=True, stderr=subprocess.STDOUT)
         else:
-            with pytest.raises(CalledProcessError) as e:
+            try:
                 subprocess.check_output(f"tja2fumen {path_tja_tmp}", text=True,
                                         shell=True, stderr=subprocess.STDOUT)
-            tb = e.value.output
+            except CalledProcessError as e:
+                tb = str(e)
 
     elif entry_point == "exe":
         exe_glob = os.path.join(os.path.split(path_test)[0], "dist", "*.exe")
@@ -46,9 +48,10 @@ def convert(path_test, path_tja_tmp, entry_point, err_msg=None):
             subprocess.check_output(f"{exe} {path_tja_tmp}", text=True,
                                     shell=True, stderr=subprocess.STDOUT)
         else:
-            with pytest.raises(CalledProcessError) as e:
+            try:
                 subprocess.check_output(f"{exe} {path_tja_tmp}", text=True,
                                         shell=True, stderr=subprocess.STDOUT)
-            tb = e.value.output
+            except CalledProcessError as e:
+                tb = str(e)
 
     return tb
