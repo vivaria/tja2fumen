@@ -101,6 +101,7 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
 
             # Course-specific metadata fields
             if name_upper == 'COURSE':
+                value = value.lower().capitalize()  # coerce hard/HARD -> Hard
                 if value not in NORMALIZE_COURSE:
                     raise ValueError(f"Invalid COURSE value: '{value}'")
                 current_course = NORMALIZE_COURSE[value]
