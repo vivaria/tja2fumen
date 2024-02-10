@@ -43,7 +43,6 @@ def main(argv: Sequence[str] = ()) -> None:
     base_name = os.path.splitext(fname)[0]
 
     if fname.endswith(".tja"):
-        print("\nConverting TJA to fumen files...")
         # Parse lines in TJA file
         parsed_tja = parse_tja(fname)
 
@@ -52,7 +51,6 @@ def main(argv: Sequence[str] = ()) -> None:
             convert_and_write(course, course_name, base_name,
                               single_course=len(parsed_tja.courses) == 1)
     elif fname.endswith(".bin"):
-        print("\nRepairing existing fumen file...")
         repair_bin(fname)
     else:
         raise ValueError(f"Unexpected file extension: {fname}")
