@@ -276,6 +276,9 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
                 if data[idx_l+1].startswith('#BRANCHSTART'):
                     name = 'section'
                     current_branch = 'all'
+                elif not branch_condition:
+                    name = 'section'
+                    current_branch = 'all'
                 # Otherwise, #SECTION exists in isolation. In this case, to
                 # reset the accuracy, we just repeat the previous #BRANCHSTART.
                 else:
