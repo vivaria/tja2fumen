@@ -303,7 +303,7 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
                 current_branch = 'all'
 
             else:
-                print(f"Ignoring unsupported command '{command}'")
+                warnings.warn(f"Ignoring unsupported command '{command}'")
 
     # Delete the last measure in the branch if no notes or events
     # were added to it (due to preallocating empty measures)
