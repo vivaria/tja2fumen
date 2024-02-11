@@ -42,7 +42,9 @@ def main(argv: Sequence[str] = ()) -> None:
     fname = getattr(args, "file")
     base_name = os.path.splitext(fname)[0]
 
-    if fname.endswith(".tja"):
+    if fname.endswith(".bin"):
+        repair_bin(fname)
+    else:
         # Parse lines in TJA file
         parsed_tja = parse_tja(fname)
 
@@ -50,10 +52,6 @@ def main(argv: Sequence[str] = ()) -> None:
         for course_name, course in parsed_tja.courses.items():
             convert_and_write(course, course_name, base_name,
                               single_course=len(parsed_tja.courses) == 1)
-    elif fname.endswith(".bin"):
-        repair_bin(fname)
-    else:
-        raise ValueError(f"Unexpected file extension: {fname}")
 
 
 def convert_and_write(tja_data: TJACourse,
