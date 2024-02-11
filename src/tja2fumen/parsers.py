@@ -230,6 +230,8 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
             if note_data.endswith(','):
                 for branch_name in (BRANCH_NAMES if current_branch == 'all'
                                     else [current_branch]):
+                    check_branch_length(parsed_branches, branch_name,
+                                        expected_len=idx_m+1)
                     parsed_branches[branch_name][idx_m].notes += note_data[:-1]
                     parsed_branches[branch_name].append(TJAMeasure())
                 idx_m += 1
@@ -247,6 +249,8 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
             pos = 0
             for branch_name in (BRANCH_NAMES if current_branch == 'all'
                                 else [current_branch]):
+                check_branch_length(parsed_branches, branch_name,
+                                    expected_len=idx_m+1)
                 pos = len(parsed_branches[branch_name][idx_m].notes)
 
             # Parse event type
@@ -288,12 +292,18 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
                 current_branch = 'all'
                 name = 'branch_start'
                 branch_condition = value
+                # If a branch was intentionally excluded by the charter,
+                # make sure to copy measures from the longest branch.
+                for branch_name in BRANCH_NAMES:
+                    check_branch_length(parsed_branches, branch_name)
                 # Preserve the index of the BRANCHSTART command to re-use
                 idx_m_branchstart = idx_m
 
             # Append event to the current measure's events
             for branch_name in (BRANCH_NAMES if current_branch == 'all'
                                 else [current_branch]):
+                check_branch_length(parsed_branches, branch_name,
+                                    expected_len=idx_m+1)
                 parsed_branches[branch_name][idx_m].events.append(
                     TJAData(name=name, value=value, pos=pos)
                 )
@@ -320,9 +330,18 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
 
     # Delete the last measure in the branch if no notes or events
     # were added to it (due to preallocating empty measures)
+    deleted_branches = False
     for branch in parsed_branches.values():
         if not branch[-1].notes and not branch[-1].events:
             del branch[-1]
+            deleted_branches = True
+    if deleted_branches:
+        idx_m -= 1
+
+    # Equalize branch lengths to account for missing branches
+    for branch_name, branch in parsed_branches.items():
+        if branch:
+            check_branch_length(parsed_branches, branch_name)
 
     # Merge measure data and measure events in chronological order
     for branch_name, branch in parsed_branches.items():
@@ -354,6 +373,7 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
     # Ensure all branches have the same number of measures
     if has_branches:
         if len({len(b) for b in parsed_branches.values()}) != 1:
+            # If `check_branch_length` works, this should never be reached
             raise ValueError(
                 "Branches do not have the same number of measures. (This "
                 "check was performed prior to splitting up the measures due "
@@ -362,6 +382,47 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
             )
 
     return parsed_branches
+
+
+def check_branch_length(parsed_branches: Dict[str, List[TJAMeasure]],
+                        branch_name: str, expected_len: int = 0) -> None:
+    """
+    Ensure that a given branch ('branch_name') matches either an expected
+    integer length, or the max length of all branches if length not given.
+
+    Note: Modifies branch in-place.
+    """
+    branch_len = len(parsed_branches[branch_name])
+    # If no length is provided, then we assume we're comparing branches,
+    # then copying any missing measures from the largest branch.
+    if expected_len == 0:
+        max_branch_name = branch_name
+        expected_len = branch_len
+        for name, branch in parsed_branches.items():
+            if len(branch) > expected_len:
+                expected_len = len(branch)
+                max_branch_name = name
+        warning_msg = (f"To fix this, measures will be copied from the "
+                       f"'{max_branch_name}' branch to equalize branch "
+                       f"lengths.")
+        for idx_m in range(branch_len, expected_len):
+            parsed_branches[branch_name].append(
+                parsed_branches[max_branch_name][idx_m]
+            )
+    # Otherwise, if length was provided, then simply pad with empty measures
+    else:
+        warning_msg = ("To fix this, empty measures will be added to "
+                       "equalize branch lengths.")
+        for idx_m in range(branch_len, expected_len):
+            parsed_branches[branch_name].append(TJAMeasure())
+
+    if branch_len < expected_len:
+        warnings.warn(
+            f"While parsing the TJA's branches, tja2fumen expected "
+            f"{expected_len} measure(s) from the '{branch_name}' branch, but "
+            f"it only had {branch_len} measure(s). {warning_msg} (Hint: Do "
+            f"#N, #E, and #M all have the same number of measures?)"
+        )
 
 
 ###############################################################################
