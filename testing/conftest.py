@@ -2,7 +2,6 @@ import glob
 import os
 import subprocess
 from subprocess import CalledProcessError
-import traceback
 
 import pytest
 
