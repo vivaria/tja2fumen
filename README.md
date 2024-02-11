@@ -28,7 +28,7 @@
 ----
 
 > [!IMPORTANT]
-> tja2fumen is a tool designed for ***mod developers***. It allows developers to work with Taiko's official binary file format (`.bin`). If you are not a mod developer, and you simply want to play TJAs on Taiko no Tatsujin PC, please install and run [TakoTako](https://github.com/fluto/takotako).
+> tja2fumen is a tool designed for ***mod developers***. It allows developers to import TJA charts into official games using Taiko's binary file format (`.bin`). If you are not a mod developer, and you simply want to play TJAs on Taiko no Tatsujin PC, please install and run [TakoTako](https://github.com/fluto/takotako).
 
 > [!NOTE]
 > TakoTako 3.2.0 includes an older, flawed tool called `tja2bin.exe`. If you have downloaded TakoTako 3.2.0, you should replace the old `tja2bin.exe` with the new `tja2fumen.exe`. This will ensure that your TJAs get converted accurately.
