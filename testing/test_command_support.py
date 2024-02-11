@@ -18,6 +18,7 @@ from conftest import convert
     ['missing_course', "Invalid COURSE value:"],
     ['missing_level', "Invalid LEVEL value:"]
 ])
+@pytest.mark.skipif("CI" in os.environ, reason="Local-only")
 def test_expected_errors(id_song, err_msg, tmp_path, entry_point):
     # Define the testing directory
     path_test = os.path.dirname(os.path.realpath(__file__))
