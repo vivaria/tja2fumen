@@ -28,10 +28,12 @@
 ----
 
 > [!IMPORTANT]
-> tja2fumen is a tool designed for ***mod developers***. It allows developers to import TJA charts into official games using Taiko's binary file format (`.bin`). If you are not a mod developer, and you simply want to play TJAs on Taiko no Tatsujin PC, please install and run [TakoTako](https://github.com/fluto/takotako).
+> tja2fumen is a tool designed for mod developers. It allows modders to load TJA charts into official games by converting them into Taiko's official binary fumen file format (`.bin`).
+> 
+> If you are not a mod developer, and you just want to play TJAs on Taiko no Tatsujin PC, please install and run [TakoTako](https://github.com/fluto/takotako). (Alternatively, you can also run TakoTako's `TJAConvert.exe` [directly on your TJA files](#tja--audio-conversion).)
 
 > [!NOTE]
-> TakoTako 3.2.0 includes an older, flawed tool called `tja2bin.exe`. If you have downloaded TakoTako 3.2.0, you should replace the old `tja2bin.exe` with the new `tja2fumen.exe`. This will ensure that your TJAs get converted accurately.
+> TakoTako 3.2.0 includes an older, flawed tool called `tja2bin.exe`. If you have downloaded TakoTako 3.2.0, you should replace the old `tja2bin.exe` with the latest version of `tja2fumen.exe`. This will ensure that your TJAs get converted accurately.
 
 ## Features
 
@@ -49,9 +51,24 @@ tja2fumen is designed to be an open source alternative to the closed source tja2
 
 To convert a `.tja` file to `.bin` files, simply download `tja2fumen.exe` and run:
 
+```bash
+tja2fumen.exe "file.tja"
 ```
-tja2fumen.exe file.tja
+
+### TJA + Audio conversion
+
+`tja2fumen.exe` only converts TJA files. If you want to convert both TJAs _and_ audio (.OGG or .WAV files) to `.bin` files, you can use the TakoTako plugin for the PC version of Taiko no Tatsujin. However, if you don't want to install and run Taiko no Tatsujin on PC, then you can use this simpler method instead:
+
+1. Download the [latest release of TakoTako](https://github.com/Fluto/TakoTako/releases).
+2. Extract the `TJAConvert.exe` program into a separate folder.
+3. Download the newest version of `tja2fumen.exe`. Rename it `tja2bin.exe`, then place it in the same folder as `TJAConvert.exe`.
+4. Run the following command:
+
+```bash
+TJAConvert.exe "path_to_folder_containing_both_tja_and_audio/"
 ```
+
+`TJAConvert.exe` will convert the audio to CRIWARE HCA packed into ACB container, and then it will call `tja2fumen.exe` to convert the chart files. (This is the exact same conversion you would get by running TakoTako as a BepInEx plugin -- you just have more control.) Note that the output audio is unencrypted, and that ACB audio files are incompatible with any NUS3BANK-based games.
 
 ### Decoding fumen charts in Python scripts
 
