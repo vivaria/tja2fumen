@@ -32,9 +32,9 @@
 > 
 > If you are not a mod developer, and you just want to play TJAs on Taiko no Tatsujin PC, please install and run [TakoTako](https://github.com/fluto/takotako). (Alternatively, you can also run TakoTako's `TJAConvert.exe` [directly on your TJA files](#tja--audio-conversion).)
 
-## Replacing tja2bin (TakoTako 3.2.0 and below)
 
 > [!NOTE]
+> #### Replacing tja2bin (TakoTako 3.2.0 and below)
 > TakoTako 3.2.0 includes an older, flawed tool called `tja2bin.exe`. If you have downloaded TakoTako 3.2.0, you should replace the old `tja2bin.exe` with the latest version of `tja2fumen.exe`. This will ensure that your TJAs get converted accurately.
 >
 > You can do this by:
