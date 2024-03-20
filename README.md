@@ -154,8 +154,6 @@ If you've found a `.tja` file that tja2fumen converts incorrectly, please [open 
 
 It is especially important that you attach the song files to the issue. You can do this by adding the song files to a `.zip` (Select files -> Right click -> "Send to" -> "Compressed (zipped) folder"), and then uploading the `.zip` to the issue. This greatly helps me to reproduce and fix any issues.
 
-You can also message me directly on Discord (`_vivaria`) if you don't have a GitHub account, and I will take care of making an issue for you. :)
-
 ## Building on top of tja2fumen
 
 If you are a developer looking to add tja2fumen to your project, you have two options:
