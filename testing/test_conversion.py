@@ -79,7 +79,8 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
         # cannot be expressed in a TJA file. So, we skip checking the
         # `branch_point` header values for KAGEKIYO.
         if id_song != 'genpe':
-            for header_property in ['b468_b471_branch_pts_good',
+            for header_property in ['b000_b431_timing_windows',
+                                    'b468_b471_branch_pts_good',
                                     'b472_b475_branch_pts_ok',
                                     'b476_b479_branch_pts_bad',
                                     'b480_b483_branch_pts_drumroll',
