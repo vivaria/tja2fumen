@@ -377,6 +377,8 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
 
     # Compute the header bytes that dictate the soul gauge bar behavior
     fumen.header.set_hp_bytes(total_notes['normal'], tja.course, tja.level)
+    # Compute the timing windows based on the course
+    fumen.header.set_timing_windows(tja.course)
 
     # If song has only drumroll branching conditions (also allowing percentage
     # conditions that force a level up/level down), then set the header bytes

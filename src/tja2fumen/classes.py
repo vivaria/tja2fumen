@@ -9,7 +9,7 @@ from typing import Any, List, Dict, Tuple
 
 from dataclasses import dataclass, field, fields
 
-from tja2fumen.constants import BRANCH_NAMES
+from tja2fumen.constants import BRANCH_NAMES, TIMING_WINDOWS
 
 
 @dataclass()
@@ -224,7 +224,7 @@ class FumenMeasure:
 class FumenHeader:
     """Contains all the byte values for a Fumen chart file's header."""
     order: str = "<"
-    b000_b431_timing_windows: Tuple[float, ...] = (25.025, 75.075, 108.422)*36
+    b000_b431_timing_windows: Tuple[float, ...] = (0.0, 0.0, 0.0)*36
     b432_b435_has_branches:                 int = 0
     b436_b439_hp_max:                       int = 10000
     b440_b443_hp_clear:                     int = 8000
@@ -291,6 +291,12 @@ class FumenHeader:
             self.order = ">"
         else:
             self.order = "<"
+
+    def set_timing_windows(self, difficulty: str) -> None:
+        """Set the timing window header bytes depending on the difficulty."""
+        # Note: Ura Oni is equivalent to Oni for timing window behavior
+        difficulty = 'Oni' if difficulty in ['Ura', 'Edit'] else difficulty
+        self.b000_b431_timing_windows = TIMING_WINDOWS[difficulty]*36
 
     def set_hp_bytes(self, n_notes: int, difficulty: str, stars: int) -> None:
         """Compute header bytes related to the soul gauge (HP) behavior."""
