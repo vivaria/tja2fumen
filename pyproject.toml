@@ -1,6 +1,6 @@
 [project]
 name = "tja2fumen"
-version = "0.0.dev0"
+version = "0.8.0"
 description = "Convert TJA chart files into fumen (.bin) chart files"
 readme = "README.md"
 requires-python = ">=3.8"
