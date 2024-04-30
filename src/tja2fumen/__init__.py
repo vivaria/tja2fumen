@@ -18,37 +18,87 @@ from tja2fumen.classes import TJACourse
 def main(argv: Sequence[str] = ()) -> None:
     """
     Main entry point for tja2fumen's command line interface.
-
-    tja2fumen can be used in 2 ways:
-
-    - If a .tja file is provided, then three steps are performed:
-          1. Parse TJA into multiple TJACourse objects. Then, for each course:
-          2. Convert TJACourse objects into FumenCourse objects.
-          3. Write each FumenCourse to its own .bin file.
-    - If a .bin file is provided, then the existing .bin is repaired:
-          1. Update don/kat senote types to do-ko-don and ka-kat.
     """
     if not argv:
         argv = sys.argv[1:]
 
     parser = argparse.ArgumentParser(
-        description="tja2fumen"
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="""
+tja2fumen is a tool to 
+
+tja2fumen can be used in 3 ways:
+- If a .tja file is provided, then three steps are performed:
+    1. Parse TJA into multiple TJACourse objects. Then, for each course:
+    2. Convert TJACourse objects into FumenCourse objects.
+    3. Write each FumenCourse to its own .bin file.
+
+- If a .bin file is provided, then the existing .bin is repaired:
+    1. Update don/kat senote types to do-ko-don and ka-kat.
+    2. Update timing windows to fix previous bug with Easy/Normal timing.
+
+- If a folder is provided, then all .tja and .bin files will be recursively
+processed according to the above logic. (Confirmation is required for safety.)
+        """
     )
     parser.add_argument(
-        "file",
-        help="Path to a Taiko no Tatsujin chart file.",
+        "input",
+        help="Path to a Taiko no Tatsujin chart file or folder.",
     )
     args = parser.parse_args(argv)
-    fname = getattr(args, "file")
-    base_name = os.path.splitext(fname)[0]
+    path_input = getattr(args, "input")
+    if os.path.isdir(path_input):
+        print(f"Folder passed to tja2fumen. "
+              f"Looking for files in {path_input}...\n")
+        tja_files, bin_files = parse_files(path_input)
+        print("\nThe following TJA files will be CONVERTED:")
+        for tja_file in tja_files:
+            print(f"  - {tja_file}")
+        print("\nThe following BIN files will be REPAIRED:")
+        for bin_file in bin_files:
+            print(f"  - {bin_file}")
+        choice = input("\nDo you wish to continue? [y/n]")
+        if choice.lower() != "y":
+            sys.exit("'y' not selected, exiting.")
+        print()
+        files = tja_files + bin_files
 
+    elif os.path.isfile(path_input):
+        files = [path_input]
+    else:
+        raise parser.error("No such file or directory: " + path_input)
+
+    for file in files:
+        process_file(file)
+
+
+def parse_files(directory: str) -> (Sequence[str], Sequence[str]):
+    """Find all .tja or .bin files within a directory."""
+    tja_files, bin_files = [], []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith(".tja"):
+                tja_files.append(os.path.join(root, file))
+            elif file.endswith(".bin"):
+                if file.startswith("song_"):
+                    print(f"Skipping '{file}' because it starts with 'song_' "
+                          f"(probably an audio file, not a chart file).")
+                    continue
+                bin_files.append(os.path.join(root, file))
+    return tja_files, bin_files
+
+
+def process_file(fname: str):
     if fname.endswith(".bin"):
+        print(f"Repairing {fname}")
         repair_bin(fname)
     else:
+        print(f"Converting {fname}")
         # Parse lines in TJA file
         parsed_tja = parse_tja(fname)
 
         # Convert parsed TJA courses and write each course to `.bin` files
+        base_name = os.path.splitext(fname)[0]
         for course_name, course in parsed_tja.courses.items():
             convert_and_write(course, course_name, base_name,
                               single_course=len(parsed_tja.courses) == 1)
