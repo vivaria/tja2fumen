@@ -127,7 +127,19 @@ def convert_and_write(tja_data: TJACourse,
 def repair_bin(fname_bin: str) -> None:
     """Repair the don/ka types of an existing .bin file."""
     fumen_data = parse_fumen(fname_bin)
+    # fix timing windows
+    for course, course_id in COURSE_IDS.items():
+        if any([fname_bin.endswith(f"_{i}.bin")
+                for i in [course_id, f"{course_id}_1", f"{course_id}_2"]]):
+            print(f"  - Setting {course} timing windows...")
+            fumen_data.header.set_timing_windows(difficulty=course)
+            break
+    else:
+        print(f"  - Can't infer difficulty {list(COURSE_IDS.values())} from "
+              f"filename. Skipping timing window fix...")
+
     # fix don/ka types
+    print("  - Fixing don/ka note types (do/ko/don, ka/kat)...")
     fix_dk_note_types_course(fumen_data)
     # write repaired fumen
     shutil.move(fname_bin, fname_bin+".bak")
