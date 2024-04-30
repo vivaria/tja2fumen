@@ -66,7 +66,7 @@ processed according to the above logic. (Confirmation is required for safety.)
     elif os.path.isfile(path_input):
         files = [path_input]
     else:
-        raise parser.error("No such file or directory: " + path_input)
+        raise FileNotFoundError("No such file or directory: " + path_input)
 
     for file in files:
         process_file(file)
@@ -75,7 +75,7 @@ processed according to the above logic. (Confirmation is required for safety.)
 def parse_files(directory: str) -> (Sequence[str], Sequence[str]):
     """Find all .tja or .bin files within a directory."""
     tja_files, bin_files = [], []
-    for root, dirs, files in os.walk(directory):
+    for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith(".tja"):
                 tja_files.append(os.path.join(root, file))
@@ -89,10 +89,11 @@ def parse_files(directory: str) -> (Sequence[str], Sequence[str]):
 
 
 def process_file(fname: str):
+    """Process a single file path (TJA or BIN)."""
     if fname.endswith(".bin"):
         print(f"Repairing {fname}")
         repair_bin(fname)
-    else:
+    elif fname.endswith(".tja"):
         print(f"Converting {fname}")
         # Parse lines in TJA file
         parsed_tja = parse_tja(fname)
@@ -102,6 +103,9 @@ def process_file(fname: str):
         for course_name, course in parsed_tja.courses.items():
             convert_and_write(course, course_name, base_name,
                               single_course=len(parsed_tja.courses) == 1)
+    else:
+        raise ValueError(f"Unrecognized file type: {fname} "
+                         f"(expected .tja or .bin)")
 
 
 def convert_and_write(tja_data: TJACourse,
@@ -129,8 +133,8 @@ def repair_bin(fname_bin: str) -> None:
     fumen_data = parse_fumen(fname_bin)
     # fix timing windows
     for course, course_id in COURSE_IDS.items():
-        if any([fname_bin.endswith(f"_{i}.bin")
-                for i in [course_id, f"{course_id}_1", f"{course_id}_2"]]):
+        if any(fname_bin.endswith(f"_{i}.bin")
+               for i in [course_id, f"{course_id}_1", f"{course_id}_2"]):
             print(f"  - Setting {course} timing windows...")
             fumen_data.header.set_timing_windows(difficulty=course)
             break
