@@ -25,7 +25,7 @@ def main(argv: Sequence[str] = ()) -> None:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description="""
-tja2fumen is a tool to 
+tja2fumen is a tool to
 
 tja2fumen can be used in 3 ways:
 - If a .tja file is provided, then three steps are performed:
