@@ -6,7 +6,7 @@ import argparse
 import os
 import shutil
 import sys
-from typing import Sequence
+from typing import Sequence, Tuple, List
 
 from tja2fumen.parsers import parse_tja, parse_fumen
 from tja2fumen.converters import convert_tja_to_fumen, fix_dk_note_types_course
@@ -72,7 +72,7 @@ processed according to the above logic. (Confirmation is required for safety.)
         process_file(file)
 
 
-def parse_files(directory: str) -> (Sequence[str], Sequence[str]):
+def parse_files(directory: str) -> Tuple[List[str], List[str]]:
     """Find all .tja or .bin files within a directory."""
     tja_files, bin_files = [], []
     for root, _, files in os.walk(directory):
@@ -88,7 +88,7 @@ def parse_files(directory: str) -> (Sequence[str], Sequence[str]):
     return tja_files, bin_files
 
 
-def process_file(fname: str):
+def process_file(fname: str) -> None:
     """Process a single file path (TJA or BIN)."""
     if fname.endswith(".bin"):
         print(f"Repairing {fname}")
