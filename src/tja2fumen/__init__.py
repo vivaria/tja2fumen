@@ -73,7 +73,7 @@ processed according to the above logic. (Confirmation is required for safety.)
 
 
 def parse_files(directory: str) -> Tuple[List[str], List[str]]:
-    """Find all .tja or .bin files within a directory."""
+    """Find all  or .bin files within a directory."""
     tja_files, bin_files = [], []
     for root, _, files in os.walk(directory):
         for file in files:
@@ -93,7 +93,7 @@ def process_file(fname: str) -> None:
     if fname.endswith(".bin"):
         print(f"Repairing {fname}")
         repair_bin(fname)
-    elif fname.endswith(".tja"):
+    else:
         print(f"Converting {fname}")
         # Parse lines in TJA file
         parsed_tja = parse_tja(fname)
@@ -103,9 +103,6 @@ def process_file(fname: str) -> None:
         for course_name, course in parsed_tja.courses.items():
             convert_and_write(course, course_name, base_name,
                               single_course=len(parsed_tja.courses) == 1)
-    else:
-        raise ValueError(f"Unrecognized file type: {fname} "
-                         f"(expected .tja or .bin)")
 
 
 def convert_and_write(tja_data: TJACourse,
