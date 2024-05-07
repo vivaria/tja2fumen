@@ -111,3 +111,50 @@ jobs:
       # Only publish distribution if workflow is run manually. (This allows the other steps in the workflow to test PRs.)
       if: github.event_name == 'workflow_dispatch'
       run: twine upload dist/*.whl dist/*.tar.gz --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
+
+  build-for-linux:
+    needs: test-and-publish-release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout tja2fumen (main branch)
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8.x'
+
+    - name: Install tja2fumen and its dev dependencies
+      run: |
+        pip install -e .[dev]
+        
+    - name: Add UPX to the PATH
+      uses: crazy-max/ghaction-upx@v2
+      with:
+        install-only: true
+
+    - name: Build pyinstaller executable
+      run: |
+        pyinstaller src/tja2fumen/__init__.py \
+                    --name tja2fumen-${{ github.event.inputs.release_version }} \
+                    --add-data="src/tja2fumen/hp_values.csv:tja2fumen/" \
+                    --onefile \
+                    --exclude-module bz2 \
+                    --exclude-module hashlib \
+                    --exclude-module lzma \
+                    --exclude-module socket \
+                    --exclude-module ssl \
+                    --exclude-module unicodedata \
+                    --exclude-module select
+                    
+    - uses: ncipollo/release-action@v1
+      # Only create release if workflow is run manually. (This allows the other steps in the workflow to test PRs.)
+      if: github.event_name == 'workflow_dispatch'
+      name: Create release
+      id: create_release
+      with:
+        tag: ${{ github.event.inputs.release_version }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        artifacts: "dist/tja2fumen-${{ github.event.inputs.release_version }}"
+        allowUpdates: true
+        draft: true
