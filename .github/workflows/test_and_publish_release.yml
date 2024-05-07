@@ -135,16 +135,16 @@ jobs:
 
     - name: Build pyinstaller executable
       run: |
-        pyinstaller src/tja2fumen/__init__.py `
-                    --name tja2fumen-${{ github.event.inputs.release_version }} `
-                    --add-data="src/tja2fumen/hp_values.csv;tja2fumen/" `
-                    --onefile `
-                    --exclude-module bz2 `
-                    --exclude-module hashlib `
-                    --exclude-module lzma `
-                    --exclude-module socket `
-                    --exclude-module ssl `
-                    --exclude-module unicodedata `
+        pyinstaller src/tja2fumen/__init__.py \
+                    --name tja2fumen-${{ github.event.inputs.release_version }} \
+                    --add-data="src/tja2fumen/hp_values.csv;tja2fumen/" \
+                    --onefile \
+                    --exclude-module bz2 \
+                    --exclude-module hashlib \
+                    --exclude-module lzma \
+                    --exclude-module socket \
+                    --exclude-module ssl \
+                    --exclude-module unicodedata \
                     --exclude-module select
                     
     - uses: ncipollo/release-action@v1
