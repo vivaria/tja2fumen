@@ -94,7 +94,7 @@ fumen = parse_fumen("path/to/fumen_file.bin")
 tja = parse_tja("path/to/tja_file.tja")
 
 # convert tja data to fumen data
-from tja2fumen.converts import convert_tja_to_fumen
+from tja2fumen.converters import convert_tja_to_fumen
 fumen_converted = convert_tja_to_fumen(tja)
 
 # modify the FumenCourse object
