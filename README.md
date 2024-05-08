@@ -88,10 +88,27 @@ pip install tja2fumen
 Then, you can use tja2fumen's Python API as follows:
 
 ```python
+# parse song files
 from tja2fumen.parsers import parse_fumen, parse_tja
-
 fumen = parse_fumen("path/to/fumen_file.bin")
 tja = parse_tja("path/to/tja_file.tja")
+
+# convert tja data to fumen data
+from tja2fumen.converts import convert_tja_to_fumen
+fumen_converted = convert_tja_to_fumen(tja)
+
+# modify the FumenCourse object
+# - e.g.1: change the timing window header metadata
+from tja2fumen.constants import TIMING_WINDOWS
+fumen.header.self.b000_b431_timing_windows = TIMING_WINDOWS['Easy']*36
+# - e.g.2: change the note offset values
+for measure in fumen.measures:
+    measure.offset_start += 1_000  # 1000ms == 1s
+    measure.offset_end += 1_000
+
+# write the modified fumen back to a .bin file
+from tja2fumen.writers import write_fumen
+write_fumen("path/to/file.bin", fumen)
 ```
 
 Please refer to `src/__init__.py` for further example usage of the Python API.
