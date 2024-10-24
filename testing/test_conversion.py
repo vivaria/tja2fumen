@@ -165,7 +165,10 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                               i_branch, i_note, abv=25.0)
                     except AssertionError:
                         pass
-                    if ca_note.note_type not in ["Balloon", "Kusudama"]:
+                    if ca_note.note_type in ["Balloon", "Kusudama"]:
+                        check(co_note, ca_note, 'hits', i_measure,
+                              i_branch, i_note)
+                    else:
                         check(co_note, ca_note, 'score_init', i_measure,
                               i_branch, i_note)
                         check(co_note, ca_note, 'score_diff', i_measure,
