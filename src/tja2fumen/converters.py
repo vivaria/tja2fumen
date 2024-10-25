@@ -209,7 +209,6 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
         current_levelhold = False
         branch_types: List[str] = []
         branch_conditions: List[Tuple[float, float]] = []
-        course_balloons = tja.balloon.copy()
 
         # Iterate over pairs of TJA and Fumen measures
         for idx_m, (measure_tja, measure_fumen) in \
@@ -334,7 +333,7 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                     current_drumroll = note
                 elif note.note_type in ["Balloon", "Kusudama"]:
                     try:
-                        note.hits = course_balloons.pop(0)
+                        note.hits = next(tja.balloon)
                     except IndexError:
                         warnings.warn(f"Not enough values for 'BALLOON:' "
                                       f"({tja.balloon}). Using value=1 to "

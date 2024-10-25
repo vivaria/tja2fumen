@@ -8,6 +8,7 @@ import struct
 import warnings
 from copy import deepcopy
 from typing import BinaryIO, Any, List, Dict, Tuple
+from itertools import cycle
 
 from tja2fumen.classes import (TJASong, TJACourse, TJAMeasure, TJAData,
                                FumenCourse, FumenMeasure, FumenBranch,
@@ -121,7 +122,7 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
             elif name_upper == 'BALLOON':
                 if value:
                     balloons = [int(v) for v in value.split(",") if v]
-                    parsed_tja.courses[current_course].balloon = balloons
+                    parsed_tja.courses[current_course].balloon = cycle(balloons)
             elif name_upper == 'STYLE':
                 # Reset the course name to remove "P1/P2" that may have been
                 # added by a previous STYLE:DOUBLE chart
