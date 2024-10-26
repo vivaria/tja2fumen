@@ -183,8 +183,8 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
     return parsed_tja
 
 
-def parse_tja_course_data(data: List[str]) -> (Dict[str, List[TJAMeasure]],
-                                               Dict[str, List[str]]):
+def parse_tja_course_data(data: List[str]) \
+        -> Tuple[Dict[str, List[TJAMeasure]], Dict[str, List[str]]]:
     """
     Parse course data (notes, commands) into a nested song structure.
 
@@ -212,7 +212,7 @@ def parse_tja_course_data(data: List[str]) -> (Dict[str, List[TJAMeasure]],
     current_branch = 'all' if has_branches else 'normal'
     branch_condition = ''
     # keep track of balloons in order to fix the 'BALLOON' field value
-    balloons = {k: [] for k in BRANCH_NAMES}
+    balloons: Dict[str, List[str]] = {k: [] for k in BRANCH_NAMES}
 
     # Process course lines
     idx_m = 0
@@ -230,7 +230,7 @@ def parse_tja_course_data(data: List[str]) -> (Dict[str, List[TJAMeasure]],
 
         # 1. Parse measure notes
         if note_data:
-            notes_to_write = []
+            notes_to_write: str = ""
             # If measure has ended, then add notes to the current measure,
             # then start a new measure by incrementing idx_m
             if note_data.endswith(','):
