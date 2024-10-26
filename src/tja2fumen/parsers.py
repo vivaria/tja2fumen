@@ -33,7 +33,9 @@ def parse_tja(fname_tja: str) -> TJASong:
     tja_lines = [line for line in tja_text.splitlines() if line.strip() != '']
     tja = split_tja_lines_into_courses(tja_lines)
     for course in tja.courses.values():
-        course.branches = parse_tja_course_data(course.data)
+        branches, balloon_data = parse_tja_course_data(course.data)
+        course.branches = branches
+        course.balloon = fix_balloon_field(course.balloon, balloon_data)
 
     return tja
 
@@ -181,7 +183,8 @@ def split_tja_lines_into_courses(lines: List[str]) -> TJASong:
     return parsed_tja
 
 
-def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
+def parse_tja_course_data(data: List[str]) -> (Dict[str, List[TJAMeasure]],
+                                               Dict[str, List[str]]):
     """
     Parse course data (notes, commands) into a nested song structure.
 
@@ -208,6 +211,8 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
     has_branches = bool([d for d in data if d.startswith('#BRANCH')])
     current_branch = 'all' if has_branches else 'normal'
     branch_condition = ''
+    # keep track of balloons in order to fix the 'BALLOON' field value
+    balloons = {k: [] for k in BRANCH_NAMES}
 
     # Process course lines
     idx_m = 0
@@ -225,6 +230,7 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
 
         # 1. Parse measure notes
         if note_data:
+            notes_to_write = []
             # If measure has ended, then add notes to the current measure,
             # then start a new measure by incrementing idx_m
             if note_data.endswith(','):
@@ -232,14 +238,26 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
                                     else [current_branch]):
                     check_branch_length(parsed_branches, branch_name,
                                         expected_len=idx_m+1)
-                    parsed_branches[branch_name][idx_m].notes += note_data[:-1]
+                    notes_to_write = note_data[:-1]
+                    parsed_branches[branch_name][idx_m].notes += notes_to_write
                     parsed_branches[branch_name].append(TJAMeasure())
                 idx_m += 1
             # Otherwise, keep adding notes to the current measure ('idx_m')
             else:
                 for branch_name in (BRANCH_NAMES if current_branch == 'all'
                                     else [current_branch]):
-                    parsed_branches[branch_name][idx_m].notes += note_data
+                    notes_to_write = note_data
+                    parsed_branches[branch_name][idx_m].notes += notes_to_write
+            
+            # Keep track of balloon notes that were added
+            balloon_notes = [n for n in notes_to_write if n in ['7', '9']]
+            # mark balloon notes as duplicates if necessary. this will be used
+            # to fix the BALLOON: field to account for duplicated balloons.
+            balloon_notes = (['DUPE'] * len(balloon_notes)
+                             if current_branch == 'all' else balloon_notes)
+            for branch_name in (BRANCH_NAMES if current_branch == 'all'
+                                else [current_branch]):
+                balloons[branch_name].extend(balloon_notes)
 
         # 2. Parse measure commands that produce an "event"
         elif command in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
@@ -381,7 +399,7 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
                 "have in each branch.)"
             )
 
-    return parsed_branches
+    return parsed_branches, balloons
 
 
 def check_branch_length(parsed_branches: Dict[str, List[TJAMeasure]],
@@ -424,6 +442,115 @@ def check_branch_length(parsed_branches: Dict[str, List[TJAMeasure]],
             f"#N, #E, and #M all have the same number of measures?)"
         )
 
+
+def fix_balloon_field(balloon_field: List[int], balloon_data: Dict[str, List[str]]) \
+        -> List[int]:
+    """
+    Fix the 'BALLOON:' metadata field for certain branching songs.
+
+    In Taiko, branching songs may have a different amount of balloons and/or
+    different balloon values on their normal/professional/master branches.
+    However, the TJA field "BALLOON:" is limited it how it can represent
+    balloon hits; it uses a single comma-delimited list of integers. E.g.:
+
+    BALLOON: 13,4,52,4,52,4,52
+
+    It is unclear which of these values belong to which branches.
+
+    This is especially unclear for songs that start out on the "normal" branch,
+    or songs that have branching conditions that force a specific branch. These
+    songs are often written as TJA with only a single branch written out, yet
+    for official fumens, this branch information actually has to be present on
+    *all three branches*. So, the 'BALLOON:' field will be missing values.
+
+    In the example above, the "13" balloon actually occurs on the normal branch
+    before the first branch condition. Meaning that the balloons are split up
+    like this:
+
+    BALLOON: (13,4,52)(4,52)(4,52)
+
+    However, due to fumen requirements, we want the balloons to actually be
+    like this:
+
+    BALLOON: (13,4,52)(13,4,52)(13,4,52)
+
+    So, the purpose of this function is to "fix" the balloon information so
+    that it can be used for fumen conversion without error.
+
+    NOTE: This fix probably only applies to a VERY small minority of songs.
+          One example (shown above) is the Ura chart for Roppon no Bara to Sai
+          no Uta. You can see in the wikiwiki that the opening 'Normal'
+          section has a balloon note prior to the branch condition. We need
+          to duplicate this value across all branches.
+    """
+    # Return early if course doesn't have branches
+    if not all(balloon_data.values()):
+        return balloon_field
+
+    # Special case: Courses where the # of balloons is the same for all
+    # branches, and the TJA author only listed 1 set of balloons.
+    # Fix: Duplicate the balloons 3 times.
+    if all(len(balloons) == len(balloon_field)
+           for balloons in balloon_data.values()):
+        return balloon_field * 3
+
+    # Return early if there were no duplicated balloons in the course
+    if not any('DUPE' in balloons for balloons in balloon_data.values()):
+        return balloon_field
+
+    # If balloons were duplicated, then we expect the BALLOON: field to have
+    # fewer hits values than the number of balloons. If this *isn't* the case,
+    # then perhaps the TJA author duplicated the balloon hits themselves, and
+    # so we don't want to make any unnecessary edits. Thus, return early.
+    # FIXME: This assumption fails for double-kusudama notes, where we may
+    #        see a "fake" balloon, thus inflating the total number of balloons.
+    #        But, this is such a rare case (double-kusudama + duplicated
+    #        balloons + 'BALLOON:' field with implicitly duplicated hits) that
+    #        I'm alright handling it incorrectly. If a user files a bug
+    #        report, then I'll fix it then.
+    total_num_balloons = sum(len(b) for b in balloon_data.values())
+    if not (len(balloon_field) < total_num_balloons):
+        return balloon_field
+
+    # OK! So, by this point in the function, we're making these assumptions:
+    #
+    # 1. The TJA chart has branches.
+    # 2. The TJA author wrote part of the song for only a single branch
+    #    (e.g. the Normal branch, before the first branch condition), and thus
+    #    we needed to duplicate some of the note data to create a valid fumen.
+    # 3. The 'single branch' part of the TJA contained balloon/kusudama notes,
+    #    and thus we needed to duplicate those notes.
+    # 4. The TJA author wrote the 'BALLOON:' field such that there was only 1
+    #    balloon value for the duplicated balloon note.
+    #
+    # The goal now is to identify which balloons were duplicated, and make sure
+    # the "hits" value is present across all branches.
+    duplicated_balloons = []
+    balloon_field_fixed = []
+
+    # Handle the normal branch first
+    # (if balloons are duplicated, then it's probably going to be from 'normal')
+    # FIXME: If the balloons are duplicated from the master/professional branch
+    #        (e.g. due to a forced branch change from a branch condition), then
+    #        this logic will read the balloon values incorrectly.
+    #        But, this is such a rare case that I'm alright handling it
+    #        incorrectly. If a user files a bug report, then I'll fix it then.
+    for balloon_note in balloon_data['normal']:
+        balloon_hits = balloon_field.pop(0)
+        if balloon_note == 'DUPE':
+            duplicated_balloons.append(balloon_hits)
+        balloon_field_fixed.append(balloon_hits)
+
+    # Repeat any duplicated balloon notes for the professional/master branches
+    for branch_name in ['professional', 'master']:
+        dupes_to_copy = duplicated_balloons.copy()
+        for balloon_note in balloon_data[branch_name]:
+            if balloon_note == 'DUPE':
+                balloon_field_fixed.append(dupes_to_copy.pop(0))
+            else:
+                balloon_field_fixed.append(balloon_field.pop(0))
+
+    return balloon_field_fixed
 
 ###############################################################################
 #                          Fumen-parsing functions                            #
