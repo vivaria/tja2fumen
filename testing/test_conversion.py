@@ -11,6 +11,7 @@ from tja2fumen.parsers import parse_fumen
 
 
 @pytest.mark.parametrize('id_song', [
+    pytest.param('emma'),
     pytest.param('butou5'),
     pytest.param('shoto9',
                  marks=pytest.mark.skip("TJA measures do not match fumen.")),
