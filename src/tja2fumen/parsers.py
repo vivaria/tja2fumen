@@ -248,7 +248,7 @@ def parse_tja_course_data(data: List[str]) -> (Dict[str, List[TJAMeasure]],
                                     else [current_branch]):
                     notes_to_write = note_data
                     parsed_branches[branch_name][idx_m].notes += notes_to_write
-            
+
             # Keep track of balloon notes that were added
             balloon_notes = [n for n in notes_to_write if n in ['7', '9']]
             # mark balloon notes as duplicates if necessary. this will be used
@@ -443,8 +443,8 @@ def check_branch_length(parsed_branches: Dict[str, List[TJAMeasure]],
         )
 
 
-def fix_balloon_field(balloon_field: List[int], balloon_data: Dict[str, List[str]]) \
-        -> List[int]:
+def fix_balloon_field(balloon_field: List[int],
+                      balloon_data: Dict[str, List[str]]) -> List[int]:
     """
     Fix the 'BALLOON:' metadata field for certain branching songs.
 
@@ -529,7 +529,7 @@ def fix_balloon_field(balloon_field: List[int], balloon_data: Dict[str, List[str
     balloon_field_fixed = []
 
     # Handle the normal branch first
-    # (if balloons are duplicated, then it's probably going to be from 'normal')
+    # If balloons are duplicated, then it's probably going to be from 'normal'
     # FIXME: If the balloons are duplicated from the master/professional branch
     #        (e.g. due to a forced branch change from a branch condition), then
     #        this logic will read the balloon values incorrectly.
@@ -551,6 +551,7 @@ def fix_balloon_field(balloon_field: List[int], balloon_data: Dict[str, List[str
                 balloon_field_fixed.append(balloon_field.pop(0))
 
     return balloon_field_fixed
+
 
 ###############################################################################
 #                          Fumen-parsing functions                            #
