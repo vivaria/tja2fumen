@@ -207,7 +207,8 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
     """
     parsed_branches = {k: [TJAMeasure()] for k in BRANCH_NAMES}
     has_branches = bool([d for d in data if d.startswith('#BRANCH')])
-    current_branch = 'all' if has_branches else 'normal'
+    current_branch = 'normal'
+    add_dummy_notes_to_other_branches = has_branches
     branch_condition = ''
 
     # Process course lines
@@ -229,18 +230,28 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
             # If measure has ended, then add notes to the current measure,
             # then start a new measure by incrementing idx_m
             if note_data.endswith(','):
-                for branch_name in (BRANCH_NAMES if current_branch == 'all'
-                                    else [current_branch]):
-                    check_branch_length(parsed_branches, branch_name,
-                                        expected_len=idx_m+1)
-                    parsed_branches[branch_name][idx_m].notes += note_data[:-1]
-                    parsed_branches[branch_name].append(TJAMeasure())
+                check_branch_length(parsed_branches, current_branch, expected_len=idx_m+1)
+                parsed_branches[current_branch][idx_m].notes += note_data[:-1]
+                parsed_branches[current_branch].append(TJAMeasure())
+                # Repeat steps for other branches if we only have info for a single branch
+                if add_dummy_notes_to_other_branches:
+                    other_branches = list(set(BRANCH_NAMES) - set([current_branch]))
+                    for branch_name in other_branches:
+                        check_branch_length(parsed_branches, branch_name,
+                                            expected_len=idx_m+1)
+                        dummy_data = note_data[:-1]
+                        parsed_branches[branch_name][idx_m].notes += dummy_data
+                        parsed_branches[branch_name].append(TJAMeasure())
                 idx_m += 1
             # Otherwise, keep adding notes to the current measure ('idx_m')
             else:
-                for branch_name in (BRANCH_NAMES if current_branch == 'all'
-                                    else [current_branch]):
-                    parsed_branches[branch_name][idx_m].notes += note_data
+                parsed_branches[current_branch][idx_m].notes += note_data
+                # Repeat steps for other branches if we only have info for a single branch
+                if add_dummy_notes_to_other_branches:
+                    other_branches = list(set(BRANCH_NAMES) - set([current_branch]))
+                    for branch_name in other_branches:
+                        dummy_data = note_data
+                        parsed_branches[branch_name][idx_m].notes += dummy_data
 
         # 2. Parse measure commands that produce an "event"
         elif command in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
@@ -248,7 +259,7 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
                          'LEVELHOLD', 'SECTION', 'BRANCHSTART']:
             # Get position of the event
             pos = 0
-            for branch_name in (BRANCH_NAMES if current_branch == 'all'
+            for branch_name in (BRANCH_NAMES if add_dummy_notes_to_other_branches
                                 else [current_branch]):
                 check_branch_length(parsed_branches, branch_name,
                                     expected_len=idx_m+1)
@@ -280,17 +291,17 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
                 # values won't be correctly set for the other two branches.
                 if data[idx_l+1].startswith('#BRANCHSTART'):
                     name = 'section'
-                    current_branch = 'all'
+                    add_dummy_notes_to_other_branches = True
                 elif not branch_condition:
                     name = 'section'
-                    current_branch = 'all'
+                    add_dummy_notes_to_other_branches = True
                 # Otherwise, #SECTION exists in isolation. In this case, to
                 # reset the accuracy, we just repeat the previous #BRANCHSTART.
                 else:
                     name, value = 'branch_start', branch_condition
             elif command == 'BRANCHSTART':
                 # Ensure that the #BRANCHSTART command is added to all branches
-                current_branch = 'all'
+                add_dummy_notes_to_other_branches = True
                 name = 'branch_start'
                 branch_condition = value
                 # If a branch was intentionally excluded by the charter,
@@ -301,7 +312,7 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
                 idx_m_branchstart = idx_m
 
             # Append event to the current measure's events
-            for branch_name in (BRANCH_NAMES if current_branch == 'all'
+            for branch_name in (BRANCH_NAMES if add_dummy_notes_to_other_branches
                                 else [current_branch]):
                 check_branch_length(parsed_branches, branch_name,
                                     expected_len=idx_m+1)
@@ -313,18 +324,23 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
         #    (e.g. simply changing the current branch)
         else:
             if command in ('START', 'END'):
-                current_branch = 'all' if has_branches else 'normal'
+                current_branch = 'normal'
+                add_dummy_notes_to_other_branches = has_branches
             elif command == 'N':
                 current_branch = 'normal'
+                add_dummy_notes_to_other_branches = False
                 idx_m = idx_m_branchstart
             elif command == 'E':
                 current_branch = 'professional'
+                add_dummy_notes_to_other_branches = False
                 idx_m = idx_m_branchstart
             elif command == 'M':
                 current_branch = 'master'
+                add_dummy_notes_to_other_branches = False
                 idx_m = idx_m_branchstart
             elif command == 'BRANCHEND':
-                current_branch = 'all'
+                current_branch = 'normal'
+                add_dummy_notes_to_other_branches = True
 
             else:
                 warnings.warn(f"Ignoring unsupported command '{command}'")
