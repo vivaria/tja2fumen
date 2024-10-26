@@ -234,12 +234,16 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
                 parsed_branches[current_branch][idx_m].notes += note_data[:-1]
                 parsed_branches[current_branch].append(TJAMeasure())
                 # Repeat steps for other branches if we only have info for a single branch
+                # (Note: We replace balloons with drumrolls to avoid reading from BALLOON:
+                #        field extra times)
                 if add_dummy_notes_to_other_branches:
                     other_branches = list(set(BRANCH_NAMES) - set([current_branch]))
                     for branch_name in other_branches:
                         check_branch_length(parsed_branches, branch_name,
                                             expected_len=idx_m+1)
                         dummy_data = note_data[:-1]
+                        dummy_data = dummy_data.replace('7', '5')  # Balloon -> Drumroll
+                        dummy_data = dummy_data.replace('9', '5')  # Kusudama -> Drumroll
                         parsed_branches[branch_name][idx_m].notes += dummy_data
                         parsed_branches[branch_name].append(TJAMeasure())
                 idx_m += 1
@@ -247,10 +251,14 @@ def parse_tja_course_data(data: List[str]) -> Dict[str, List[TJAMeasure]]:
             else:
                 parsed_branches[current_branch][idx_m].notes += note_data
                 # Repeat steps for other branches if we only have info for a single branch
+                # (Note: We replace balloons with drumrolls to avoid reading from BALLOON:
+                #        field extra times)
                 if add_dummy_notes_to_other_branches:
                     other_branches = list(set(BRANCH_NAMES) - set([current_branch]))
                     for branch_name in other_branches:
                         dummy_data = note_data
+                        dummy_data = dummy_data.replace('7', '5')  # Balloon -> Drumroll
+                        dummy_data = dummy_data.replace('9', '5')  # Kusudama -> Drumroll
                         parsed_branches[branch_name][idx_m].notes += dummy_data
 
         # 2. Parse measure commands that produce an "event"

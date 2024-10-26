@@ -149,8 +149,17 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                 for i_note in range(max([co_branch.length, ca_branch.length])):
                     co_note = co_branch.notes[i_note]
                     ca_note = ca_branch.notes[i_note]
-                    check(co_note, ca_note, 'note_type', i_measure,
-                          i_branch, i_note, func=normalize_type)
+                    # Check for "balloon deduplication" workaround.
+                    # This is a hack I specifically added to account
+                    # for songs where a balloon note occurs on the
+                    # normal branch and gets copied to other branches.
+                    # See PR #80 for more information.
+                    if (ca_note.note_type in ['Balloon', 'Kusudama']
+                            and co_note.note_type == 'Drumroll'):
+                        pass
+                    else:
+                        check(co_note, ca_note, 'note_type', i_measure,
+                              i_branch, i_note, func=normalize_type)
                     check(co_note, ca_note, 'pos', i_measure,
                           i_branch, i_note, abv=0.1)
                     # NB: Drumroll duration doesn't always end exactly on a
@@ -167,8 +176,16 @@ def test_converted_tja_vs_cached_fumen(id_song, tmp_path, entry_point):
                     except AssertionError:
                         pass
                     if ca_note.note_type in ["Balloon", "Kusudama"]:
-                        check(co_note, ca_note, 'hits', i_measure,
-                              i_branch, i_note)
+                        # Check for "balloon deduplication" workaround.
+                        # This is a hack I specifically added to account
+                        # for songs where a balloon note occurs on the
+                        # normal branch and gets copied to other branches.
+                        # See PR #80 for more information.
+                        if co_note.note_type == 'Drumroll':
+                            pass
+                        else:
+                            check(co_note, ca_note, 'hits', i_measure,
+                                  i_branch, i_note)
                     else:
                         check(co_note, ca_note, 'score_init', i_measure,
                               i_branch, i_note)
