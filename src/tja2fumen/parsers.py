@@ -509,7 +509,7 @@ def fix_balloon_field(balloon_field: List[int],
     #        I'm alright handling it incorrectly. If a user files a bug
     #        report, then I'll fix it then.
     total_num_balloons = sum(len(b) for b in balloon_data.values())
-    if not (len(balloon_field) < total_num_balloons):
+    if not len(balloon_field) < total_num_balloons:
         return balloon_field
 
     # OK! So, by this point in the function, we're making these assumptions:

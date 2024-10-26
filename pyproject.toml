@@ -42,5 +42,7 @@ disable = """
     too-many-branches,
     too-many-arguments,
     too-many-locals,
-    too-many-statements
+    too-many-statements,
+    too-many-positional-arguments,
+    fixme
 """
