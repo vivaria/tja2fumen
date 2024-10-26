@@ -9,7 +9,7 @@ from typing import List, Dict, Tuple, Union
 from tja2fumen.classes import (TJACourse, TJAMeasure, TJAMeasureProcessed,
                                FumenCourse, FumenHeader, FumenMeasure,
                                FumenNote)
-from tja2fumen.constants import BRANCH_NAMES
+from tja2fumen.constants import BRANCH_NAMES, SENOTECHANGE_TYPES
 
 
 def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
@@ -38,6 +38,7 @@ def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
         current_scroll = 1.0
         current_gogo = False
         current_barline = True
+        current_senote = ""
         current_dividend = 4
         current_divisor = 4
         for measure_tja in branch_measures_tja:
@@ -95,15 +96,18 @@ def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
                 # to BPM/SCROLL/GOGO, then the measure will actually be split
                 # into two small submeasures. So, we need to start a new
                 # measure in those cases.)
-                elif data.name in ['bpm', 'scroll', 'gogo']:
+                elif data.name in ['bpm', 'scroll', 'gogo', 'senote']:
                     # Parse the values
-                    new_val: Union[bool, float]
+                    new_val: Union[bool, float, str]
                     if data.name == 'bpm':
                         new_val = current_bpm = float(data.value)
                     elif data.name == 'scroll':
                         new_val = current_scroll = float(data.value)
                     elif data.name == 'gogo':
                         new_val = current_gogo = bool(int(data.value))
+                    elif data.name == 'senote':
+                        new_val = current_senote \
+                                = SENOTECHANGE_TYPES[int(data.value)]
                     # Check for mid-measure commands
                     # - Case 1: Command happens at the start of a measure;
                     #           just change the value directly
@@ -123,8 +127,13 @@ def process_commands(tja_branches: Dict[str, List[TJAMeasure]], bpm: float) \
                             barline=current_barline,
                             time_sig=[current_dividend, current_divisor],
                             subdivisions=len(measure_tja.notes),
-                            pos_start=data.pos
+                            pos_start=data.pos,
+                            senote=current_senote
                         )
+                    # SENOTECHANGE commands don't carry over to next branch.
+                    # (But they CAN happen mid-measure, which is why we
+                    #  process them here.)
+                    current_senote = ""
 
                 else:
                     warnings.warn(f"Unexpected event type: {data.name}")
@@ -327,7 +336,15 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
                 # we can initialize a note and handle general note metadata.
                 note = FumenNote()
                 note.pos = note_pos
-                note.note_type = note_tja.value
+                # Account for a measure's #SENOTECHANGE command
+                if measure_tja.senote:
+                    note.note_type = measure_tja.senote
+                    note.manually_set = True
+                    # SENOTECHANGE only applies to the note immediately after
+                    # So, we erase it once it's been applied.
+                    measure_tja.senote = ""
+                else:
+                    note.note_type = note_tja.value
                 note.score_init = tja.score_init
                 note.score_diff = tja.score_diff
 
@@ -508,12 +525,13 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
     positions within a cluster of notes.
 
     NB: Modifies FumenNote objects in-place
+    NB: FumenNote values are only updated if not manually set by #SENOTECHANGE
     """
     big_notes = ['DON', 'DON2', 'KA', 'KA2']
     for cluster in note_clusters:
         # Replace all small notes with the basic do/ka notes ("Don2", "Ka2")
         for note in cluster:
-            if note.note_type not in big_notes:
+            if note.note_type not in big_notes and not note.manually_set:
                 if note.note_type[-1].isdigit():
                     note.note_type = note.note_type[:-1] + "2"
                 else:
@@ -524,7 +542,8 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
         all_dons = all(note.note_type.startswith("Don") for note in cluster)
         for i, note in enumerate(cluster):
             if (all_dons and (len(cluster) % 2 == 1) and (i % 2 == 1)
-                    and note.note_type not in big_notes):
+                    and note.note_type not in big_notes
+                    and not note.manually_set):
                 note.note_type = "Don3"
 
         # Replace the last note in a cluster with the ending Don/Kat
@@ -538,7 +557,8 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
             pass
         else:
             # Replace last Don2/Ka2 with Don/Ka
-            if cluster[-1].note_type not in big_notes:
+            if (cluster[-1].note_type not in big_notes
+                    and not cluster[-1].manually_set):
                 cluster[-1].note_type = cluster[-1].note_type[:-1]
 
 
