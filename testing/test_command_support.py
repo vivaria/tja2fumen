@@ -13,6 +13,7 @@ from conftest import convert
     ['notes_double_kusudama', None],
     ['notes_hands', None],
     ['notes_sim_only', None],
+    ['notes_senotechange', None],
     ['missing_score', None],
     ['missing_balloon', "UserWarning"],
     ['missing_course', "Invalid COURSE value:"],
