@@ -195,6 +195,9 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
         len(b) for b in tja_branches_processed.values()
     ))
 
+    # Use a single copy of the course balloons (since we use .pop())
+    course_balloons = tja.balloon.copy()
+
     # Iterate through the different branches in the TJA
     total_notes = {'normal': 0, 'professional': 0, 'master': 0}
     for current_branch, branch_tja in tja_branches_processed.items():
@@ -209,7 +212,6 @@ def convert_tja_to_fumen(tja: TJACourse) -> FumenCourse:
         current_levelhold = False
         branch_types: List[str] = []
         branch_conditions: List[Tuple[float, float]] = []
-        course_balloons = tja.balloon.copy()
 
         # Iterate over pairs of TJA and Fumen measures
         for idx_m, (measure_tja, measure_fumen) in \
