@@ -28,6 +28,15 @@ TJA_NOTE_TYPES = {
     'I': 'Drumroll',  # green roll
 }
 
+# Conversion for TJAPlayer3's #SENOTECHANGE command
+SENOTECHANGE_TYPES = {
+    1: "Don",   # ドン
+    2: "Don2",  # ド
+    3: "Don3",  # コ
+    4: "Ka",    # カッ
+    5: "Ka2",   # カ
+}
+
 # Types of notes that can be found in fumen files
 FUMEN_NOTE_TYPES = {
     0x1: "Don",   # ドン

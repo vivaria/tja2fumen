@@ -262,7 +262,8 @@ def parse_tja_course_data(data: List[str]) \
         # 2. Parse measure commands that produce an "event"
         elif command in ['GOGOSTART', 'GOGOEND', 'BARLINEON', 'BARLINEOFF',
                          'DELAY', 'SCROLL', 'BPMCHANGE', 'MEASURE',
-                         'LEVELHOLD', 'SECTION', 'BRANCHSTART']:
+                         'LEVELHOLD', 'SENOTECHANGE', 'SECTION',
+                         'BRANCHSTART']:
             # Get position of the event
             pos = 0
             for branch_name in (BRANCH_NAMES if current_branch == 'all'
@@ -290,6 +291,8 @@ def parse_tja_course_data(data: List[str]) \
                 name = 'measure'
             elif command == 'LEVELHOLD':
                 name = 'levelhold'
+            elif command == "SENOTECHANGE":
+                name = 'senote'
             elif command == 'SECTION':
                 # If #SECTION occurs before a #BRANCHSTART, then ensure that
                 # it's present on every branch. Otherwise, #SECTION will only
