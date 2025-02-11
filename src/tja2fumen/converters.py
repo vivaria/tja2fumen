@@ -551,7 +551,7 @@ def replace_alternate_don_kas(note_clusters: List[List[FumenNote]],
         # However, there's one exception: Groups of 4 notes, faster than 8th
         is_fast_cluster_of_4 = (len(cluster) == 4 and
                                 all(note.diff < eighth_note_duration
-                                    for note in cluster[:-1]))
+                                    for note in cluster))
         if is_fast_cluster_of_4:
             # Leave last note as Don2/Ka2
             pass
