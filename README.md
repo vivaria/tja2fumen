@@ -95,7 +95,7 @@ tja = parse_tja("path/to/tja_file.tja")
 
 # convert tja data to fumen data
 from tja2fumen.converters import convert_tja_to_fumen
-fumen_converted = convert_tja_to_fumen(tja)
+fumen_converted = convert_tja_to_fumen(tja.courses['Oni']) #TJAcourse is under tja.courses so it's necessary to specify which course to be converted
 
 # modify the FumenCourse object
 # - e.g.1: change the timing window header metadata
