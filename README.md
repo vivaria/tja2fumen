@@ -6,7 +6,7 @@
     alt="tja2fumen – TJA chart converter"
   />
   <br>
-  tja2fumen is a tool that allows you to convert TJA charts (<code>.tja</code>) to fumen charts (<code>.bin</code>).
+  tja2fumen is a tool that allows you to convert fan-made Taiko song charts (<code>.tja</code>) into officially-compatible game files (<code>.bin</code>).
 </p>
 
 <p align="center">
