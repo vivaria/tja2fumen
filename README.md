@@ -1,3 +1,8 @@
+> [!CAUTION]
+> Due to the [recent, aggressive shift](https://x.com/taiko_kateiyou/status/1935532991863820367) in Bandai Namco's handling of modding tools, and due to the threat of [fraudulent DMCA takedowns](https://github.com/TaikoModding/TekaTeka), development has shifted to an alternate Git host: [**tendokyu.moe**](https://gitea.tendokyu.moe/vivaria/tja2fumen). This GitHub repository will hereby be changed to "Archived" status.
+>
+> **Note:** The code in the tja2fumen repository deals only with plaintext and unencrypted binary files. The tja2fumen code does not modify game code, it does not use proprietary assets, and it does not use Bandai Namco secrets. In theory, this should keep it safe from DMCA takedown notices. However, theoretical safety does not matter in today's world, so it is better to be safe than sorry.
+
 &nbsp;
 <p align="center">
   <img
